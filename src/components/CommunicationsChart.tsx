@@ -204,10 +204,19 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
   const dataMaxValue = allValues.length > 0 ? Math.max(...allValues) : 1;
   const maxValue = Math.max(dataMaxValue, 5);
 
+  const yAxisMax = Math.ceil(maxValue * 1.2);
   const yAxisSteps = 20;
-  const stepSize = Math.ceil(maxValue / yAxisSteps);
-  const yAxisMax = stepSize * yAxisSteps;
+  const stepSize = Math.max(1, Math.ceil(yAxisMax / yAxisSteps));
   const yAxisLabels = Array.from({ length: yAxisSteps + 1 }, (_, i) => i * stepSize);
+
+  console.log('Chart Debug:', {
+    allValues,
+    dataMaxValue,
+    maxValue,
+    yAxisMax,
+    stepSize,
+    stats: stats.map(s => ({ date: s.date, calls: s.calls, emails: s.emails, deals: s.deals }))
+  });
 
   const totalCalls = stats.reduce((sum, stat) => sum + stat.calls, 0);
   const totalEmails = stats.reduce((sum, stat) => sum + stat.emails, 0);
@@ -364,6 +373,19 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
                   const callHeight = (stat.calls / yAxisMax) * 100;
                   const emailHeight = (stat.emails / yAxisMax) * 100;
                   const dealHeight = (stat.deals / yAxisMax) * 100;
+
+                  if (index === 0) {
+                    console.log('First bar heights:', {
+                      date: stat.date,
+                      calls: stat.calls,
+                      emails: stat.emails,
+                      deals: stat.deals,
+                      yAxisMax,
+                      callHeight: `${callHeight}%`,
+                      emailHeight: `${emailHeight}%`,
+                      dealHeight: `${dealHeight}%`
+                    });
+                  }
 
                   return (
                     <div
