@@ -27,6 +27,7 @@ import CommunicationsHistory from './components/CommunicationsHistory';
 import ButtonOrderSettings from './components/ButtonOrderSettings';
 import MultiSelectDropdown from './components/MultiSelectDropdown';
 import AccountSettings from './components/AccountSettings';
+import DuplicatesModal from './components/DuplicatesModal';
 
 interface NotificationSettings {
   id?: string;
@@ -130,7 +131,8 @@ function App() {
   const [allDeals, setAllDeals] = useState<FuelDeal[]>([]);
   const [showButtonOrderSettings, setShowButtonOrderSettings] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
-  const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'delete-all', 'settings', 'import', 'add-contact']);
+  const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
+  const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'add-contact']);
   const { user, loading: authLoading, signOut } = useAuth();
 
   useEffect(() => {
@@ -1644,6 +1646,16 @@ function App() {
           Delete All
         </button>
       ),
+      'duplicates': (
+        <button
+          key="duplicates"
+          onClick={() => setShowDuplicatesModal(true)}
+          className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+        >
+          <Users className="w-5 h-5" />
+          Duplicates
+        </button>
+      ),
       'settings': (
         <button
           key="settings"
@@ -2527,6 +2539,17 @@ function App() {
           currentOrder={buttonOrder}
           onClose={() => setShowButtonOrderSettings(false)}
           onSave={handleSaveButtonOrder}
+        />
+      )}
+
+      {showDuplicatesModal && (
+        <DuplicatesModal
+          contacts={contacts}
+          onClose={() => {
+            setShowDuplicatesModal(false);
+            loadContacts();
+          }}
+          onDelete={handleDeleteContact}
         />
       )}
 
