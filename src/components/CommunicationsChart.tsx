@@ -193,18 +193,17 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
   };
 
   const stats = getStats();
-  const dataMaxValue = Math.max(
-    ...stats.map(stat => {
-      let max = 0;
-      if (showCalls) max = Math.max(max, stat.calls);
-      if (showEmails) max = Math.max(max, stat.emails);
-      if (showDeals) max = Math.max(max, stat.deals);
-      return max;
-    }),
-    1
-  );
 
+  const allValues: number[] = [];
+  stats.forEach(stat => {
+    if (showCalls) allValues.push(stat.calls);
+    if (showEmails) allValues.push(stat.emails);
+    if (showDeals) allValues.push(stat.deals);
+  });
+
+  const dataMaxValue = allValues.length > 0 ? Math.max(...allValues) : 1;
   const maxValue = Math.max(dataMaxValue, 5);
+
   const yAxisSteps = 20;
   const stepSize = Math.ceil(maxValue / yAxisSteps);
   const yAxisMax = stepSize * yAxisSteps;
