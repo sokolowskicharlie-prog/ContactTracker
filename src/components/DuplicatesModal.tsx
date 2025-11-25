@@ -15,6 +15,7 @@ interface DuplicatesModalProps {
 
 export default function DuplicatesModal({ contacts, onClose, onDelete }: DuplicatesModalProps) {
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const findDuplicates = (): DuplicateGroup[] => {
     const nameMap = new Map<string, ContactWithActivity[]>();
@@ -56,6 +57,25 @@ export default function DuplicatesModal({ contacts, onClose, onDelete }: Duplica
         newSet.delete(contactId);
         return newSet;
       });
+    }
+  };
+
+  const handleDeleteAllNewest = async () => {
+    if (!confirm('Are you sure you want to delete all NEWEST duplicates? This will keep the oldest contact for each duplicate name.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      for (const group of duplicateGroups) {
+        const newestContact = group.contacts[0];
+        await onDelete(newestContact.id);
+      }
+      onClose();
+    } catch (error) {
+      console.error('Error deleting newest duplicates:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -198,12 +218,24 @@ export default function DuplicatesModal({ contacts, onClose, onDelete }: Duplica
         </div>
 
         <div className="border-t border-gray-200 px-6 py-4">
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            Close
-          </button>
+          <div className="flex gap-3">
+            {duplicateGroups.length > 0 && (
+              <button
+                onClick={handleDeleteAllNewest}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                {isDeleting ? 'Deleting...' : 'Delete All Newest'}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
