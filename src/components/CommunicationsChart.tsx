@@ -201,8 +201,10 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
       if (showDeals) max = Math.max(max, stat.deals);
       return max;
     }),
-    1
+    20
   );
+
+  const yAxisLabels = Array.from({ length: 21 }, (_, i) => i);
 
   const totalCalls = stats.reduce((sum, stat) => sum + stat.calls, 0);
   const totalEmails = stats.reduce((sum, stat) => sum + stat.emails, 0);
@@ -344,81 +346,93 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
       </div>
 
       <div className="overflow-x-auto">
-        <div className="flex items-end h-64 gap-2 justify-start" style={{ minWidth: '100%' }}>
-            {stats.map((stat, index) => {
-              const callHeight = (stat.calls / maxValue) * 100;
-              const emailHeight = (stat.emails / maxValue) * 100;
-              const dealHeight = (stat.deals / maxValue) * 100;
+        <div className="flex gap-4">
+          <div className="flex flex-col justify-between h-64 py-2">
+            {yAxisLabels.reverse().map((label) => (
+              <div key={label} className="text-xs text-gray-500 text-right pr-2" style={{ height: '12px' }}>
+                {label}
+              </div>
+            ))}
+          </div>
 
-              return (
-                <div
-                  key={index}
-                  className="flex flex-col items-center flex-1 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors p-1"
-                  style={{ minWidth: `${groupWidth}px`, maxWidth: '100px' }}
-                  onClick={() => setSelectedDate(stat.date)}
-                >
-                  <div className="flex items-end justify-center gap-1 h-56 w-full">
-                    {showCalls && (
-                      <div className="relative group">
-                        <div
-                          className="bg-green-500 hover:bg-green-600 transition-colors rounded-t"
-                          style={{
-                            height: `${callHeight}%`,
-                            minHeight: stat.calls > 0 ? '4px' : '0px',
-                            width: `${barWidth}px`
-                          }}
-                        />
-                        {stat.calls > 0 && (
-                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                            {stat.calls}
+          <div className="flex-1 overflow-x-auto">
+            <div className="flex items-end h-64 gap-2 justify-start" style={{ minWidth: '100%' }}>
+                {stats.map((stat, index) => {
+                  const callHeight = (stat.calls / maxValue) * 100;
+                  const emailHeight = (stat.emails / maxValue) * 100;
+                  const dealHeight = (stat.deals / maxValue) * 100;
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex flex-col items-center flex-1 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors p-1"
+                      style={{ minWidth: `${groupWidth}px`, maxWidth: '100px' }}
+                      onClick={() => setSelectedDate(stat.date)}
+                    >
+                      <div className="flex items-end justify-center gap-1 h-56 w-full">
+                        {showCalls && (
+                          <div className="relative group">
+                            <div
+                              className="bg-green-500 hover:bg-green-600 transition-colors rounded-t"
+                              style={{
+                                height: `${callHeight}%`,
+                                minHeight: stat.calls > 0 ? '4px' : '0px',
+                                width: `${barWidth}px`
+                              }}
+                            />
+                            {stat.calls > 0 && (
+                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                {stat.calls}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {showEmails && (
+                          <div className="relative group">
+                            <div
+                              className="bg-orange-500 hover:bg-orange-600 transition-colors rounded-t"
+                              style={{
+                                height: `${emailHeight}%`,
+                                minHeight: stat.emails > 0 ? '4px' : '0px',
+                                width: `${barWidth}px`
+                              }}
+                            />
+                            {stat.emails > 0 && (
+                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                {stat.emails}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {showDeals && (
+                          <div className="relative group">
+                            <div
+                              className="bg-blue-500 hover:bg-blue-600 transition-colors rounded-t"
+                              style={{
+                                height: `${dealHeight}%`,
+                                minHeight: stat.deals > 0 ? '4px' : '0px',
+                                width: `${barWidth}px`
+                              }}
+                            />
+                            {stat.deals > 0 && (
+                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                {stat.deals}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
 
-                    {showEmails && (
-                      <div className="relative group">
-                        <div
-                          className="bg-orange-500 hover:bg-orange-600 transition-colors rounded-t"
-                          style={{
-                            height: `${emailHeight}%`,
-                            minHeight: stat.emails > 0 ? '4px' : '0px',
-                            width: `${barWidth}px`
-                          }}
-                        />
-                        {stat.emails > 0 && (
-                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                            {stat.emails}
-                          </div>
-                        )}
+                      <div className="text-xs text-gray-700 font-medium mt-2 text-center">
+                        {timePeriod === 'daily' ? stat.date : timePeriod === 'monthly' ? stat.date : stat.date}
                       </div>
-                    )}
-
-                    {showDeals && (
-                      <div className="relative group">
-                        <div
-                          className="bg-blue-500 hover:bg-blue-600 transition-colors rounded-t"
-                          style={{
-                            height: `${dealHeight}%`,
-                            minHeight: stat.deals > 0 ? '4px' : '0px',
-                            width: `${barWidth}px`
-                          }}
-                        />
-                        {stat.deals > 0 && (
-                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                            {stat.deals}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="text-xs text-gray-700 font-medium mt-2 text-center">
-                    {timePeriod === 'daily' ? stat.date : timePeriod === 'monthly' ? stat.date : stat.date}
-                  </div>
-                </div>
-              );
-            })}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
         </div>
       </div>
 
