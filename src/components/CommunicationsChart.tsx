@@ -14,18 +14,66 @@ interface CommunicationsChartProps {
   deals: FuelDeal[];
 }
 
-type TimePeriod = 'daily' | 'monthly' | 'annual';
+type TimePeriod = 'daily' | 'monthly' | 'annual' | 'custom';
 
 export default function CommunicationsChart({ calls, emails, deals }: CommunicationsChartProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
   const [showCalls, setShowCalls] = useState(true);
   const [showEmails, setShowEmails] = useState(true);
   const [showDeals, setShowDeals] = useState(true);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const getStats = (): DailyStats[] => {
     const now = new Date();
     const statsMap = new Map<string, DailyStats>();
 
-    if (timePeriod === 'daily') {
+    if (timePeriod === 'custom') {
+      if (!startDate || !endDate) return [];
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (start > end) return [];
+
+      const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+      for (let i = 0; i < daysDiff; i++) {
+        const date = new Date(start);
+        date.setDate(date.getDate() + i);
+        const dateKey = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+        statsMap.set(dateKey, { date: dateKey, calls: 0, emails: 0, deals: 0 });
+      }
+
+      calls.forEach(call => {
+        const date = new Date(call.call_date);
+        if (date >= start && date <= end) {
+          const dateKey = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+          if (statsMap.has(dateKey)) {
+            statsMap.get(dateKey)!.calls++;
+          }
+        }
+      });
+
+      emails.forEach(email => {
+        const date = new Date(email.email_date);
+        if (date >= start && date <= end) {
+          const dateKey = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+          if (statsMap.has(dateKey)) {
+            statsMap.get(dateKey)!.emails++;
+          }
+        }
+      });
+
+      deals.forEach(deal => {
+        const date = new Date(deal.deal_date);
+        if (date >= start && date <= end) {
+          const dateKey = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+          if (statsMap.has(dateKey)) {
+            statsMap.get(dateKey)!.deals++;
+          }
+        }
+      });
+    } else if (timePeriod === 'daily') {
       for (let i = 29; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
@@ -158,7 +206,7 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
   const totalEmails = stats.reduce((sum, stat) => sum + stat.emails, 0);
   const totalDeals = stats.reduce((sum, stat) => sum + stat.deals, 0);
 
-  const periodLabel = timePeriod === 'daily' ? 'Last 30 days' : timePeriod === 'monthly' ? 'Last 12 months' : 'Last 5 years';
+  const periodLabel = timePeriod === 'daily' ? 'Last 30 days' : timePeriod === 'monthly' ? 'Last 12 months' : timePeriod === 'annual' ? 'Last 5 years' : 'Custom range';
 
   const barsPerGroup = [showCalls, showEmails, showDeals].filter(Boolean).length;
   const barWidth = 20;
@@ -166,40 +214,79 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Activity Overview</h3>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setTimePeriod('daily')}
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              timePeriod === 'daily'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Daily
-          </button>
-          <button
-            onClick={() => setTimePeriod('monthly')}
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              timePeriod === 'monthly'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setTimePeriod('annual')}
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              timePeriod === 'annual'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Annual
-          </button>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Activity Overview</h3>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setTimePeriod('daily')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                timePeriod === 'daily'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Daily
+            </button>
+            <button
+              onClick={() => setTimePeriod('monthly')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                timePeriod === 'monthly'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setTimePeriod('annual')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                timePeriod === 'annual'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Annual
+            </button>
+            <button
+              onClick={() => setTimePeriod('custom')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                timePeriod === 'custom'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Custom
+            </button>
+          </div>
         </div>
+
+        {timePeriod === 'custom' && (
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-4 mb-4">
