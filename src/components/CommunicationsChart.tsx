@@ -25,6 +25,16 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  console.log('Chart Props:', {
+    callsCount: calls.length,
+    emailsCount: emails.length,
+    dealsCount: deals.length,
+    sampleCall: calls[0],
+    sampleEmail: emails[0],
+    sampleDeal: deals[0]
+  });
+
   const getStats = (): DailyStats[] => {
     const now = new Date();
     const statsMap = new Map<string, DailyStats>();
@@ -125,8 +135,16 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
       calls.forEach(call => {
         const date = new Date(call.call_date);
         const monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
+        const dateKey = date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+        console.log('Processing call:', {
+          call_date: call.call_date,
+          parsed_date: date,
+          monthsDiff,
+          dateKey,
+          hasKey: statsMap.has(dateKey),
+          inRange: monthsDiff >= 0 && monthsDiff < 12
+        });
         if (monthsDiff >= 0 && monthsDiff < 12) {
-          const dateKey = date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
           if (statsMap.has(dateKey)) {
             statsMap.get(dateKey)!.calls++;
           }
