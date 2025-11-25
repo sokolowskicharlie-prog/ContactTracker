@@ -193,7 +193,7 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
   };
 
   const stats = getStats();
-  const maxValue = Math.max(
+  const dataMaxValue = Math.max(
     ...stats.map(stat => {
       let max = 0;
       if (showCalls) max = Math.max(max, stat.calls);
@@ -201,10 +201,14 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
       if (showDeals) max = Math.max(max, stat.deals);
       return max;
     }),
-    20
+    1
   );
 
-  const yAxisLabels = Array.from({ length: 21 }, (_, i) => i);
+  const maxValue = Math.max(dataMaxValue, 5);
+  const yAxisSteps = 20;
+  const stepSize = Math.ceil(maxValue / yAxisSteps);
+  const yAxisMax = stepSize * yAxisSteps;
+  const yAxisLabels = Array.from({ length: yAxisSteps + 1 }, (_, i) => i * stepSize);
 
   const totalCalls = stats.reduce((sum, stat) => sum + stat.calls, 0);
   const totalEmails = stats.reduce((sum, stat) => sum + stat.emails, 0);
@@ -358,9 +362,9 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
           <div className="flex-1 overflow-x-auto">
             <div className="flex items-end h-64 gap-2 justify-start" style={{ minWidth: '100%' }}>
                 {stats.map((stat, index) => {
-                  const callHeight = (stat.calls / maxValue) * 100;
-                  const emailHeight = (stat.emails / maxValue) * 100;
-                  const dealHeight = (stat.deals / maxValue) * 100;
+                  const callHeight = (stat.calls / yAxisMax) * 100;
+                  const emailHeight = (stat.emails / yAxisMax) * 100;
+                  const dealHeight = (stat.deals / yAxisMax) * 100;
 
                   return (
                     <div
