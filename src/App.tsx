@@ -518,9 +518,14 @@ function App() {
 
         await supabase.from('contact_persons').delete().eq('contact_id', contactId);
       } else {
+        const insertData = {
+          ...contactData,
+          user_id: user?.id,
+        };
+
         const { data, error } = await supabase
           .from('contacts')
-          .insert([contactData])
+          .insert([insertData])
           .select()
           .single();
 
