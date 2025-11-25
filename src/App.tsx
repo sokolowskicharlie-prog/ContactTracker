@@ -1662,6 +1662,23 @@ function App() {
     }
   };
 
+  const handleCopyAllSupplierEmails = () => {
+    const emails = filteredSuppliers
+      .map(s => s.general_email || s.email)
+      .filter(Boolean)
+      .join('; ');
+
+    if (emails) {
+      navigator.clipboard.writeText(emails).then(() => {
+        alert(`Copied ${filteredSuppliers.filter(s => s.general_email || s.email).length} email addresses to clipboard!`);
+      }).catch(() => {
+        alert('Failed to copy emails. Please try again.');
+      });
+    } else {
+      alert('No email addresses found in filtered suppliers.');
+    }
+  };
+
   const renderContactButtons = () => {
     const buttonComponents: Record<string, JSX.Element> = {
       'copy-emails': (
@@ -1922,6 +1939,13 @@ function App() {
             renderContactButtons()
           ) : currentPage === 'suppliers' ? (
             <div className="flex gap-2">
+              <button
+                onClick={handleCopyAllSupplierEmails}
+                className="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Copy className="w-5 h-5" />
+                Copy Emails
+              </button>
               <button
                 onClick={() => setShowSupplierImportModal(true)}
                 className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
