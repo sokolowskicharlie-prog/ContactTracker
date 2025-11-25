@@ -28,6 +28,7 @@ import ButtonOrderSettings from './components/ButtonOrderSettings';
 import MultiSelectDropdown from './components/MultiSelectDropdown';
 import AccountSettings from './components/AccountSettings';
 import DuplicatesModal from './components/DuplicatesModal';
+import SupplierImportModal from './components/SupplierImportModal';
 
 interface NotificationSettings {
   id?: string;
@@ -57,6 +58,7 @@ function App() {
   const [showSupplierDetail, setShowSupplierDetail] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showSupplierContactModal, setShowSupplierContactModal] = useState(false);
+  const [showSupplierImportModal, setShowSupplierImportModal] = useState(false);
   const [editingVessel, setEditingVessel] = useState<Vessel | undefined>();
   const [editingFuelDeal, setEditingFuelDeal] = useState<FuelDeal | undefined>();
   const [editingCall, setEditingCall] = useState<Call | undefined>();
@@ -1263,6 +1265,61 @@ function App() {
     setShowSupplierModal(true);
   };
 
+  const handleImportSuppliers = async (importedSuppliers: any[]) => {
+    try {
+      const suppliersToInsert = importedSuppliers.map(s => ({
+        user_id: user.id,
+        company_name: s['Supplier Name'],
+        ports: s['Ports'] || null,
+        address: s['Address'] || null,
+        notes: s['Notes'] || null,
+        usual_payment_terms: s['Usual Payment Terms'] || null,
+        emails: s['Emails'] || null,
+        phone_number: s['Phone Number'] || null,
+        country: s['Country'] || null,
+        website: s['Website'] || null,
+        currency: s['Currency'] || null,
+        supplier_type: s['Supplier Type'] || null,
+        fuel_types: s['Fuel Types'] ? s['Fuel Types'].split(',').map((t: string) => t.trim()) : null,
+      }));
+
+      const { error } = await supabase.from('suppliers').upsert(suppliersToInsert, {
+        onConflict: 'user_id,company_name',
+        ignoreDuplicates: false,
+      });
+
+      if (error) throw error;
+      await loadSuppliers();
+    } catch (error) {
+      console.error('Error importing suppliers:', error);
+      throw error;
+    }
+  };
+
+  const handleExportSuppliers = () => {
+    const workbook = XLSX.utils.book_new();
+
+    const suppliersData = suppliers.map(supplier => ({
+      'Supplier Name': supplier.company_name,
+      'Ports': supplier.ports || '',
+      'Address': supplier.address || '',
+      'Notes': supplier.notes || '',
+      'Usual Payment Terms': supplier.usual_payment_terms || '',
+      'Emails': supplier.emails || '',
+      'Phone Number': supplier.phone_number || '',
+      'Country': supplier.country || '',
+      'Website': supplier.website || '',
+      'Currency': supplier.currency || '',
+      'Supplier Type': supplier.supplier_type || '',
+      'Fuel Types': supplier.fuel_types ? supplier.fuel_types.join(', ') : '',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(suppliersData);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Suppliers');
+
+    XLSX.writeFile(workbook, `suppliers_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   const handleSaveOrder = async (orderData: Partial<SupplierOrder>) => {
     if (!selectedSupplier) return;
 
@@ -1863,16 +1920,32 @@ function App() {
           {currentPage === 'contacts' ? (
             renderContactButtons()
           ) : currentPage === 'suppliers' ? (
-            <button
-              onClick={() => {
-                setEditingSupplier(undefined);
-                setShowSupplierModal(true);
-              }}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
-            >
-              <Plus className="w-5 h-5" />
-              Add Supplier
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowSupplierImportModal(true)}
+                className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Upload className="w-5 h-5" />
+                Import
+              </button>
+              <button
+                onClick={handleExportSuppliers}
+                className="px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Download className="w-5 h-5" />
+                Export
+              </button>
+              <button
+                onClick={() => {
+                  setEditingSupplier(undefined);
+                  setShowSupplierModal(true);
+                }}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Plus className="w-5 h-5" />
+                Add Supplier
+              </button>
+            </div>
           ) : (
             <button
               onClick={() => {
@@ -2504,6 +2577,13 @@ function App() {
             setEditingSupplierContact(undefined);
           }}
           onSave={handleSaveSupplierContact}
+        />
+      )}
+
+      {showSupplierImportModal && (
+        <SupplierImportModal
+          onClose={() => setShowSupplierImportModal(false)}
+          onImport={handleImportSuppliers}
         />
       )}
 
