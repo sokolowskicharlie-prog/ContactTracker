@@ -1,0 +1,763 @@
+import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ContactWithActivity, Vessel, FuelDeal, Call, Email, TaskWithRelated } from '../lib/supabase';
+
+interface ContactDetailProps {
+  contact: ContactWithActivity;
+  tasks: TaskWithRelated[];
+  onClose: () => void;
+  onLogCall: () => void;
+  onLogEmail: () => void;
+  onEditCall: (call: Call) => void;
+  onEditEmail: (email: Email) => void;
+  onAddVessel: () => void;
+  onEditVessel: (vessel: Vessel) => void;
+  onDeleteVessel: (vesselId: string) => void;
+  onAddFuelDeal: () => void;
+  onEditFuelDeal: (deal: FuelDeal) => void;
+  onDeleteFuelDeal: (dealId: string) => void;
+  onUpdateStatus: (statusField: 'is_jammed' | 'has_traction' | 'is_client', value: boolean) => void;
+  onAddTask: () => void;
+  onToggleTaskComplete: (taskId: string, completed: boolean) => void;
+  onEditTask: (task: TaskWithRelated) => void;
+  onDeleteTask: (taskId: string) => void;
+}
+
+export default function ContactDetail({ contact, tasks, onClose, onLogCall, onLogEmail, onEditCall, onEditEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask }: ContactDetailProps) {
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'No due date';
+    const date = new Date(dateString);
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const hasTime = hours !== 0 || minutes !== 0;
+
+    if (hasTime) {
+      return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+    }
+
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const getTaskTypeLabel = (taskType: string) => {
+    switch (taskType) {
+      case 'call_back':
+        return 'Call Back';
+      case 'email_back':
+        return 'Email Back';
+      case 'text_back':
+        return 'Text Back';
+      default:
+        return 'Other';
+    }
+  };
+
+  const getTaskTypeIcon = (taskType: string) => {
+    switch (taskType) {
+      case 'call_back':
+        return <Phone className="w-3 h-3" />;
+      case 'email_back':
+        return <Mail className="w-3 h-3" />;
+      case 'text_back':
+        return <MessageCircle className="w-3 h-3" />;
+      default:
+        return <CheckSquare className="w-3 h-3" />;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex-1">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-3">{contact.name}</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onUpdateStatus('has_traction', !contact.has_traction)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  contact.has_traction
+                    ? 'bg-yellow-400 text-yellow-900 border border-yellow-500'
+                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                }`}
+              >
+                <Star className={`w-4 h-4 ${contact.has_traction ? 'fill-yellow-900' : ''}`} />
+                Traction
+              </button>
+              <button
+                onClick={() => onUpdateStatus('is_client', !contact.is_client)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  contact.is_client
+                    ? 'bg-green-500 text-white border border-green-600'
+                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                }`}
+              >
+                <Check className="w-4 h-4" />
+                Client
+              </button>
+              <button
+                onClick={() => onUpdateStatus('is_jammed', !contact.is_jammed)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  contact.is_jammed
+                    ? 'bg-red-500 text-white border border-red-600'
+                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                }`}
+              >
+                <XCircle className="w-4 h-4" />
+                Jammed
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            {contact.company && (
+              <div className="flex items-center text-gray-700">
+                <Building2 className="w-5 h-5 mr-3 text-gray-500" />
+                <div className="flex items-center gap-2">
+                  <span>{contact.company}</span>
+                  {contact.company_size && (
+                    <span className="text-sm text-gray-500">({contact.company_size})</span>
+                  )}
+                </div>
+              </div>
+            )}
+            {contact.phone && (
+              <div className="flex items-center text-gray-700">
+                {contact.phone_type === 'whatsapp' ? (
+                  <MessageCircle className="w-5 h-5 mr-3 text-green-500" />
+                ) : (
+                  <Phone className="w-5 h-5 mr-3 text-gray-500" />
+                )}
+                <span>{contact.phone}</span>
+                <span className="ml-2 text-xs text-gray-400">({contact.phone_type || 'general'})</span>
+              </div>
+            )}
+            {contact.email && (
+              <div className="flex items-center text-gray-700">
+                <Mail className="w-5 h-5 mr-3 text-gray-500" />
+                <span>{contact.email}</span>
+              </div>
+            )}
+            {contact.website && (
+              <div className="flex items-center text-gray-700">
+                <Globe className="w-5 h-5 mr-3 text-gray-500" />
+                <a href={contact.website} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 underline">
+                  {contact.website}
+                </a>
+              </div>
+            )}
+            {contact.address && (
+              <div className="flex items-start text-gray-700">
+                <Building2 className="w-5 h-5 mr-3 text-gray-500 mt-0.5" />
+                <span className="flex-1">{contact.address}</span>
+              </div>
+            )}
+            {contact.city && (
+              <div className="flex items-center text-gray-700">
+                <Building2 className="w-5 h-5 mr-3 text-gray-500" />
+                <span>{contact.city}</span>
+              </div>
+            )}
+            {contact.post_code && (
+              <div className="flex items-center text-gray-700">
+                <Hash className="w-5 h-5 mr-3 text-gray-500" />
+                <span>{contact.post_code}</span>
+              </div>
+            )}
+            {contact.country && (
+              <div className="flex items-center text-gray-700">
+                <Globe2 className="w-5 h-5 mr-3 text-gray-500" />
+                <span>{contact.country}</span>
+              </div>
+            )}
+            {contact.timezone && (
+              <div className="flex items-center text-gray-700">
+                <Clock className="w-5 h-5 mr-3 text-gray-500" />
+                <span>{contact.timezone}</span>
+              </div>
+            )}
+            {contact.company_excerpt && (
+              <div className="flex items-start text-gray-700">
+                <FileText className="w-5 h-5 mr-3 text-gray-500 mt-0.5" />
+                <span className="flex-1 italic">{contact.company_excerpt}</span>
+              </div>
+            )}
+            {contact.notes && (
+              <div className="flex items-start text-gray-700 pt-2 border-t border-gray-200">
+                <FileText className="w-5 h-5 mr-3 text-gray-500 mt-0.5" />
+                <span className="flex-1">{contact.notes}</span>
+              </div>
+            )}
+          </div>
+
+          {contact.contact_persons && contact.contact_persons.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Contact Persons ({contact.contact_persons.length})
+              </h3>
+              <div className="space-y-3">
+                {contact.contact_persons
+                  .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
+                  .map((person) => (
+                    <div
+                      key={person.id}
+                      className="bg-white border border-gray-200 rounded-lg p-4"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                            {person.name}
+                            {person.is_primary && (
+                              <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
+                            )}
+                          </div>
+                          {person.job_title && (
+                            <div className="text-sm text-gray-500 mt-0.5">{person.job_title}</div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        {person.email && (
+                          <div className="flex items-start text-sm text-gray-600">
+                            <Mail className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                            <div className="flex flex-wrap gap-1">
+                              {person.email.split(';').map((email, idx) => (
+                                <span key={idx} className="break-all">
+                                  {email.trim()}
+                                  {idx < person.email!.split(';').length - 1 && <span className="text-gray-400 ml-1">;</span>}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {person.phone && (
+                          <div className="flex items-center text-sm text-gray-600">
+                            {person.phone_type === 'whatsapp' ? (
+                              <MessageCircle className="w-4 h-4 mr-2 text-green-500" />
+                            ) : (
+                              <Phone className="w-4 h-4 mr-2" />
+                            )}
+                            <span>{person.phone}</span>
+                            <span className="ml-1 text-xs text-gray-400">({person.phone_type || 'general'})</span>
+                          </div>
+                        )}
+                        {person.mobile && (
+                          <div className="flex items-center text-sm text-gray-600">
+                            {person.mobile_type === 'whatsapp' ? (
+                              <MessageCircle className="w-4 h-4 mr-2 text-green-500" />
+                            ) : (
+                              <Smartphone className="w-4 h-4 mr-2" />
+                            )}
+                            <span>{person.mobile}</span>
+                            <span className="ml-1 text-xs text-gray-400">({person.mobile_type || 'general'})</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {contact.vessels && contact.vessels.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Ship className="w-5 h-5" />
+                  Vessels ({contact.vessels.length})
+                </h3>
+                <button
+                  onClick={onAddVessel}
+                  className="px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Vessel
+                </button>
+              </div>
+              <div className="space-y-3">
+                {contact.vessels.map((vessel) => (
+                  <div
+                    key={vessel.id}
+                    className="bg-white border border-gray-200 rounded-lg p-4"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <div className="font-medium text-gray-900 flex items-center gap-2">
+                          <Ship className="w-4 h-4 text-blue-600" />
+                          {vessel.vessel_name}
+                        </div>
+                        {vessel.vessel_type && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {vessel.vessel_type}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => onEditVessel(vessel)}
+                          className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete vessel ${vessel.vessel_name}?`)) {
+                              onDeleteVessel(vessel.id);
+                            }
+                          }}
+                          className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {vessel.imo_number && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Hash className="w-4 h-4 mr-2" />
+                          IMO: {vessel.imo_number}
+                        </div>
+                      )}
+                      {vessel.marine_traffic_url && (
+                        <a
+                          href={vessel.marine_traffic_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Track on Marine Traffic
+                        </a>
+                      )}
+                      {vessel.notes && (
+                        <p className="text-sm text-gray-600 mt-2 italic">
+                          {vessel.notes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(!contact.vessels || contact.vessels.length === 0) && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Ship className="w-5 h-5" />
+                  Vessels
+                </h3>
+                <button
+                  onClick={onAddVessel}
+                  className="px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Vessel
+                </button>
+              </div>
+              <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                <Ship className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                <p>No vessels added yet</p>
+              </div>
+            </div>
+          )}
+
+          {contact.fuel_deals && contact.fuel_deals.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Fuel Deals ({contact.fuel_deals.length})
+                </h3>
+                <button
+                  onClick={onAddFuelDeal}
+                  className="px-3 py-1 text-sm bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Deal
+                </button>
+              </div>
+              <div className="space-y-3">
+                {contact.fuel_deals
+                  .sort((a, b) => new Date(b.deal_date).getTime() - new Date(a.deal_date).getTime())
+                  .map((deal) => (
+                  <div
+                    key={deal.id}
+                    className="bg-white border border-gray-200 rounded-lg p-4"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 flex items-center gap-2 mb-1">
+                          <Ship className="w-4 h-4 text-green-600" />
+                          {deal.vessel_name}
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 mb-1">
+                          <Calendar className="w-4 h-4 mr-2" />
+                          {new Date(deal.deal_date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => onEditFuelDeal(deal)}
+                          className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete fuel deal for ${deal.vessel_name}?`)) {
+                              onDeleteFuelDeal(deal.id);
+                            }
+                          }}
+                          className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex items-center text-gray-700">
+                        <Droplet className="w-4 h-4 mr-2 text-blue-500" />
+                        <span className="font-semibold">{deal.fuel_quantity} MT</span>
+                      </div>
+                      <div className="flex items-center text-gray-700">
+                        <Anchor className="w-4 h-4 mr-2 text-gray-500" />
+                        {deal.port}
+                      </div>
+                      <div className="col-span-2 text-gray-600 text-xs bg-gray-50 px-2 py-1 rounded">
+                        {deal.fuel_type}
+                      </div>
+                    </div>
+                    {deal.notes && (
+                      <p className="text-sm text-gray-600 mt-3 pt-3 border-t border-gray-100 italic">
+                        {deal.notes}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(!contact.fuel_deals || contact.fuel_deals.length === 0) && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Fuel Deals
+                </h3>
+                <button
+                  onClick={onAddFuelDeal}
+                  className="px-3 py-1 text-sm bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Deal
+                </button>
+              </div>
+              <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                <TrendingUp className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                <p>No fuel deals recorded yet</p>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-6">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Tasks ({tasks.length})
+                </h3>
+                <button
+                  onClick={onAddTask}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
+                >
+                  <CheckSquare className="w-4 h-4" />
+                  Add Task
+                </button>
+              </div>
+
+              {tasks.length > 0 ? (
+                <div className="space-y-3">
+                  {tasks
+                    .sort((a, b) => {
+                      if (a.completed !== b.completed) {
+                        return a.completed ? 1 : -1;
+                      }
+                      if (a.due_date && b.due_date) {
+                        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+                      }
+                      if (a.due_date) return -1;
+                      if (b.due_date) return 1;
+                      return 0;
+                    })
+                    .map((task) => (
+                      <div
+                        key={task.id}
+                        className={`bg-white border rounded-lg p-4 transition-all ${
+                          task.completed
+                            ? 'border-gray-200 opacity-60'
+                            : task.is_overdue
+                            ? 'border-red-300 bg-red-50'
+                            : 'border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <button
+                            onClick={() => onToggleTaskComplete(task.id, !task.completed)}
+                            className="mt-0.5 flex-shrink-0"
+                          >
+                            {task.completed ? (
+                              <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            ) : (
+                              <Circle className="w-5 h-5 text-gray-400 hover:text-orange-600" />
+                            )}
+                          </button>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-3 mb-2">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-orange-50 text-orange-700 rounded text-xs font-medium">
+                                    {getTaskTypeIcon(task.task_type)}
+                                    {getTaskTypeLabel(task.task_type)}
+                                  </div>
+                                  {task.is_overdue && !task.completed && (
+                                    <div className="flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">
+                                      <AlertCircle className="w-3 h-3" />
+                                      Overdue
+                                    </div>
+                                  )}
+                                </div>
+
+                                <h4 className={`font-medium text-gray-900 mb-1 ${task.completed ? 'line-through' : ''}`}>
+                                  {task.title}
+                                </h4>
+
+                                {task.notes && (
+                                  <p className="text-sm text-gray-600 mb-2">{task.notes}</p>
+                                )}
+
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                  <Calendar className="w-3 h-3" />
+                                  <span>{formatDate(task.due_date)}</span>
+                                  {task.days_until_due !== undefined && !task.completed && (
+                                    <span className={task.is_overdue ? 'text-red-600 font-medium' : 'text-gray-600'}>
+                                      {task.is_overdue
+                                        ? `${Math.abs(task.days_until_due)} days overdue`
+                                        : `${task.days_until_due} days left`}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <button
+                                  onClick={() => onEditTask(task)}
+                                  className="p-1.5 text-gray-400 hover:text-orange-600 transition-colors rounded hover:bg-orange-50"
+                                  title="Edit task"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm('Are you sure you want to delete this task?')) {
+                                      onDeleteTask(task.id);
+                                    }
+                                  }}
+                                  className="p-1.5 text-gray-400 hover:text-red-600 transition-colors rounded hover:bg-red-50"
+                                  title="Delete task"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                  <CheckSquare className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                  <p>No tasks created yet</p>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Call History ({contact.calls.length})
+                </h3>
+                <button
+                  onClick={onLogCall}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  <Phone className="w-4 h-4" />
+                  Log Call
+                </button>
+              </div>
+
+            {contact.calls.length > 0 ? (
+              <div className="space-y-3">
+                {contact.calls
+                  .sort((a, b) => new Date(b.call_date).getTime() - new Date(a.call_date).getTime())
+                  .map((call) => (
+                    <div
+                      key={call.id}
+                      className="bg-white border border-gray-200 rounded-lg p-4"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Calendar className="w-4 h-4 mr-2" />
+                          {formatDateTime(call.call_date)}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {call.duration && (
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Clock className="w-4 h-4 mr-1" />
+                              {call.duration} min
+                            </div>
+                          )}
+                          <button
+                            onClick={() => onEditCall(call)}
+                            className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Edit call"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      {(call.spoke_with || call.phone_number) && (
+                        <div className="flex items-center gap-4 text-sm text-gray-600 mt-2 pt-2 border-t border-gray-100">
+                          {call.spoke_with && (
+                            <div className="flex items-center">
+                              <User className="w-4 h-4 mr-2 text-gray-400" />
+                              <span>{call.spoke_with}</span>
+                            </div>
+                          )}
+                          {call.phone_number && (
+                            <div className="flex items-center">
+                              <Phone className="w-4 h-4 mr-2 text-gray-400" />
+                              <span>{call.phone_number}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {call.notes && (
+                        <p className="text-gray-700 text-sm mt-2">{call.notes}</p>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                <Phone className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                <p>No calls logged yet</p>
+              </div>
+            )}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Email History ({contact.emails.length})
+                </h3>
+                <button
+                  onClick={onLogEmail}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                >
+                  <Mail className="w-4 h-4" />
+                  Log Email
+                </button>
+              </div>
+
+              {contact.emails.length > 0 ? (
+                <div className="space-y-3">
+                  {contact.emails
+                    .sort((a, b) => new Date(b.email_date).getTime() - new Date(a.email_date).getTime())
+                    .map((email) => (
+                      <div
+                        key={email.id}
+                        className="bg-white border border-gray-200 rounded-lg p-4"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            {formatDateTime(email.email_date)}
+                          </div>
+                          <button
+                            onClick={() => onEditEmail(email)}
+                            className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Edit email"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {email.subject && (
+                          <p className="text-gray-900 font-medium text-sm mb-1">{email.subject}</p>
+                        )}
+                        {(email.emailed_to || email.email_address) && (
+                          <div className="flex items-center gap-4 text-sm text-gray-600 mt-2 pt-2 border-t border-gray-100">
+                            {email.emailed_to && (
+                              <div className="flex items-center">
+                                <User className="w-4 h-4 mr-2 text-gray-400" />
+                                <span>{email.emailed_to}</span>
+                              </div>
+                            )}
+                            {email.email_address && (
+                              <div className="flex items-center">
+                                <Mail className="w-4 h-4 mr-2 text-gray-400" />
+                                <span className="text-blue-600">{email.email_address}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {email.notes && (
+                          <p className="text-gray-700 text-sm">{email.notes}</p>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                  <Mail className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                  <p>No emails logged yet</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
