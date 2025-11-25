@@ -1273,20 +1273,17 @@ function App() {
         ports: s['Ports'] || null,
         address: s['Address'] || null,
         notes: s['Notes'] || null,
-        usual_payment_terms: s['Usual Payment Terms'] || null,
-        emails: s['Emails'] || null,
-        phone_number: s['Phone Number'] || null,
+        payment_terms: s['Usual Payment Terms'] || null,
+        general_email: s['Emails'] || null,
+        phone: s['Phone Number'] || null,
         country: s['Country'] || null,
         website: s['Website'] || null,
-        currency: s['Currency'] || null,
+        currency: s['Currency'] || 'USD',
         supplier_type: s['Supplier Type'] || null,
-        fuel_types: s['Fuel Types'] ? s['Fuel Types'].split(',').map((t: string) => t.trim()) : null,
+        fuel_types: s['Fuel Types'] || null,
       }));
 
-      const { error } = await supabase.from('suppliers').upsert(suppliersToInsert, {
-        onConflict: 'user_id,company_name',
-        ignoreDuplicates: false,
-      });
+      const { error } = await supabase.from('suppliers').insert(suppliersToInsert);
 
       if (error) throw error;
       await loadSuppliers();
@@ -1304,14 +1301,14 @@ function App() {
       'Ports': supplier.ports || '',
       'Address': supplier.address || '',
       'Notes': supplier.notes || '',
-      'Usual Payment Terms': supplier.usual_payment_terms || '',
-      'Emails': supplier.emails || '',
-      'Phone Number': supplier.phone_number || '',
+      'Usual Payment Terms': supplier.payment_terms || '',
+      'Emails': supplier.general_email || '',
+      'Phone Number': supplier.phone || '',
       'Country': supplier.country || '',
       'Website': supplier.website || '',
       'Currency': supplier.currency || '',
       'Supplier Type': supplier.supplier_type || '',
-      'Fuel Types': supplier.fuel_types ? supplier.fuel_types.join(', ') : '',
+      'Fuel Types': supplier.fuel_types || '',
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(suppliersData);
