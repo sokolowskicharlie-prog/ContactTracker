@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Phone, Mail, Fuel, X, Calendar, Clock, User } from 'lucide-react';
 import { Call, Email, FuelDeal } from '../lib/supabase';
 
 interface DailyStats {
@@ -23,6 +24,7 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
   const [showDeals, setShowDeals] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const getStats = (): DailyStats[] => {
     const now = new Date();
     const statsMap = new Map<string, DailyStats>();
@@ -349,7 +351,12 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
               const dealHeight = (stat.deals / maxValue) * 100;
 
               return (
-                <div key={index} className="flex flex-col items-center flex-1" style={{ minWidth: `${groupWidth}px`, maxWidth: '100px' }}>
+                <div
+                  key={index}
+                  className="flex flex-col items-center flex-1 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors p-1"
+                  style={{ minWidth: `${groupWidth}px`, maxWidth: '100px' }}
+                  onClick={() => setSelectedDate(stat.date)}
+                >
                   <div className="flex items-end justify-center gap-1 h-56 w-full">
                     {showCalls && (
                       <div className="relative group">
@@ -445,6 +452,233 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
           </div>
         </div>
       </div>
+
+      {selectedDate && (() => {
+        const parseDate = (dateStr: string) => {
+          if (timePeriod === 'daily' || timePeriod === 'custom') {
+            const [day, month] = dateStr.split('/');
+            const now = new Date();
+            return new Date(now.getFullYear(), parseInt(month) - 1, parseInt(day));
+          } else if (timePeriod === 'monthly') {
+            const [monthStr, yearStr] = dateStr.split(' ');
+            const monthMap: { [key: string]: number } = {
+              'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+              'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+            };
+            return new Date(2000 + parseInt(yearStr), monthMap[monthStr], 1);
+          } else {
+            return new Date(parseInt(dateStr), 0, 1);
+          }
+        };
+
+        const selectedDateObj = parseDate(selectedDate);
+
+        const filterByDate = (date: Date) => {
+          if (timePeriod === 'daily' || timePeriod === 'custom') {
+            return date.getDate() === selectedDateObj.getDate() &&
+                   date.getMonth() === selectedDateObj.getMonth() &&
+                   date.getFullYear() === selectedDateObj.getFullYear();
+          } else if (timePeriod === 'monthly') {
+            return date.getMonth() === selectedDateObj.getMonth() &&
+                   date.getFullYear() === selectedDateObj.getFullYear();
+          } else {
+            return date.getFullYear() === selectedDateObj.getFullYear();
+          }
+        };
+
+        const daysCalls = calls.filter(call => filterByDate(new Date(call.call_date)));
+        const daysEmails = emails.filter(email => filterByDate(new Date(email.email_date)));
+        const daysDeals = deals.filter(deal => filterByDate(new Date(deal.deal_date)));
+
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-6 h-6" />
+                  <div>
+                    <h3 className="text-xl font-bold">Activity Details</h3>
+                    <p className="text-blue-100 text-sm">{selectedDate}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedDate(null)}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="bg-green-50 rounded-lg p-4 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Phone className="w-4 h-4 text-green-600" />
+                      <span className="text-sm font-medium text-gray-700">Calls</span>
+                    </div>
+                    <div className="text-2xl font-bold text-green-600">{daysCalls.length}</div>
+                  </div>
+                  <div className="bg-orange-50 rounded-lg p-4 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Mail className="w-4 h-4 text-orange-600" />
+                      <span className="text-sm font-medium text-gray-700">Emails</span>
+                    </div>
+                    <div className="text-2xl font-bold text-orange-600">{daysEmails.length}</div>
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-4 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Fuel className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-700">Deals</span>
+                    </div>
+                    <div className="text-2xl font-bold text-blue-600">{daysDeals.length}</div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {daysCalls.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Phone className="w-5 h-5 text-green-600" />
+                        Calls ({daysCalls.length})
+                      </h4>
+                      <div className="space-y-3">
+                        {daysCalls.map(call => (
+                          <div key={call.id} className="bg-green-50 rounded-lg p-4 border border-green-100">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="font-medium text-gray-900">{call.contact_name}</div>
+                              <div className="flex items-center gap-1 text-sm text-gray-600">
+                                <Clock className="w-4 h-4" />
+                                {new Date(call.call_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                            {call.spoke_with && (
+                              <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                                <User className="w-4 h-4" />
+                                {call.spoke_with}
+                              </div>
+                            )}
+                            {call.phone_number && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Phone: {call.phone_number}
+                              </div>
+                            )}
+                            {call.duration && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Duration: {call.duration} minutes
+                              </div>
+                            )}
+                            {call.notes && (
+                              <div className="mt-2 text-sm text-gray-700 bg-white p-2 rounded">
+                                {call.notes}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {daysEmails.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Mail className="w-5 h-5 text-orange-600" />
+                        Emails ({daysEmails.length})
+                      </h4>
+                      <div className="space-y-3">
+                        {daysEmails.map(email => (
+                          <div key={email.id} className="bg-orange-50 rounded-lg p-4 border border-orange-100">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="font-medium text-gray-900">{email.contact_name}</div>
+                              <div className="flex items-center gap-1 text-sm text-gray-600">
+                                <Clock className="w-4 h-4" />
+                                {new Date(email.email_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                            {email.subject && (
+                              <div className="text-sm font-medium text-gray-900 mb-1">
+                                Subject: {email.subject}
+                              </div>
+                            )}
+                            {email.emailed_to && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                To: {email.emailed_to}
+                              </div>
+                            )}
+                            {email.email_address && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Email: {email.email_address}
+                              </div>
+                            )}
+                            {email.notes && (
+                              <div className="mt-2 text-sm text-gray-700 bg-white p-2 rounded">
+                                {email.notes}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {daysDeals.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Fuel className="w-5 h-5 text-blue-600" />
+                        Deals ({daysDeals.length})
+                      </h4>
+                      <div className="space-y-3">
+                        {daysDeals.map(deal => (
+                          <div key={deal.id} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="font-medium text-gray-900">{deal.contact_name}</div>
+                              <div className="flex items-center gap-1 text-sm text-gray-600">
+                                <Clock className="w-4 h-4" />
+                                {new Date(deal.deal_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                            {deal.vessel_name && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Vessel: {deal.vessel_name}
+                              </div>
+                            )}
+                            {deal.fuel_type && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Fuel Type: {deal.fuel_type}
+                              </div>
+                            )}
+                            {deal.fuel_quantity && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Quantity: {deal.fuel_quantity} MT
+                              </div>
+                            )}
+                            {deal.port && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Port: {deal.port}
+                              </div>
+                            )}
+                            {deal.notes && (
+                              <div className="mt-2 text-sm text-gray-700 bg-white p-2 rounded">
+                                {deal.notes}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {daysCalls.length === 0 && daysEmails.length === 0 && daysDeals.length === 0 && (
+                    <div className="text-center py-12">
+                      <Calendar className="w-16 h-16 mx-auto text-gray-400 mb-3" />
+                      <p className="text-gray-500 text-lg">No activity recorded for this date</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
