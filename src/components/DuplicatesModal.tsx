@@ -1,6 +1,6 @@
 import { X, Trash2, Users, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
-import { ContactWithActivity } from '../lib/supabase';
+import { ContactWithActivity, supabase } from '../lib/supabase';
 
 interface DuplicateGroup {
   name: string;
@@ -62,6 +62,7 @@ export default function DuplicatesModal({ contacts, onClose, onDelete }: Duplica
 
   const handleDeleteAllNewest = async () => {
     const totalToDelete = duplicateGroups.length;
+    const idsToDelete = duplicateGroups.map(group => group.contacts[0].id);
 
     if (!confirm(`Are you sure you want to delete ${totalToDelete} NEWEST duplicates? This will keep the oldest contact for each duplicate name.`)) {
       return;
@@ -69,22 +70,18 @@ export default function DuplicatesModal({ contacts, onClose, onDelete }: Duplica
 
     setIsDeleting(true);
     try {
-      let deletedCount = 0;
-      for (const group of duplicateGroups) {
-        const newestContact = group.contacts[0];
-        console.log(`Deleting newest duplicate: ${newestContact.name} (ID: ${newestContact.id}, Created: ${newestContact.created_at})`);
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .in('id', idsToDelete);
 
-        try {
-          await onDelete(newestContact.id);
-          deletedCount++;
-          console.log(`Successfully deleted ${deletedCount}/${totalToDelete}`);
-        } catch (error) {
-          console.error(`Failed to delete contact ${newestContact.id}:`, error);
-        }
+      if (error) {
+        console.error('Error deleting contacts:', error);
+        alert(`Error deleting duplicates: ${error.message}`);
+        return;
       }
 
-      console.log(`Deletion complete: ${deletedCount} contacts deleted`);
-      alert(`Successfully deleted ${deletedCount} newest duplicate(s)`);
+      alert(`Successfully deleted ${totalToDelete} newest duplicate(s)`);
       onClose();
     } catch (error) {
       console.error('Error deleting newest duplicates:', error);
