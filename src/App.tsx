@@ -304,15 +304,19 @@ function App() {
     }
 
     if (filterPort !== 'all') {
-      filtered = filtered.filter((supplier) =>
-        supplier.ports?.toLowerCase().includes(filterPort.toLowerCase())
-      );
+      filtered = filtered.filter((supplier) => {
+        if (!supplier.ports) return false;
+        const ports = supplier.ports.split(';').map(p => p.trim().toLowerCase());
+        return ports.some(port => port.includes(filterPort.toLowerCase()));
+      });
     }
 
     if (filterFuelType !== 'all') {
-      filtered = filtered.filter((supplier) =>
-        supplier.fuel_types?.toLowerCase().includes(filterFuelType.toLowerCase())
-      );
+      filtered = filtered.filter((supplier) => {
+        if (!supplier.fuel_types) return false;
+        const fuelTypes = supplier.fuel_types.split(';').map(f => f.trim().toLowerCase());
+        return fuelTypes.some(fuel => fuel.includes(filterFuelType.toLowerCase()));
+      });
     }
 
     filtered.sort((a, b) => a.company_name.localeCompare(b.company_name));
@@ -2244,7 +2248,7 @@ function App() {
                   <option value="all">All Ports</option>
                   {Array.from(new Set(
                     suppliers
-                      .flatMap((s) => s.ports?.split(',').map(p => p.trim()) || [])
+                      .flatMap((s) => s.ports?.split(';').map(p => p.trim()) || [])
                       .filter(Boolean)
                   )).sort().map((port) => (
                     <option key={port} value={port}>
@@ -2265,7 +2269,7 @@ function App() {
                   <option value="all">All Fuel Types</option>
                   {Array.from(new Set(
                     suppliers
-                      .flatMap((s) => s.fuel_types?.split(',').map(f => f.trim()) || [])
+                      .flatMap((s) => s.fuel_types?.split(';').map(f => f.trim()) || [])
                       .filter(Boolean)
                   )).sort().map((fuelType) => (
                     <option key={fuelType} value={fuelType}>
