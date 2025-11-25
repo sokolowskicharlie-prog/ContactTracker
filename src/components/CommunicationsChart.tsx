@@ -74,17 +74,19 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
         }
       });
     } else if (timePeriod === 'daily') {
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - i);
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(currentYear, currentMonth, day);
         const dateKey = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
         statsMap.set(dateKey, { date: dateKey, calls: 0, emails: 0, deals: 0 });
       }
 
       calls.forEach(call => {
         const date = new Date(call.call_date);
-        const daysDiff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysDiff >= 0 && daysDiff < 30) {
+        if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
           const dateKey = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
           if (statsMap.has(dateKey)) {
             statsMap.get(dateKey)!.calls++;
@@ -94,8 +96,7 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
 
       emails.forEach(email => {
         const date = new Date(email.email_date);
-        const daysDiff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysDiff >= 0 && daysDiff < 30) {
+        if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
           const dateKey = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
           if (statsMap.has(dateKey)) {
             statsMap.get(dateKey)!.emails++;
@@ -105,8 +106,7 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
 
       deals.forEach(deal => {
         const date = new Date(deal.deal_date);
-        const daysDiff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysDiff >= 0 && daysDiff < 30) {
+        if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
           const dateKey = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
           if (statsMap.has(dateKey)) {
             statsMap.get(dateKey)!.deals++;
@@ -206,7 +206,20 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
   const totalEmails = stats.reduce((sum, stat) => sum + stat.emails, 0);
   const totalDeals = stats.reduce((sum, stat) => sum + stat.deals, 0);
 
-  const periodLabel = timePeriod === 'daily' ? 'Last 30 days' : timePeriod === 'monthly' ? 'Last 12 months' : timePeriod === 'annual' ? 'Last 5 years' : 'Custom range';
+  const getPeriodLabel = () => {
+    if (timePeriod === 'daily') {
+      const now = new Date();
+      return now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+    if (timePeriod === 'monthly') return 'Last 12 months';
+    if (timePeriod === 'annual') return 'Last 5 years';
+    if (timePeriod === 'custom' && startDate && endDate) {
+      return `${new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    }
+    return 'Custom range';
+  };
+
+  const periodLabel = getPeriodLabel();
 
   const barsPerGroup = [showCalls, showEmails, showDeals].filter(Boolean).length;
   const barWidth = 20;
@@ -329,15 +342,14 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
       </div>
 
       <div className="overflow-x-auto">
-        <div style={{ minWidth: `${stats.length * (groupWidth + 8)}px` }}>
-          <div className="flex items-end h-64 gap-2">
+        <div className="flex items-end h-64 gap-2 justify-start" style={{ minWidth: '100%' }}>
             {stats.map((stat, index) => {
               const callHeight = (stat.calls / maxValue) * 100;
               const emailHeight = (stat.emails / maxValue) * 100;
               const dealHeight = (stat.deals / maxValue) * 100;
 
               return (
-                <div key={index} className="flex flex-col items-center" style={{ width: `${groupWidth}px` }}>
+                <div key={index} className="flex flex-col items-center flex-1" style={{ minWidth: `${groupWidth}px`, maxWidth: '100px' }}>
                   <div className="flex items-end justify-center gap-1 h-56 w-full">
                     {showCalls && (
                       <div className="relative group">
@@ -400,7 +412,6 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
                 </div>
               );
             })}
-          </div>
         </div>
       </div>
 
