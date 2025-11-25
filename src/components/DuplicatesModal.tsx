@@ -61,19 +61,34 @@ export default function DuplicatesModal({ contacts, onClose, onDelete }: Duplica
   };
 
   const handleDeleteAllNewest = async () => {
-    if (!confirm('Are you sure you want to delete all NEWEST duplicates? This will keep the oldest contact for each duplicate name.')) {
+    const totalToDelete = duplicateGroups.length;
+
+    if (!confirm(`Are you sure you want to delete ${totalToDelete} NEWEST duplicates? This will keep the oldest contact for each duplicate name.`)) {
       return;
     }
 
     setIsDeleting(true);
     try {
+      let deletedCount = 0;
       for (const group of duplicateGroups) {
         const newestContact = group.contacts[0];
-        await onDelete(newestContact.id);
+        console.log(`Deleting newest duplicate: ${newestContact.name} (ID: ${newestContact.id}, Created: ${newestContact.created_at})`);
+
+        try {
+          await onDelete(newestContact.id);
+          deletedCount++;
+          console.log(`Successfully deleted ${deletedCount}/${totalToDelete}`);
+        } catch (error) {
+          console.error(`Failed to delete contact ${newestContact.id}:`, error);
+        }
       }
+
+      console.log(`Deletion complete: ${deletedCount} contacts deleted`);
+      alert(`Successfully deleted ${deletedCount} newest duplicate(s)`);
       onClose();
     } catch (error) {
       console.error('Error deleting newest duplicates:', error);
+      alert('An error occurred while deleting duplicates. Please try again.');
     } finally {
       setIsDeleting(false);
     }
