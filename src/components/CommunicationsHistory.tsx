@@ -95,7 +95,7 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
             </button>
             <div>
               <h2 className="text-2xl font-bold">Communications History</h2>
-              <p className="text-blue-100 text-sm">View all calls, emails, and deals</p>
+              <p className="text-blue-100 text-sm">View all calls, emails, deals, and goals</p>
             </div>
           </div>
         </div>
