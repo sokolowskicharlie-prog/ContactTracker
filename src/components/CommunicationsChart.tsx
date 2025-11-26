@@ -119,8 +119,14 @@ export default function CommunicationsChart({
         }
       });
     } else if (timePeriod === 'hourly') {
-      const targetDate = selectedDay ? new Date(selectedDay) : new Date();
-      targetDate.setHours(0, 0, 0, 0);
+      const targetDateStr = selectedDay || new Date().toISOString().split('T')[0];
+
+      const getLocalDateStr = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
 
       for (let hour = 0; hour < 24; hour++) {
         const hourKey = `${hour.toString().padStart(2, '0')}:00`;
@@ -129,10 +135,9 @@ export default function CommunicationsChart({
 
       calls.forEach(call => {
         const date = new Date(call.call_date);
-        const callDay = new Date(date);
-        callDay.setHours(0, 0, 0, 0);
+        const dateStr = getLocalDateStr(date);
 
-        if (callDay.getTime() === targetDate.getTime()) {
+        if (dateStr === targetDateStr) {
           const hour = date.getHours();
           const hourKey = `${hour.toString().padStart(2, '0')}:00`;
           if (statsMap.has(hourKey)) {
@@ -143,10 +148,9 @@ export default function CommunicationsChart({
 
       emails.forEach(email => {
         const date = new Date(email.email_date);
-        const emailDay = new Date(date);
-        emailDay.setHours(0, 0, 0, 0);
+        const dateStr = getLocalDateStr(date);
 
-        if (emailDay.getTime() === targetDate.getTime()) {
+        if (dateStr === targetDateStr) {
           const hour = date.getHours();
           const hourKey = `${hour.toString().padStart(2, '0')}:00`;
           if (statsMap.has(hourKey)) {
@@ -157,10 +161,9 @@ export default function CommunicationsChart({
 
       deals.forEach(deal => {
         const date = new Date(deal.deal_date);
-        const dealDay = new Date(date);
-        dealDay.setHours(0, 0, 0, 0);
+        const dateStr = getLocalDateStr(date);
 
-        if (dealDay.getTime() === targetDate.getTime()) {
+        if (dateStr === targetDateStr) {
           const hour = date.getHours();
           const hourKey = `${hour.toString().padStart(2, '0')}:00`;
           if (statsMap.has(hourKey)) {
@@ -171,10 +174,9 @@ export default function CommunicationsChart({
 
       goals.forEach(goal => {
         const date = new Date(goal.completed_at || goal.created_at);
-        const goalDay = new Date(date);
-        goalDay.setHours(0, 0, 0, 0);
+        const dateStr = getLocalDateStr(date);
 
-        if (goalDay.getTime() === targetDate.getTime()) {
+        if (dateStr === targetDateStr) {
           const hour = date.getHours();
           const hourKey = `${hour.toString().padStart(2, '0')}:00`;
           if (statsMap.has(hourKey)) {
