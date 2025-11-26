@@ -1,0 +1,515 @@
+import { useState, useEffect } from 'react';
+import { Target, Plus, Trash2, Bell, BellOff, Clock, TrendingUp, TrendingDown, Minus, CheckCircle } from 'lucide-react';
+import { supabase, DailyGoal, GoalNotificationSettings, Call, Email, FuelDeal } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
+
+interface DailyGoalsProps {
+  calls: Call[];
+  emails: Email[];
+  deals: FuelDeal[];
+}
+
+type GoalType = 'calls' | 'emails' | 'deals';
+
+interface GoalProgress {
+  type: GoalType;
+  targetAmount: number;
+  targetTime: string;
+  currentAmount: number;
+  percentComplete: number;
+  onTrack: boolean;
+  timeRemaining: string;
+  requiredRate: number;
+}
+
+export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
+  const { user } = useAuth();
+  const [goals, setGoals] = useState<DailyGoal[]>([]);
+  const [settings, setSettings] = useState<GoalNotificationSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showAddGoal, setShowAddGoal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const [newGoalType, setNewGoalType] = useState<GoalType>('calls');
+  const [newGoalAmount, setNewGoalAmount] = useState(10);
+  const [newGoalTime, setNewGoalTime] = useState('17:00');
+
+  const [notificationFrequency, setNotificationFrequency] = useState(30);
+  const [enableNotifications, setEnableNotifications] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      loadGoals();
+      loadSettings();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !settings?.enable_notifications) return;
+
+    const interval = setInterval(() => {
+      checkGoalsAndNotify();
+    }, settings.notification_frequency * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [user, settings, goals, calls, emails, deals]);
+
+  const loadGoals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('daily_goals')
+        .select('*')
+        .eq('is_active', true)
+        .order('target_time', { ascending: true });
+
+      if (error) throw error;
+      setGoals(data || []);
+    } catch (error) {
+      console.error('Error loading goals:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('goal_notification_settings')
+        .select('*')
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setSettings(data);
+        setNotificationFrequency(data.notification_frequency);
+        setEnableNotifications(data.enable_notifications);
+      } else {
+        const defaultSettings = {
+          user_id: user!.id,
+          notification_frequency: 30,
+          enable_notifications: true
+        };
+
+        const { data: newSettings, error: insertError } = await supabase
+          .from('goal_notification_settings')
+          .insert(defaultSettings)
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        setSettings(newSettings);
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
+
+  const addGoal = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('daily_goals')
+        .insert({
+          user_id: user!.id,
+          goal_type: newGoalType,
+          target_amount: newGoalAmount,
+          target_time: newGoalTime,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      setGoals([...goals, data]);
+      setShowAddGoal(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error adding goal:', error);
+    }
+  };
+
+  const deleteGoal = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('daily_goals')
+        .update({ is_active: false })
+        .eq('id', id);
+
+      if (error) throw error;
+      setGoals(goals.filter(g => g.id !== id));
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+    }
+  };
+
+  const saveSettings = async () => {
+    try {
+      const { error } = await supabase
+        .from('goal_notification_settings')
+        .update({
+          notification_frequency: notificationFrequency,
+          enable_notifications: enableNotifications
+        })
+        .eq('user_id', user!.id);
+
+      if (error) throw error;
+
+      setSettings({
+        ...settings!,
+        notification_frequency: notificationFrequency,
+        enable_notifications: enableNotifications
+      });
+
+      setShowSettings(false);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setNewGoalType('calls');
+    setNewGoalAmount(10);
+    setNewGoalTime('17:00');
+  };
+
+  const getTodayActivity = (type: GoalType): number => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (type === 'calls') {
+      return calls.filter(c => {
+        const callDate = new Date(c.call_date);
+        callDate.setHours(0, 0, 0, 0);
+        return callDate.getTime() === today.getTime();
+      }).length;
+    } else if (type === 'emails') {
+      return emails.filter(e => {
+        const emailDate = new Date(e.email_date);
+        emailDate.setHours(0, 0, 0, 0);
+        return emailDate.getTime() === today.getTime();
+      }).length;
+    } else {
+      return deals.filter(d => {
+        const dealDate = new Date(d.deal_date);
+        dealDate.setHours(0, 0, 0, 0);
+        return dealDate.getTime() === today.getTime();
+      }).length;
+    }
+  };
+
+  const calculateProgress = (goal: DailyGoal): GoalProgress => {
+    const currentAmount = getTodayActivity(goal.goal_type);
+    const percentComplete = Math.min(100, (currentAmount / goal.target_amount) * 100);
+
+    const now = new Date();
+    const [targetHours, targetMinutes] = goal.target_time.split(':').map(Number);
+    const targetDate = new Date();
+    targetDate.setHours(targetHours, targetMinutes, 0, 0);
+
+    const timeRemainingMs = targetDate.getTime() - now.getTime();
+    const hoursRemaining = Math.max(0, timeRemainingMs / (1000 * 60 * 60));
+
+    const remaining = goal.target_amount - currentAmount;
+    const requiredRate = hoursRemaining > 0 ? remaining / hoursRemaining : 0;
+
+    const currentRate = currentAmount / ((now.getHours() + now.getMinutes() / 60) || 1);
+    const onTrack = hoursRemaining <= 0 ? currentAmount >= goal.target_amount : currentRate >= requiredRate;
+
+    const hours = Math.floor(Math.abs(hoursRemaining));
+    const minutes = Math.floor((Math.abs(hoursRemaining) % 1) * 60);
+    const timeRemaining = hoursRemaining <= 0
+      ? 'Time expired'
+      : `${hours}h ${minutes}m`;
+
+    return {
+      type: goal.goal_type,
+      targetAmount: goal.target_amount,
+      targetTime: goal.target_time,
+      currentAmount,
+      percentComplete,
+      onTrack,
+      timeRemaining,
+      requiredRate
+    };
+  };
+
+  const checkGoalsAndNotify = () => {
+    goals.forEach(goal => {
+      const progress = calculateProgress(goal);
+
+      if (!progress.onTrack && progress.timeRemaining !== 'Time expired') {
+        showNotification(progress);
+      }
+    });
+  };
+
+  const showNotification = (progress: GoalProgress) => {
+    const remaining = progress.targetAmount - progress.currentAmount;
+    const typeLabel = progress.type === 'calls' ? 'calls' : progress.type === 'emails' ? 'emails' : 'deals';
+
+    if (Notification.permission === 'granted') {
+      new Notification('Goal Progress Alert', {
+        body: `You need ${remaining} more ${typeLabel} by ${progress.targetTime} to stay on track.`,
+        icon: '/favicon.ico'
+      });
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          new Notification('Goal Progress Alert', {
+            body: `You need ${remaining} more ${typeLabel} by ${progress.targetTime} to stay on track.`,
+            icon: '/favicon.ico'
+          });
+        }
+      });
+    }
+  };
+
+  const getGoalIcon = (type: GoalType) => {
+    switch (type) {
+      case 'calls': return '📞';
+      case 'emails': return '✉️';
+      case 'deals': return '🤝';
+    }
+  };
+
+  const getGoalLabel = (type: GoalType) => {
+    switch (type) {
+      case 'calls': return 'Calls';
+      case 'emails': return 'Emails';
+      case 'deals': return 'Deals';
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-4 text-gray-500">Loading goals...</div>;
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Target className="text-blue-600" size={24} />
+          <h2 className="text-xl font-semibold text-gray-900">Daily Goals</h2>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            {enableNotifications ? <Bell size={16} /> : <BellOff size={16} />}
+            Notifications
+          </button>
+          <button
+            onClick={() => setShowAddGoal(!showAddGoal)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus size={16} />
+            Add Goal
+          </button>
+        </div>
+      </div>
+
+      {showSettings && (
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-900 mb-4">Notification Settings</h3>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="enableNotifications"
+                checked={enableNotifications}
+                onChange={(e) => setEnableNotifications(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <label htmlFor="enableNotifications" className="text-sm text-gray-700">
+                Enable progress notifications
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Check progress every (minutes)
+              </label>
+              <input
+                type="number"
+                value={notificationFrequency}
+                onChange={(e) => setNotificationFrequency(Math.max(1, parseInt(e.target.value) || 1))}
+                min="1"
+                className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={saveSettings}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Save Settings
+              </button>
+              <button
+                onClick={() => {
+                  setShowSettings(false);
+                  setNotificationFrequency(settings?.notification_frequency || 30);
+                  setEnableNotifications(settings?.enable_notifications || true);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddGoal && (
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-900 mb-4">Add New Goal</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+              <select
+                value={newGoalType}
+                onChange={(e) => setNewGoalType(e.target.value as GoalType)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="calls">Calls</option>
+                <option value="emails">Emails</option>
+                <option value="deals">Deals</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Target Amount</label>
+              <input
+                type="number"
+                value={newGoalAmount}
+                onChange={(e) => setNewGoalAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                min="1"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Target Time</label>
+              <input
+                type="time"
+                value={newGoalTime}
+                onChange={(e) => setNewGoalTime(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={addGoal}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Add Goal
+            </button>
+            <button
+              onClick={() => {
+                setShowAddGoal(false);
+                resetForm();
+              }}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {goals.length === 0 ? (
+        <div className="text-center py-8">
+          <Target className="mx-auto text-gray-400 mb-3" size={48} />
+          <p className="text-gray-500 mb-2">No daily goals set</p>
+          <p className="text-sm text-gray-400">Add your first goal to start tracking your progress</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {goals.map(goal => {
+            const progress = calculateProgress(goal);
+            return (
+              <div
+                key={goal.id}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  progress.percentComplete >= 100
+                    ? 'bg-green-50 border-green-200'
+                    : progress.onTrack
+                    ? 'bg-blue-50 border-blue-200'
+                    : 'bg-orange-50 border-orange-200'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{getGoalIcon(goal.goal_type)}</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900">
+                          {progress.currentAmount} / {goal.target_amount} {getGoalLabel(goal.goal_type)}
+                        </h3>
+                        {progress.percentComplete >= 100 ? (
+                          <CheckCircle className="text-green-600" size={20} />
+                        ) : progress.onTrack ? (
+                          <TrendingUp className="text-blue-600" size={20} />
+                        ) : (
+                          <TrendingDown className="text-orange-600" size={20} />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                        <Clock size={14} />
+                        <span>
+                          Target: {progress.targetTime} ({progress.timeRemaining})
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deleteGoal(goal.id)}
+                    className="text-gray-400 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-500 ${
+                        progress.percentComplete >= 100
+                          ? 'bg-green-500'
+                          : progress.onTrack
+                          ? 'bg-blue-500'
+                          : 'bg-orange-500'
+                      }`}
+                      style={{ width: `${progress.percentComplete}%` }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className={`font-medium ${
+                      progress.percentComplete >= 100
+                        ? 'text-green-700'
+                        : progress.onTrack
+                        ? 'text-blue-700'
+                        : 'text-orange-700'
+                    }`}>
+                      {Math.round(progress.percentComplete)}% complete
+                    </span>
+                    {progress.timeRemaining !== 'Time expired' && progress.percentComplete < 100 && (
+                      <span className="text-gray-600">
+                        {progress.onTrack ? (
+                          <span className="text-blue-600">On track</span>
+                        ) : (
+                          <span className="text-orange-600">
+                            Need {Math.ceil(progress.requiredRate)} per hour
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

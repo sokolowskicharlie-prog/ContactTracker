@@ -29,6 +29,7 @@ import MultiSelectDropdown from './components/MultiSelectDropdown';
 import AccountSettings from './components/AccountSettings';
 import DuplicatesModal from './components/DuplicatesModal';
 import SupplierImportModal from './components/SupplierImportModal';
+import DailyGoals from './components/DailyGoals';
 
 interface NotificationSettings {
   id?: string;
@@ -2400,12 +2401,19 @@ function App() {
             />
           )
         ) : (
-          <TaskList
-            tasks={filteredTasks}
-            onToggleComplete={handleToggleTaskComplete}
-            onDeleteTask={handleDeleteTask}
-            onEditTask={handleEditTask}
-          />
+          <>
+            <DailyGoals
+              calls={contacts.flatMap(c => c.calls)}
+              emails={contacts.flatMap(c => c.emails)}
+              deals={contacts.flatMap(c => c.fuel_deals)}
+            />
+            <TaskList
+              tasks={filteredTasks}
+              onToggleComplete={handleToggleTaskComplete}
+              onDeleteTask={handleDeleteTask}
+              onEditTask={handleEditTask}
+            />
+          </>
         )}
       </div>
 

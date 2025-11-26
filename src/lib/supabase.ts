@@ -194,3 +194,23 @@ export type TaskWithRelated = Task & {
   is_overdue?: boolean;
   days_until_due?: number;
 };
+
+export type DailyGoal = {
+  id: string;
+  user_id: string;
+  goal_type: 'calls' | 'emails' | 'deals';
+  target_amount: number;
+  target_time: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type GoalNotificationSettings = {
+  id: string;
+  user_id: string;
+  notification_frequency: number;
+  enable_notifications: boolean;
+  created_at: string;
+  updated_at: string;
+};
