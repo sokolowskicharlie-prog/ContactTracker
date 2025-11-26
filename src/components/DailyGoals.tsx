@@ -346,6 +346,24 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
               </button>
               <button
                 onClick={() => {
+                  const testProgress: GoalProgress = {
+                    type: 'calls',
+                    targetAmount: 10,
+                    targetTime: '17:00',
+                    currentAmount: 3,
+                    percentComplete: 30,
+                    onTrack: false,
+                    timeRemaining: '3h 30m',
+                    requiredRate: 2.5
+                  };
+                  showNotification(testProgress);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Test Notification
+              </button>
+              <button
+                onClick={() => {
                   setShowSettings(false);
                   setNotificationFrequency(settings?.notification_frequency || 30);
                   setEnableNotifications(settings?.enable_notifications || true);
