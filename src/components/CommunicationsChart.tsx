@@ -470,9 +470,9 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                       style={{ minWidth: `${groupWidth}px`, maxWidth: '100px' }}
                       onClick={() => setSelectedDate(stat.date)}
                     >
-                      <div className="flex items-end justify-center gap-1 h-56 w-full">
+                      <div className="flex items-end justify-center gap-1 w-full" style={{ height: '224px' }}>
                         {showCalls && (
-                          <div className="relative group">
+                          <div className="relative group" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
                             <div
                               className="bg-green-500 hover:bg-green-600 transition-colors rounded-t"
                               style={{
@@ -490,7 +490,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                         )}
 
                         {showEmails && (
-                          <div className="relative group">
+                          <div className="relative group" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
                             <div
                               className="bg-orange-500 hover:bg-orange-600 transition-colors rounded-t"
                               style={{
@@ -508,7 +508,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                         )}
 
                         {showDeals && (
-                          <div className="relative group">
+                          <div className="relative group" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
                             <div
                               className="bg-blue-500 hover:bg-blue-600 transition-colors rounded-t"
                               style={{
@@ -526,7 +526,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                         )}
 
                         {showGoals && (
-                          <div className="relative group">
+                          <div className="relative group" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
                             <div
                               className="bg-purple-500 hover:bg-purple-600 transition-colors rounded-t"
                               style={{
