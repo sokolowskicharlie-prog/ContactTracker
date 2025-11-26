@@ -45,6 +45,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
   const [enableNotifications, setEnableNotifications] = useState(true);
   const [inAppNotifications, setInAppNotifications] = useState<GoalProgress[]>([]);
   const [completedGoals, setCompletedGoals] = useState<Set<string>>(new Set());
+  const [motivationalMessages, setMotivationalMessages] = useState<Array<{id: string; message: string; type: 'success' | 'warning' | 'info'}>>([]);
 
   useEffect(() => {
     if (user) {
@@ -62,6 +63,25 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
 
     return () => clearInterval(interval);
   }, [user, settings, goals, calls, emails, deals]);
+
+  useEffect(() => {
+    if (!goals.length) return;
+
+    goals.forEach(goal => {
+      const today = new Date().toISOString().split('T')[0];
+      if (goal.target_date === today) {
+        const progress = calculateProgress(goal);
+        const automaticCount = getActivityForDate(goal.goal_type, goal.target_date);
+
+        if (automaticCount > 0) {
+          const previousAutoCount = goal.manual_count ? progress.currentAmount - goal.manual_count : progress.currentAmount;
+          if (automaticCount > previousAutoCount) {
+            showMotivationalMessage(goal.id, progress);
+          }
+        }
+      }
+    });
+  }, [calls.length, emails.length, deals.length]);
 
   const loadGoals = async () => {
     try {
@@ -192,6 +212,35 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
     setEditingGoal(null);
   };
 
+  const showMotivationalMessage = (goalId: string, progress: GoalProgress) => {
+    let message = '';
+    let type: 'success' | 'warning' | 'info' = 'info';
+
+    if (progress.percentComplete >= 100) {
+      message = "Goal completed! You're on fire!";
+      type = 'success';
+    } else if (progress.percentComplete >= 75) {
+      message = "Great work! Almost there!";
+      type = 'success';
+    } else if (progress.percentComplete >= 50) {
+      message = "Nice! You're halfway there!";
+      type = 'info';
+    } else if (progress.percentComplete >= 25) {
+      message = "Good start! Keep it up!";
+      type = 'info';
+    } else {
+      message = "Every step counts! Keep going!";
+      type = 'info';
+    }
+
+    const msgId = `${goalId}-${Date.now()}`;
+    setMotivationalMessages(prev => [...prev, { id: msgId, message, type }]);
+
+    setTimeout(() => {
+      setMotivationalMessages(prev => prev.filter(m => m.id !== msgId));
+    }, 3000);
+  };
+
   const updateManualCount = async (goalId: string, delta: number) => {
     const goal = goals.find(g => g.id === goalId);
     if (!goal) return;
@@ -208,6 +257,11 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
 
       if (error) throw error;
       setGoals(goals.map(g => g.id === goalId ? data : g));
+
+      if (delta > 0) {
+        const updatedProgress = calculateProgress(data);
+        showMotivationalMessage(goalId, updatedProgress);
+      }
     } catch (error) {
       console.error('Error updating manual count:', error);
     }
@@ -879,6 +933,30 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {motivationalMessages.length > 0 && (
+        <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-xs">
+          {motivationalMessages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`px-4 py-3 rounded-lg shadow-lg animate-slide-in-right border-2 ${
+                msg.type === 'success'
+                  ? 'bg-green-50 border-green-400 text-green-800'
+                  : msg.type === 'warning'
+                  ? 'bg-orange-50 border-orange-400 text-orange-800'
+                  : 'bg-blue-50 border-blue-400 text-blue-800'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xl">
+                  {msg.type === 'success' ? '🎉' : msg.type === 'warning' ? '⚠️' : '💪'}
+                </span>
+                <p className="font-medium text-sm">{msg.message}</p>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
