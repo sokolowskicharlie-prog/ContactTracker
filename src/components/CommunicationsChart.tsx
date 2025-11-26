@@ -630,73 +630,77 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
                       <div className="flex items-end justify-center gap-1 w-full relative" style={{ height: '224px' }}>
                         {showCalls && (
                           <div className="relative group/bar" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
-                            {stat.calls > 0 && (
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
-                                {stat.calls}
-                              </div>
-                            )}
                             <div
-                              className="bg-green-500 hover:bg-green-600 transition-colors rounded-t"
+                              className="bg-green-500 hover:bg-green-600 transition-colors rounded-t relative"
                               style={{
                                 height: `${callHeight}%`,
                                 minHeight: stat.calls > 0 ? '4px' : '0px',
                                 width: `${barWidth}px`
                               }}
-                            />
+                            >
+                              {stat.calls > 0 && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap pointer-events-none" style={{ zIndex: 100 }}>
+                                  {stat.calls}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
 
                         {showEmails && (
                           <div className="relative group/bar" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
-                            {stat.emails > 0 && (
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
-                                {stat.emails}
-                              </div>
-                            )}
                             <div
-                              className="bg-orange-500 hover:bg-orange-600 transition-colors rounded-t"
+                              className="bg-orange-500 hover:bg-orange-600 transition-colors rounded-t relative"
                               style={{
                                 height: `${emailHeight}%`,
                                 minHeight: stat.emails > 0 ? '4px' : '0px',
                                 width: `${barWidth}px`
                               }}
-                            />
+                            >
+                              {stat.emails > 0 && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap pointer-events-none" style={{ zIndex: 100 }}>
+                                  {stat.emails}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
 
                         {showDeals && (
                           <div className="relative group/bar" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
-                            {stat.deals > 0 && (
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
-                                {stat.deals}
-                              </div>
-                            )}
                             <div
-                              className="bg-blue-500 hover:bg-blue-600 transition-colors rounded-t"
+                              className="bg-blue-500 hover:bg-blue-600 transition-colors rounded-t relative"
                               style={{
                                 height: `${dealHeight}%`,
                                 minHeight: stat.deals > 0 ? '4px' : '0px',
                                 width: `${barWidth}px`
                               }}
-                            />
+                            >
+                              {stat.deals > 0 && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap pointer-events-none" style={{ zIndex: 100 }}>
+                                  {stat.deals}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
 
                         {showGoals && (
                           <div className="relative group/bar" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
-                            {stat.goals > 0 && (
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
-                                {stat.goals}
-                              </div>
-                            )}
                             <div
-                              className="bg-purple-500 hover:bg-purple-600 transition-colors rounded-t"
+                              className="bg-purple-500 hover:bg-purple-600 transition-colors rounded-t relative"
                               style={{
                                 height: `${goalHeight}%`,
                                 minHeight: stat.goals > 0 ? '4px' : '0px',
                                 width: `${barWidth}px`
                               }}
-                            />
+                            >
+                              {stat.goals > 0 && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap pointer-events-none" style={{ zIndex: 100 }}>
+                                  {stat.goals}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
