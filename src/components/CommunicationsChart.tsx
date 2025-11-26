@@ -24,9 +24,10 @@ interface CommunicationsChartProps {
   onSummaryEndDateChange?: (date: string) => void;
   hideChartPeriodButtons?: boolean;
   externalFilterType?: 'all' | 'call' | 'email' | 'deal' | 'goal';
+  selectedDay?: string;
 }
 
-type TimePeriod = 'all' | 'daily' | 'monthly' | 'annual' | 'custom';
+type TimePeriod = 'all' | 'hourly' | 'daily' | 'monthly' | 'annual' | 'custom';
 
 export default function CommunicationsChart({
   calls,
@@ -41,7 +42,8 @@ export default function CommunicationsChart({
   onSummaryStartDateChange,
   onSummaryEndDateChange,
   hideChartPeriodButtons = false,
-  externalFilterType
+  externalFilterType,
+  selectedDay
 }: CommunicationsChartProps) {
   const showCalls = externalFilterType ? (externalFilterType === 'all' || externalFilterType === 'call') : true;
   const showEmails = externalFilterType ? (externalFilterType === 'all' || externalFilterType === 'email') : true;
@@ -114,6 +116,70 @@ export default function CommunicationsChart({
         const dateKey = date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
         if (statsMap.has(dateKey)) {
           statsMap.get(dateKey)!.goals++;
+        }
+      });
+    } else if (timePeriod === 'hourly') {
+      const targetDate = selectedDay ? new Date(selectedDay) : new Date();
+      targetDate.setHours(0, 0, 0, 0);
+
+      for (let hour = 0; hour < 24; hour++) {
+        const hourKey = `${hour.toString().padStart(2, '0')}:00`;
+        statsMap.set(hourKey, { date: hourKey, calls: 0, emails: 0, deals: 0, goals: 0 });
+      }
+
+      calls.forEach(call => {
+        const date = new Date(call.call_date);
+        const callDay = new Date(date);
+        callDay.setHours(0, 0, 0, 0);
+
+        if (callDay.getTime() === targetDate.getTime()) {
+          const hour = date.getHours();
+          const hourKey = `${hour.toString().padStart(2, '0')}:00`;
+          if (statsMap.has(hourKey)) {
+            statsMap.get(hourKey)!.calls++;
+          }
+        }
+      });
+
+      emails.forEach(email => {
+        const date = new Date(email.email_date);
+        const emailDay = new Date(date);
+        emailDay.setHours(0, 0, 0, 0);
+
+        if (emailDay.getTime() === targetDate.getTime()) {
+          const hour = date.getHours();
+          const hourKey = `${hour.toString().padStart(2, '0')}:00`;
+          if (statsMap.has(hourKey)) {
+            statsMap.get(hourKey)!.emails++;
+          }
+        }
+      });
+
+      deals.forEach(deal => {
+        const date = new Date(deal.deal_date);
+        const dealDay = new Date(date);
+        dealDay.setHours(0, 0, 0, 0);
+
+        if (dealDay.getTime() === targetDate.getTime()) {
+          const hour = date.getHours();
+          const hourKey = `${hour.toString().padStart(2, '0')}:00`;
+          if (statsMap.has(hourKey)) {
+            statsMap.get(hourKey)!.deals++;
+          }
+        }
+      });
+
+      goals.forEach(goal => {
+        const date = new Date(goal.completed_at || goal.created_at);
+        const goalDay = new Date(date);
+        goalDay.setHours(0, 0, 0, 0);
+
+        if (goalDay.getTime() === targetDate.getTime()) {
+          const hour = date.getHours();
+          const hourKey = `${hour.toString().padStart(2, '0')}:00`;
+          if (statsMap.has(hourKey)) {
+            statsMap.get(hourKey)!.goals++;
+          }
         }
       });
     } else if (timePeriod === 'custom') {
