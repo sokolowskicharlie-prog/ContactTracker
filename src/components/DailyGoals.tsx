@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, Plus, Trash2, Bell, BellOff, Clock, TrendingUp, TrendingDown, Minus, CheckCircle } from 'lucide-react';
+import { Target, Plus, Trash2, Bell, BellOff, Clock, TrendingUp, TrendingDown, Minus, CheckCircle, Edit2 } from 'lucide-react';
 import { supabase, DailyGoal, GoalNotificationSettings, Call, Email, FuelDeal } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
@@ -29,11 +29,17 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
   const [loading, setLoading] = useState(true);
   const [showAddGoal, setShowAddGoal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<DailyGoal | null>(null);
 
   const [newGoalType, setNewGoalType] = useState<GoalType>('calls');
   const [newGoalAmount, setNewGoalAmount] = useState(10);
   const [newGoalTime, setNewGoalTime] = useState('17:00');
   const [newGoalDate, setNewGoalDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const [editGoalType, setEditGoalType] = useState<GoalType>('calls');
+  const [editGoalAmount, setEditGoalAmount] = useState(10);
+  const [editGoalTime, setEditGoalTime] = useState('17:00');
+  const [editGoalDate, setEditGoalDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [notificationFrequency, setNotificationFrequency] = useState(30);
   const [enableNotifications, setEnableNotifications] = useState(true);
@@ -144,6 +150,44 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
     } catch (error) {
       console.error('Error deleting goal:', error);
     }
+  };
+
+  const startEditGoal = (goal: DailyGoal) => {
+    setEditingGoal(goal);
+    setEditGoalType(goal.goal_type);
+    setEditGoalAmount(goal.target_amount);
+    setEditGoalTime(goal.target_time);
+    setEditGoalDate(goal.target_date);
+    setShowAddGoal(false);
+  };
+
+  const updateGoal = async () => {
+    if (!editingGoal) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('daily_goals')
+        .update({
+          goal_type: editGoalType,
+          target_amount: editGoalAmount,
+          target_time: editGoalTime,
+          target_date: editGoalDate,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingGoal.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      setGoals(goals.map(g => g.id === editingGoal.id ? data : g));
+      setEditingGoal(null);
+    } catch (error) {
+      console.error('Error updating goal:', error);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingGoal(null);
   };
 
   const saveSettings = async () => {
@@ -446,6 +490,68 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
         </div>
       )}
 
+      {editingGoal && (
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-300">
+          <h3 className="text-sm font-semibold text-blue-900 mb-4">Edit Goal</h3>
+          <div className="grid grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+              <select
+                value={editGoalType}
+                onChange={(e) => setEditGoalType(e.target.value as GoalType)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="calls">Calls</option>
+                <option value="emails">Emails</option>
+                <option value="deals">Deals</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Target Amount</label>
+              <input
+                type="number"
+                value={editGoalAmount}
+                onChange={(e) => setEditGoalAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                min="1"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
+              <input
+                type="date"
+                value={editGoalDate}
+                onChange={(e) => setEditGoalDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Target Time</label>
+              <input
+                type="time"
+                value={editGoalTime}
+                onChange={(e) => setEditGoalTime(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={updateGoal}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Update Goal
+            </button>
+            <button
+              onClick={cancelEdit}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {goals.length === 0 ? (
         <div className="text-center py-8">
           <Target className="mx-auto text-gray-400 mb-3" size={48} />
@@ -495,12 +601,20 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => deleteGoal(goal.id)}
-                    className="text-gray-400 hover:text-red-600 transition-colors"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => startEditGoal(goal)}
+                      className="text-gray-400 hover:text-blue-600 transition-colors"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={() => deleteGoal(goal.id)}
+                      className="text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
