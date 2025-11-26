@@ -201,6 +201,7 @@ export type DailyGoal = {
   goal_type: 'calls' | 'emails' | 'deals';
   target_amount: number;
   target_time: string;
+  target_date: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;

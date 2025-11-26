@@ -33,6 +33,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
   const [newGoalType, setNewGoalType] = useState<GoalType>('calls');
   const [newGoalAmount, setNewGoalAmount] = useState(10);
   const [newGoalTime, setNewGoalTime] = useState('17:00');
+  const [newGoalDate, setNewGoalDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [notificationFrequency, setNotificationFrequency] = useState(30);
   const [enableNotifications, setEnableNotifications] = useState(true);
@@ -60,6 +61,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
         .from('daily_goals')
         .select('*')
         .eq('is_active', true)
+        .order('target_date', { ascending: true })
         .order('target_time', { ascending: true });
 
       if (error) throw error;
@@ -114,6 +116,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
           goal_type: newGoalType,
           target_amount: newGoalAmount,
           target_time: newGoalTime,
+          target_date: newGoalDate,
           is_active: true
         })
         .select()
@@ -170,43 +173,44 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
     setNewGoalType('calls');
     setNewGoalAmount(10);
     setNewGoalTime('17:00');
+    setNewGoalDate(new Date().toISOString().split('T')[0]);
   };
 
-  const getTodayActivity = (type: GoalType): number => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const getActivityForDate = (type: GoalType, targetDate: string): number => {
+    const goalDate = new Date(targetDate);
+    goalDate.setHours(0, 0, 0, 0);
 
     if (type === 'calls') {
       return calls.filter(c => {
         const callDate = new Date(c.call_date);
         callDate.setHours(0, 0, 0, 0);
-        return callDate.getTime() === today.getTime();
+        return callDate.getTime() === goalDate.getTime();
       }).length;
     } else if (type === 'emails') {
       return emails.filter(e => {
         const emailDate = new Date(e.email_date);
         emailDate.setHours(0, 0, 0, 0);
-        return emailDate.getTime() === today.getTime();
+        return emailDate.getTime() === goalDate.getTime();
       }).length;
     } else {
       return deals.filter(d => {
         const dealDate = new Date(d.deal_date);
         dealDate.setHours(0, 0, 0, 0);
-        return dealDate.getTime() === today.getTime();
+        return dealDate.getTime() === goalDate.getTime();
       }).length;
     }
   };
 
   const calculateProgress = (goal: DailyGoal): GoalProgress => {
-    const currentAmount = getTodayActivity(goal.goal_type);
+    const currentAmount = getActivityForDate(goal.goal_type, goal.target_date);
     const percentComplete = Math.min(100, (currentAmount / goal.target_amount) * 100);
 
     const now = new Date();
     const [targetHours, targetMinutes] = goal.target_time.split(':').map(Number);
-    const targetDate = new Date();
-    targetDate.setHours(targetHours, targetMinutes, 0, 0);
+    const targetDateTime = new Date(goal.target_date);
+    targetDateTime.setHours(targetHours, targetMinutes, 0, 0);
 
-    const timeRemainingMs = targetDate.getTime() - now.getTime();
+    const timeRemainingMs = targetDateTime.getTime() - now.getTime();
     const hoursRemaining = Math.max(0, timeRemainingMs / (1000 * 60 * 60));
 
     const remaining = goal.target_amount - currentAmount;
@@ -380,7 +384,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
       {showAddGoal && (
         <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Add New Goal</h3>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
               <select
@@ -400,6 +404,15 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                 value={newGoalAmount}
                 onChange={(e) => setNewGoalAmount(Math.max(1, parseInt(e.target.value) || 1))}
                 min="1"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
+              <input
+                type="date"
+                value={newGoalDate}
+                onChange={(e) => setNewGoalDate(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -473,7 +486,11 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                       <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                         <Clock size={14} />
                         <span>
-                          Target: {progress.targetTime} ({progress.timeRemaining})
+                          {new Date(goal.target_date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: new Date(goal.target_date).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                          })} at {progress.targetTime} ({progress.timeRemaining})
                         </span>
                       </div>
                     </div>
