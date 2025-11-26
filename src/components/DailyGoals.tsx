@@ -732,6 +732,30 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                       </span>
                     )}
                   </div>
+
+                  {progress.timeRemaining !== 'Time expired' && (
+                    <div className={`mt-2 px-3 py-1.5 rounded-md text-xs font-medium ${
+                      progress.percentComplete >= 100
+                        ? 'bg-green-100 text-green-800'
+                        : progress.percentComplete >= 75
+                        ? 'bg-blue-100 text-blue-800'
+                        : progress.percentComplete >= 50
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-orange-100 text-orange-800'
+                    }`}>
+                      {progress.percentComplete >= 100 ? (
+                        "Goal achieved! Keep going!"
+                      ) : progress.percentComplete >= 75 ? (
+                        "You're doing great! Almost there!"
+                      ) : progress.percentComplete >= 50 ? (
+                        "Good progress! Keep pushing!"
+                      ) : progress.percentComplete >= 25 ? (
+                        "You can do it! Stay focused!"
+                      ) : (
+                        "Let's get started! Time to hustle!"
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -750,6 +774,19 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
             if (isCompletion) {
               const achieved = notification.currentAmount >= notification.targetAmount;
               const difference = Math.abs(notification.targetAmount - notification.currentAmount);
+              const percentage = notification.percentComplete;
+
+              const getMotivationalMessage = () => {
+                if (achieved) {
+                  if (percentage >= 150) return "Outstanding! You're crushing it!";
+                  if (percentage >= 120) return "Excellent work! Keep this momentum going!";
+                  return "Great job! You hit your target!";
+                } else {
+                  if (percentage >= 80) return "Almost there! Push a bit harder next time.";
+                  if (percentage >= 50) return "Good effort, but you can do better!";
+                  return "Time to step it up! You've got this!";
+                }
+              };
 
               return (
                 <div
@@ -797,6 +834,11 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                       </p>
                       <div className={`mt-2 text-xs ${achieved ? 'text-green-700' : 'text-red-700'}`}>
                         Final: {notification.currentAmount}/{notification.targetAmount} ({Math.round(notification.percentComplete)}%)
+                      </div>
+                      <div className={`mt-2 px-3 py-2 rounded-md font-medium text-sm ${
+                        achieved ? 'bg-green-100 text-green-900' : 'bg-red-100 text-red-900'
+                      }`}>
+                        {getMotivationalMessage()}
                       </div>
                     </div>
                   </div>
