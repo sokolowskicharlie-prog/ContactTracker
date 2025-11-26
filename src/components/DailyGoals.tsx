@@ -780,7 +780,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                           <span className="text-blue-600">On track</span>
                         ) : (
                           <span className="text-orange-600">
-                            Need {Math.ceil(progress.requiredRate)} per hour
+                            Need {Math.ceil(progress.requiredRate)} {getGoalLabel(goal.goal_type).toLowerCase()} per hour
                           </span>
                         )}
                       </span>
