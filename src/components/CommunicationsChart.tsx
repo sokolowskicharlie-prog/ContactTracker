@@ -791,41 +791,93 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
         )}
 
         <div className="grid grid-cols-4 gap-6">
-          <div className="bg-green-50 rounded-lg p-4 text-center">
+          <button
+            onClick={() => {
+              const today = new Date();
+              if (summaryPeriod === 'daily') {
+                setSelectedDate(`${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`);
+              } else if (summaryPeriod === 'monthly') {
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                setSelectedDate(`${monthNames[today.getMonth()]} ${today.getFullYear().toString().slice(-2)}`);
+              } else if (summaryPeriod === 'annual') {
+                setSelectedDate(today.getFullYear().toString());
+              }
+            }}
+            className="bg-green-50 rounded-lg p-4 text-center hover:bg-green-100 transition-colors cursor-pointer"
+          >
             <div className="flex items-center justify-center gap-2 mb-2">
               <div className="w-3 h-3 bg-green-500 rounded"></div>
               <span className="text-sm font-medium text-gray-700">Calls</span>
             </div>
             <div className="text-3xl font-bold text-green-600">{totalCalls}</div>
             <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
-          </div>
+          </button>
 
-          <div className="bg-orange-50 rounded-lg p-4 text-center">
+          <button
+            onClick={() => {
+              const today = new Date();
+              if (summaryPeriod === 'daily') {
+                setSelectedDate(`${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`);
+              } else if (summaryPeriod === 'monthly') {
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                setSelectedDate(`${monthNames[today.getMonth()]} ${today.getFullYear().toString().slice(-2)}`);
+              } else if (summaryPeriod === 'annual') {
+                setSelectedDate(today.getFullYear().toString());
+              }
+            }}
+            className="bg-orange-50 rounded-lg p-4 text-center hover:bg-orange-100 transition-colors cursor-pointer"
+          >
             <div className="flex items-center justify-center gap-2 mb-2">
               <div className="w-3 h-3 bg-orange-500 rounded"></div>
               <span className="text-sm font-medium text-gray-700">Emails</span>
             </div>
             <div className="text-3xl font-bold text-orange-600">{totalEmails}</div>
             <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
-          </div>
+          </button>
 
-          <div className="bg-blue-50 rounded-lg p-4 text-center">
+          <button
+            onClick={() => {
+              const today = new Date();
+              if (summaryPeriod === 'daily') {
+                setSelectedDate(`${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`);
+              } else if (summaryPeriod === 'monthly') {
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                setSelectedDate(`${monthNames[today.getMonth()]} ${today.getFullYear().toString().slice(-2)}`);
+              } else if (summaryPeriod === 'annual') {
+                setSelectedDate(today.getFullYear().toString());
+              }
+            }}
+            className="bg-blue-50 rounded-lg p-4 text-center hover:bg-blue-100 transition-colors cursor-pointer"
+          >
             <div className="flex items-center justify-center gap-2 mb-2">
               <div className="w-3 h-3 bg-blue-500 rounded"></div>
               <span className="text-sm font-medium text-gray-700">Deals</span>
             </div>
             <div className="text-3xl font-bold text-blue-600">{totalDeals}</div>
             <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
-          </div>
+          </button>
 
-          <div className="bg-purple-50 rounded-lg p-4 text-center">
+          <button
+            onClick={() => {
+              const today = new Date();
+              if (summaryPeriod === 'daily') {
+                setSelectedDate(`${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`);
+              } else if (summaryPeriod === 'monthly') {
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                setSelectedDate(`${monthNames[today.getMonth()]} ${today.getFullYear().toString().slice(-2)}`);
+              } else if (summaryPeriod === 'annual') {
+                setSelectedDate(today.getFullYear().toString());
+              }
+            }}
+            className="bg-purple-50 rounded-lg p-4 text-center hover:bg-purple-100 transition-colors cursor-pointer"
+          >
             <div className="flex items-center justify-center gap-2 mb-2">
               <div className="w-3 h-3 bg-purple-500 rounded"></div>
               <span className="text-sm font-medium text-gray-700">Goals</span>
             </div>
             <div className="text-3xl font-bold text-purple-600">{totalGoals}</div>
             <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -868,7 +920,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
 
         return (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[85vh] flex flex-col">
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-xl flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Calendar className="w-6 h-6" />
