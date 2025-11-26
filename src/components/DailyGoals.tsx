@@ -125,6 +125,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
           target_amount: newGoalAmount,
           target_time: newGoalTime,
           target_date: newGoalDate,
+          manual_count: 0,
           is_active: true
         })
         .select()
@@ -191,6 +192,27 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
     setEditingGoal(null);
   };
 
+  const updateManualCount = async (goalId: string, delta: number) => {
+    const goal = goals.find(g => g.id === goalId);
+    if (!goal) return;
+
+    const newCount = Math.max(0, (goal.manual_count || 0) + delta);
+
+    try {
+      const { data, error } = await supabase
+        .from('daily_goals')
+        .update({ manual_count: newCount })
+        .eq('id', goalId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      setGoals(goals.map(g => g.id === goalId ? data : g));
+    } catch (error) {
+      console.error('Error updating manual count:', error);
+    }
+  };
+
   const saveSettings = async () => {
     try {
       const { error } = await supabase
@@ -248,7 +270,8 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
   };
 
   const calculateProgress = (goal: DailyGoal): GoalProgress => {
-    const currentAmount = getActivityForDate(goal.goal_type, goal.target_date);
+    const automaticCount = getActivityForDate(goal.goal_type, goal.target_date);
+    const currentAmount = automaticCount + (goal.manual_count || 0);
     const percentComplete = Math.min(100, (currentAmount / goal.target_amount) * 100);
 
     const now = new Date();
@@ -643,7 +666,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                     <div
                       className={`h-full transition-all duration-500 ${
@@ -655,6 +678,36 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                       }`}
                       style={{ width: `${progress.percentComplete}%` }}
                     />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-600">
+                        Auto: {getActivityForDate(goal.goal_type, goal.target_date)}
+                      </span>
+                      {goal.manual_count > 0 && (
+                        <span className="text-xs text-purple-600 font-medium">
+                          + Manual: {goal.manual_count}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => updateManualCount(goal.id, -1)}
+                        disabled={!goal.manual_count}
+                        className="p-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        title="Decrease manual count"
+                      >
+                        <Minus size={14} className="text-gray-700" />
+                      </button>
+                      <button
+                        onClick={() => updateManualCount(goal.id, 1)}
+                        className="p-1 rounded bg-purple-100 hover:bg-purple-200 transition-colors"
+                        title="Increase manual count"
+                      >
+                        <Plus size={14} className="text-purple-700" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between text-sm">
