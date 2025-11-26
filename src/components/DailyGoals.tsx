@@ -37,6 +37,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
 
   const [notificationFrequency, setNotificationFrequency] = useState(30);
   const [enableNotifications, setEnableNotifications] = useState(true);
+  const [inAppNotifications, setInAppNotifications] = useState<GoalProgress[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -252,29 +253,18 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
   };
 
   const showNotification = async (progress: GoalProgress) => {
-    const remaining = progress.targetAmount - progress.currentAmount;
-    const typeLabel = progress.type === 'calls' ? 'calls' : progress.type === 'emails' ? 'emails' : 'deals';
+    const isDuplicate = inAppNotifications.some(
+      n => n.type === progress.type && n.targetTime === progress.targetTime
+    );
 
-    if (!('Notification' in window)) {
-      console.warn('This browser does not support notifications');
-      return;
-    }
+    if (!isDuplicate) {
+      setInAppNotifications(prev => [...prev, progress]);
 
-    if (Notification.permission === 'granted') {
-      new Notification('Goal Progress Alert', {
-        body: `You need ${remaining} more ${typeLabel} by ${progress.targetTime} to stay on track.`,
-        icon: '/favicon.ico',
-        tag: 'goal-progress'
-      });
-    } else if (Notification.permission === 'default') {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        new Notification('Goal Progress Alert', {
-          body: `You need ${remaining} more ${typeLabel} by ${progress.targetTime} to stay on track.`,
-          icon: '/favicon.ico',
-          tag: 'goal-progress'
-        });
-      }
+      setTimeout(() => {
+        setInAppNotifications(prev =>
+          prev.filter(n => !(n.type === progress.type && n.targetTime === progress.targetTime))
+        );
+      }, 10000);
     }
   };
 
@@ -360,24 +350,6 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
               </button>
               <button
                 onClick={async () => {
-                  if (!('Notification' in window)) {
-                    alert('Your browser does not support notifications');
-                    return;
-                  }
-
-                  if (Notification.permission === 'denied') {
-                    alert('Notifications are blocked. Please enable them in your browser settings.');
-                    return;
-                  }
-
-                  if (Notification.permission === 'default') {
-                    const permission = await Notification.requestPermission();
-                    if (permission !== 'granted') {
-                      alert('Notification permission denied');
-                      return;
-                    }
-                  }
-
                   const testProgress: GoalProgress = {
                     type: 'calls',
                     targetAmount: 10,
@@ -566,6 +538,49 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                         )}
                       </span>
                     )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {inAppNotifications.length > 0 && (
+        <div className="fixed top-4 right-4 z-50 space-y-2 max-w-md">
+          {inAppNotifications.map((notification, index) => {
+            const remaining = notification.targetAmount - notification.currentAmount;
+            const typeLabel = notification.type === 'calls' ? 'calls' : notification.type === 'emails' ? 'emails' : 'deals';
+            const icon = notification.type === 'calls' ? '📞' : notification.type === 'emails' ? '✉️' : '🤝';
+
+            return (
+              <div
+                key={index}
+                className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4 shadow-lg animate-slide-in-right"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="text-3xl">{icon}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <h4 className="font-semibold text-orange-900">Goal Progress Alert</h4>
+                      <button
+                        onClick={() => {
+                          setInAppNotifications(prev =>
+                            prev.filter((_, i) => i !== index)
+                          );
+                        }}
+                        className="text-orange-400 hover:text-orange-600"
+                      >
+                        <Minus size={18} />
+                      </button>
+                    </div>
+                    <p className="text-sm text-orange-800">
+                      You need <span className="font-semibold">{remaining} more {typeLabel}</span> by{' '}
+                      <span className="font-semibold">{notification.targetTime}</span> to stay on track.
+                    </p>
+                    <div className="mt-2 text-xs text-orange-700">
+                      Currently at {notification.currentAmount}/{notification.targetAmount} ({Math.round(notification.percentComplete)}%)
+                    </div>
                   </div>
                 </div>
               </div>
