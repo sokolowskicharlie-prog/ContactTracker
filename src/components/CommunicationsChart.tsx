@@ -558,16 +558,16 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
 
       <div className="overflow-x-auto">
         <div className="flex gap-4">
-          <div className="flex flex-col justify-between h-64 py-2">
+          <div className="flex flex-col justify-between py-2" style={{ height: '224px' }}>
             {yAxisLabels.reverse().map((label) => (
-              <div key={label} className="text-xs text-gray-500 text-right pr-2" style={{ height: '12px' }}>
+              <div key={label} className="text-xs text-gray-500 text-right pr-2">
                 {label}
               </div>
             ))}
           </div>
 
           <div className="flex-1 overflow-x-auto">
-            <div className="flex items-end h-64 gap-2 justify-start" style={{ minWidth: '100%' }}>
+            <div className="flex items-end gap-2 justify-start" style={{ minWidth: '100%', height: '224px' }}>
                 {stats.map((stat, index) => {
                   const callHeight = (stat.calls / yAxisMax) * 100;
                   const emailHeight = (stat.emails / yAxisMax) * 100;
@@ -590,11 +590,11 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                   return (
                     <div
                       key={index}
-                      className="flex flex-col items-center flex-1 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors p-1 relative group/bar"
+                      className="flex flex-col items-center flex-1 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors p-1 relative group"
                       style={{ minWidth: `${groupWidth}px`, maxWidth: '100px' }}
                       onClick={() => setSelectedDate(stat.date)}
                     >
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full mb-2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-lg">
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl">
                         <div className="font-semibold mb-1 text-center">{stat.date}</div>
                         <div className="space-y-0.5">
                           {showCalls && (
@@ -892,8 +892,8 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                       <div className="space-y-3">
                         {daysCalls.map(call => (
                           <div key={call.id} className="bg-green-50 rounded-lg p-4 border border-green-100">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="font-medium text-gray-900">{call.contact_name}</div>
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="text-lg font-bold text-gray-900">{call.contact_name}</div>
                               <div className="flex items-center gap-1 text-sm text-gray-600">
                                 <Clock className="w-4 h-4" />
                                 {new Date(call.call_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -935,8 +935,8 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                       <div className="space-y-3">
                         {daysEmails.map(email => (
                           <div key={email.id} className="bg-orange-50 rounded-lg p-4 border border-orange-100">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="font-medium text-gray-900">{email.contact_name}</div>
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="text-lg font-bold text-gray-900">{email.contact_name}</div>
                               <div className="flex items-center gap-1 text-sm text-gray-600">
                                 <Clock className="w-4 h-4" />
                                 {new Date(email.email_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -977,8 +977,8 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                       <div className="space-y-3">
                         {daysDeals.map(deal => (
                           <div key={deal.id} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="font-medium text-gray-900">{deal.contact_name}</div>
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="text-lg font-bold text-gray-900">{deal.contact_name}</div>
                               <div className="flex items-center gap-1 text-sm text-gray-600">
                                 <Clock className="w-4 h-4" />
                                 {new Date(deal.deal_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
