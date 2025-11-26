@@ -203,6 +203,7 @@ export type DailyGoal = {
   target_time: string;
   target_date: string;
   manual_count: number;
+  notes?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;

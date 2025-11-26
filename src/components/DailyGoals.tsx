@@ -35,11 +35,13 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
   const [newGoalAmount, setNewGoalAmount] = useState(10);
   const [newGoalTime, setNewGoalTime] = useState('17:00');
   const [newGoalDate, setNewGoalDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newGoalNotes, setNewGoalNotes] = useState('');
 
   const [editGoalType, setEditGoalType] = useState<GoalType>('calls');
   const [editGoalAmount, setEditGoalAmount] = useState(10);
   const [editGoalTime, setEditGoalTime] = useState('17:00');
   const [editGoalDate, setEditGoalDate] = useState(new Date().toISOString().split('T')[0]);
+  const [editGoalNotes, setEditGoalNotes] = useState('');
 
   const [notificationFrequency, setNotificationFrequency] = useState(30);
   const [enableNotifications, setEnableNotifications] = useState(true);
@@ -146,6 +148,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
           target_time: newGoalTime,
           target_date: newGoalDate,
           manual_count: 0,
+          notes: newGoalNotes.trim() || null,
           is_active: true
         })
         .select()
@@ -180,6 +183,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
     setEditGoalAmount(goal.target_amount);
     setEditGoalTime(goal.target_time);
     setEditGoalDate(goal.target_date);
+    setEditGoalNotes(goal.notes || '');
     setShowAddGoal(false);
   };
 
@@ -194,6 +198,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
           target_amount: editGoalAmount,
           target_time: editGoalTime,
           target_date: editGoalDate,
+          notes: editGoalNotes.trim() || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', editingGoal.id)
@@ -296,6 +301,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
     setNewGoalAmount(10);
     setNewGoalTime('17:00');
     setNewGoalDate(new Date().toISOString().split('T')[0]);
+    setNewGoalNotes('');
   };
 
   const getActivityForDate = (type: GoalType, targetDate: string): number => {
@@ -573,6 +579,16 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
               />
             </div>
           </div>
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Notes (optional)</label>
+            <textarea
+              value={newGoalNotes}
+              onChange={(e) => setNewGoalNotes(e.target.value)}
+              placeholder="Add any notes or reminders for this goal..."
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+            />
+          </div>
           <div className="flex gap-2 mt-4">
             <button
               onClick={addGoal}
@@ -637,6 +653,16 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
+          </div>
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Notes (optional)</label>
+            <textarea
+              value={editGoalNotes}
+              onChange={(e) => setEditGoalNotes(e.target.value)}
+              placeholder="Add any notes or reminders for this goal..."
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+            />
           </div>
           <div className="flex gap-2 mt-4">
             <button
@@ -808,6 +834,12 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                       ) : (
                         "Let's get started! Time to hustle!"
                       )}
+                    </div>
+                  )}
+
+                  {goal.notes && (
+                    <div className="mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
+                      <p className="text-xs text-gray-700 italic">{goal.notes}</p>
                     </div>
                   )}
                 </div>
