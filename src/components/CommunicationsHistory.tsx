@@ -20,9 +20,14 @@ interface CommunicationsHistoryProps {
   onClose: () => void;
 }
 
+type TimePeriod = 'daily' | 'monthly' | 'annual' | 'custom';
+
 export default function CommunicationsHistory({ calls, emails, deals, contacts, completedGoals, onClose }: CommunicationsHistoryProps) {
   const [items, setItems] = useState<CommunicationItem[]>([]);
   const [filterType, setFilterType] = useState<'all' | 'call' | 'email' | 'deal' | 'goal'>('all');
+  const [summaryPeriod, setSummaryPeriod] = useState<TimePeriod>('monthly');
+  const [summaryStartDate, setSummaryStartDate] = useState('');
+  const [summaryEndDate, setSummaryEndDate] = useState('');
 
   useEffect(() => {
     const callItems: CommunicationItem[] = calls.map(call => ({
@@ -63,9 +68,81 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
     setItems(combined);
   }, [calls, emails, deals, contacts, completedGoals]);
 
-  const filteredItems = items.filter(item =>
+  const getSummaryFilteredItems = () => {
+    const now = new Date();
+    let filtered = items;
+
+    if (summaryPeriod === 'custom') {
+      if (summaryStartDate && summaryEndDate) {
+        const start = new Date(summaryStartDate);
+        const end = new Date(summaryEndDate);
+        end.setHours(23, 59, 59, 999);
+
+        filtered = items.filter(item => {
+          const date = new Date(item.date);
+          return date >= start && date <= end;
+        });
+      }
+    } else if (summaryPeriod === 'daily') {
+      const currentDay = now.getDate();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      filtered = items.filter(item => {
+        const date = new Date(item.date);
+        return date.getDate() === currentDay && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      });
+    } else if (summaryPeriod === 'monthly') {
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      filtered = items.filter(item => {
+        const date = new Date(item.date);
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      });
+    } else if (summaryPeriod === 'annual') {
+      const currentYear = now.getFullYear();
+
+      filtered = items.filter(item => {
+        const date = new Date(item.date);
+        return date.getFullYear() === currentYear;
+      });
+    }
+
+    return filtered;
+  };
+
+  const summaryFilteredItems = getSummaryFilteredItems();
+
+  const filteredItems = summaryFilteredItems.filter(item =>
     filterType === 'all' || item.type === filterType
   );
+
+  const getSummaryPeriodLabel = () => {
+    if (summaryPeriod === 'daily') {
+      const now = new Date();
+      return now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+    if (summaryPeriod === 'monthly') {
+      const now = new Date();
+      return now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+    if (summaryPeriod === 'annual') {
+      const now = new Date();
+      return now.getFullYear().toString();
+    }
+    if (summaryPeriod === 'custom' && summaryStartDate && summaryEndDate) {
+      return `${new Date(summaryStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(summaryEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    }
+    return 'Custom range';
+  };
+
+  const summaryPeriodLabel = getSummaryPeriodLabel();
+
+  const periodCallsCount = summaryFilteredItems.filter(i => i.type === 'call').length;
+  const periodEmailsCount = summaryFilteredItems.filter(i => i.type === 'email').length;
+  const periodDealsCount = summaryFilteredItems.filter(i => i.type === 'deal').length;
+  const periodGoalsCount = summaryFilteredItems.filter(i => i.type === 'goal').length;
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -101,6 +178,81 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
         </div>
 
         <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSummaryPeriod('daily')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  summaryPeriod === 'daily'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Day
+              </button>
+              <button
+                onClick={() => setSummaryPeriod('monthly')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  summaryPeriod === 'monthly'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Month
+              </button>
+              <button
+                onClick={() => setSummaryPeriod('annual')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  summaryPeriod === 'annual'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Year
+              </button>
+              <button
+                onClick={() => setSummaryPeriod('custom')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  summaryPeriod === 'custom'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Custom
+              </button>
+            </div>
+            <div className="text-sm font-medium text-gray-700">
+              {summaryPeriodLabel}
+            </div>
+          </div>
+
+          {summaryPeriod === 'custom' && (
+            <div className="flex gap-4 items-end mb-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={summaryStartDate}
+                  onChange={(e) => setSummaryStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={summaryEndDate}
+                  onChange={(e) => setSummaryEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-3 mb-6">
             <button
               onClick={() => setFilterType('all')}
@@ -110,7 +262,7 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              All ({items.length})
+              All ({summaryFilteredItems.length})
             </button>
             <button
               onClick={() => setFilterType('call')}
@@ -121,7 +273,7 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
               }`}
             >
               <Phone className="w-4 h-4" />
-              Calls ({calls.length})
+              Calls ({periodCallsCount})
             </button>
             <button
               onClick={() => setFilterType('email')}
@@ -132,7 +284,7 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
               }`}
             >
               <Mail className="w-4 h-4" />
-              Emails ({emails.length})
+              Emails ({periodEmailsCount})
             </button>
             <button
               onClick={() => setFilterType('deal')}
@@ -143,7 +295,7 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
               }`}
             >
               <Fuel className="w-4 h-4" />
-              Deals ({deals.length})
+              Deals ({periodDealsCount})
             </button>
             <button
               onClick={() => setFilterType('goal')}
@@ -154,11 +306,23 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
               }`}
             >
               <Target className="w-4 h-4" />
-              Goals ({completedGoals.length})
+              Goals ({periodGoalsCount})
             </button>
           </div>
 
-          <CommunicationsChart calls={calls} emails={emails} deals={deals} goals={completedGoals} contacts={contacts} />
+          <CommunicationsChart
+            calls={calls}
+            emails={emails}
+            deals={deals}
+            goals={completedGoals}
+            contacts={contacts}
+            externalSummaryPeriod={summaryPeriod}
+            externalSummaryStartDate={summaryStartDate}
+            externalSummaryEndDate={summaryEndDate}
+            onSummaryPeriodChange={setSummaryPeriod}
+            onSummaryStartDateChange={setSummaryStartDate}
+            onSummaryEndDateChange={setSummaryEndDate}
+          />
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">

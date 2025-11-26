@@ -16,23 +16,45 @@ interface CommunicationsChartProps {
   deals: FuelDeal[];
   goals: DailyGoal[];
   contacts: Contact[];
+  externalSummaryPeriod?: TimePeriod;
+  externalSummaryStartDate?: string;
+  externalSummaryEndDate?: string;
+  onSummaryPeriodChange?: (period: TimePeriod) => void;
+  onSummaryStartDateChange?: (date: string) => void;
+  onSummaryEndDateChange?: (date: string) => void;
 }
 
 type TimePeriod = 'daily' | 'monthly' | 'annual' | 'custom';
 
-export default function CommunicationsChart({ calls, emails, deals, goals, contacts }: CommunicationsChartProps) {
+export default function CommunicationsChart({
+  calls,
+  emails,
+  deals,
+  goals,
+  contacts,
+  externalSummaryPeriod,
+  externalSummaryStartDate,
+  externalSummaryEndDate,
+  onSummaryPeriodChange,
+  onSummaryStartDateChange,
+  onSummaryEndDateChange
+}: CommunicationsChartProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
-  const [summaryPeriod, setSummaryPeriod] = useState<TimePeriod>('monthly');
   const [showCalls, setShowCalls] = useState(true);
   const [showEmails, setShowEmails] = useState(true);
   const [showDeals, setShowDeals] = useState(true);
   const [showGoals, setShowGoals] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [summaryStartDate, setSummaryStartDate] = useState('');
-  const [summaryEndDate, setSummaryEndDate] = useState('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [chartHeight, setChartHeight] = useState(224);
+
+  const summaryPeriod = externalSummaryPeriod || 'monthly';
+  const summaryStartDate = externalSummaryStartDate || '';
+  const summaryEndDate = externalSummaryEndDate || '';
+  const setSummaryPeriod = onSummaryPeriodChange || (() => {});
+  const setSummaryStartDate = onSummaryStartDateChange || (() => {});
+  const setSummaryEndDate = onSummaryEndDateChange || (() => {});
 
   console.log('Chart Props:', {
     callsCount: calls.length,
@@ -732,170 +754,172 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
         </div>
       </div>
 
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-md font-semibold text-gray-900">Summary Totals</h4>
-          <div className="flex gap-2">
+      {!externalSummaryPeriod && (
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-md font-semibold text-gray-900">Summary Totals</h4>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSummaryPeriod('daily')}
+                className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
+                  summaryPeriod === 'daily'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Day
+              </button>
+              <button
+                onClick={() => setSummaryPeriod('monthly')}
+                className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
+                  summaryPeriod === 'monthly'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Month
+              </button>
+              <button
+                onClick={() => setSummaryPeriod('annual')}
+                className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
+                  summaryPeriod === 'annual'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Year
+              </button>
+              <button
+                onClick={() => setSummaryPeriod('custom')}
+                className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
+                  summaryPeriod === 'custom'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Custom
+              </button>
+            </div>
+          </div>
+
+          {summaryPeriod === 'custom' && (
+            <div className="flex gap-4 items-end mb-4">
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={summaryStartDate}
+                  onChange={(e) => setSummaryStartDate(e.target.value)}
+                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={summaryEndDate}
+                  onChange={(e) => setSummaryEndDate(e.target.value)}
+                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-4 gap-6">
             <button
-              onClick={() => setSummaryPeriod('daily')}
-              className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
-                summaryPeriod === 'daily'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              onClick={() => {
+                const today = new Date();
+                if (summaryPeriod === 'daily') {
+                  setSelectedDate(`${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`);
+                } else if (summaryPeriod === 'monthly') {
+                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  setSelectedDate(`${monthNames[today.getMonth()]} ${today.getFullYear().toString().slice(-2)}`);
+                } else if (summaryPeriod === 'annual') {
+                  setSelectedDate(today.getFullYear().toString());
+                }
+              }}
+              className="bg-green-50 rounded-lg p-4 text-center hover:bg-green-100 transition-colors cursor-pointer"
             >
-              Day
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="w-3 h-3 bg-green-500 rounded"></div>
+                <span className="text-sm font-medium text-gray-700">Calls</span>
+              </div>
+              <div className="text-3xl font-bold text-green-600">{totalCalls}</div>
+              <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
             </button>
+
             <button
-              onClick={() => setSummaryPeriod('monthly')}
-              className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
-                summaryPeriod === 'monthly'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              onClick={() => {
+                const today = new Date();
+                if (summaryPeriod === 'daily') {
+                  setSelectedDate(`${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`);
+                } else if (summaryPeriod === 'monthly') {
+                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  setSelectedDate(`${monthNames[today.getMonth()]} ${today.getFullYear().toString().slice(-2)}`);
+                } else if (summaryPeriod === 'annual') {
+                  setSelectedDate(today.getFullYear().toString());
+                }
+              }}
+              className="bg-orange-50 rounded-lg p-4 text-center hover:bg-orange-100 transition-colors cursor-pointer"
             >
-              Month
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="w-3 h-3 bg-orange-500 rounded"></div>
+                <span className="text-sm font-medium text-gray-700">Emails</span>
+              </div>
+              <div className="text-3xl font-bold text-orange-600">{totalEmails}</div>
+              <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
             </button>
+
             <button
-              onClick={() => setSummaryPeriod('annual')}
-              className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
-                summaryPeriod === 'annual'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              onClick={() => {
+                const today = new Date();
+                if (summaryPeriod === 'daily') {
+                  setSelectedDate(`${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`);
+                } else if (summaryPeriod === 'monthly') {
+                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  setSelectedDate(`${monthNames[today.getMonth()]} ${today.getFullYear().toString().slice(-2)}`);
+                } else if (summaryPeriod === 'annual') {
+                  setSelectedDate(today.getFullYear().toString());
+                }
+              }}
+              className="bg-blue-50 rounded-lg p-4 text-center hover:bg-blue-100 transition-colors cursor-pointer"
             >
-              Year
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                <span className="text-sm font-medium text-gray-700">Deals</span>
+              </div>
+              <div className="text-3xl font-bold text-blue-600">{totalDeals}</div>
+              <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
             </button>
+
             <button
-              onClick={() => setSummaryPeriod('custom')}
-              className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
-                summaryPeriod === 'custom'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              onClick={() => {
+                const today = new Date();
+                if (summaryPeriod === 'daily') {
+                  setSelectedDate(`${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`);
+                } else if (summaryPeriod === 'monthly') {
+                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  setSelectedDate(`${monthNames[today.getMonth()]} ${today.getFullYear().toString().slice(-2)}`);
+                } else if (summaryPeriod === 'annual') {
+                  setSelectedDate(today.getFullYear().toString());
+                }
+              }}
+              className="bg-purple-50 rounded-lg p-4 text-center hover:bg-purple-100 transition-colors cursor-pointer"
             >
-              Custom
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="w-3 h-3 bg-purple-500 rounded"></div>
+                <span className="text-sm font-medium text-gray-700">Goals</span>
+              </div>
+              <div className="text-3xl font-bold text-purple-600">{totalGoals}</div>
+              <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
             </button>
           </div>
         </div>
-
-        {summaryPeriod === 'custom' && (
-          <div className="flex gap-4 items-end mb-4">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={summaryStartDate}
-                onChange={(e) => setSummaryStartDate(e.target.value)}
-                className="w-full px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={summaryEndDate}
-                onChange={(e) => setSummaryEndDate(e.target.value)}
-                className="w-full px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-4 gap-6">
-          <button
-            onClick={() => {
-              const today = new Date();
-              if (summaryPeriod === 'daily') {
-                setSelectedDate(`${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`);
-              } else if (summaryPeriod === 'monthly') {
-                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                setSelectedDate(`${monthNames[today.getMonth()]} ${today.getFullYear().toString().slice(-2)}`);
-              } else if (summaryPeriod === 'annual') {
-                setSelectedDate(today.getFullYear().toString());
-              }
-            }}
-            className="bg-green-50 rounded-lg p-4 text-center hover:bg-green-100 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <div className="w-3 h-3 bg-green-500 rounded"></div>
-              <span className="text-sm font-medium text-gray-700">Calls</span>
-            </div>
-            <div className="text-3xl font-bold text-green-600">{totalCalls}</div>
-            <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
-          </button>
-
-          <button
-            onClick={() => {
-              const today = new Date();
-              if (summaryPeriod === 'daily') {
-                setSelectedDate(`${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`);
-              } else if (summaryPeriod === 'monthly') {
-                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                setSelectedDate(`${monthNames[today.getMonth()]} ${today.getFullYear().toString().slice(-2)}`);
-              } else if (summaryPeriod === 'annual') {
-                setSelectedDate(today.getFullYear().toString());
-              }
-            }}
-            className="bg-orange-50 rounded-lg p-4 text-center hover:bg-orange-100 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <div className="w-3 h-3 bg-orange-500 rounded"></div>
-              <span className="text-sm font-medium text-gray-700">Emails</span>
-            </div>
-            <div className="text-3xl font-bold text-orange-600">{totalEmails}</div>
-            <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
-          </button>
-
-          <button
-            onClick={() => {
-              const today = new Date();
-              if (summaryPeriod === 'daily') {
-                setSelectedDate(`${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`);
-              } else if (summaryPeriod === 'monthly') {
-                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                setSelectedDate(`${monthNames[today.getMonth()]} ${today.getFullYear().toString().slice(-2)}`);
-              } else if (summaryPeriod === 'annual') {
-                setSelectedDate(today.getFullYear().toString());
-              }
-            }}
-            className="bg-blue-50 rounded-lg p-4 text-center hover:bg-blue-100 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <div className="w-3 h-3 bg-blue-500 rounded"></div>
-              <span className="text-sm font-medium text-gray-700">Deals</span>
-            </div>
-            <div className="text-3xl font-bold text-blue-600">{totalDeals}</div>
-            <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
-          </button>
-
-          <button
-            onClick={() => {
-              const today = new Date();
-              if (summaryPeriod === 'daily') {
-                setSelectedDate(`${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`);
-              } else if (summaryPeriod === 'monthly') {
-                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                setSelectedDate(`${monthNames[today.getMonth()]} ${today.getFullYear().toString().slice(-2)}`);
-              } else if (summaryPeriod === 'annual') {
-                setSelectedDate(today.getFullYear().toString());
-              }
-            }}
-            className="bg-purple-50 rounded-lg p-4 text-center hover:bg-purple-100 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <div className="w-3 h-3 bg-purple-500 rounded"></div>
-              <span className="text-sm font-medium text-gray-700">Goals</span>
-            </div>
-            <div className="text-3xl font-bold text-purple-600">{totalGoals}</div>
-            <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
-          </button>
-        </div>
-      </div>
+      )}
 
       {selectedDate && (() => {
         const parseDate = (dateStr: string) => {
