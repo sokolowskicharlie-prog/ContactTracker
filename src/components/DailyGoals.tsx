@@ -44,6 +44,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
   const [notificationFrequency, setNotificationFrequency] = useState(30);
   const [enableNotifications, setEnableNotifications] = useState(true);
   const [inAppNotifications, setInAppNotifications] = useState<GoalProgress[]>([]);
+  const [completedGoals, setCompletedGoals] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -284,13 +285,22 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
 
   const checkGoalsAndNotify = () => {
     const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
 
     goals.forEach(goal => {
       if (goal.target_date !== today) return;
 
       const progress = calculateProgress(goal);
 
-      if (!progress.onTrack && progress.timeRemaining !== 'Time expired') {
+      const [targetHours, targetMinutes] = goal.target_time.split(':').map(Number);
+      const targetDateTime = new Date(goal.target_date);
+      targetDateTime.setHours(targetHours, targetMinutes, 0, 0);
+      const timeExpired = now.getTime() >= targetDateTime.getTime();
+
+      if (timeExpired && !completedGoals.has(goal.id)) {
+        showCompletionNotification(goal, progress);
+        setCompletedGoals(prev => new Set(prev).add(goal.id));
+      } else if (!progress.onTrack && progress.timeRemaining !== 'Time expired') {
         showNotification(progress);
       }
     });
@@ -298,7 +308,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
 
   const showNotification = async (progress: GoalProgress) => {
     const isDuplicate = inAppNotifications.some(
-      n => n.type === progress.type && n.targetTime === progress.targetTime
+      n => n.type === progress.type && n.targetTime === progress.targetTime && 'isCompletion' in n === false
     );
 
     if (!isDuplicate) {
@@ -306,10 +316,26 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
 
       setTimeout(() => {
         setInAppNotifications(prev =>
-          prev.filter(n => !(n.type === progress.type && n.targetTime === progress.targetTime))
+          prev.filter(n => !(n.type === progress.type && n.targetTime === progress.targetTime && 'isCompletion' in n === false))
         );
       }, 10000);
     }
+  };
+
+  const showCompletionNotification = (goal: DailyGoal, progress: GoalProgress) => {
+    const completionData = {
+      ...progress,
+      isCompletion: true,
+      goalId: goal.id
+    } as any;
+
+    setInAppNotifications(prev => [...prev, completionData]);
+
+    setTimeout(() => {
+      setInAppNotifications(prev =>
+        prev.filter(n => !('isCompletion' in n && (n as any).goalId === goal.id))
+      );
+    }, 20000);
   };
 
   const getGoalIcon = (type: GoalType) => {
@@ -663,9 +689,67 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
       {inAppNotifications.length > 0 && (
         <div className="fixed top-4 right-4 z-50 space-y-2 max-w-md">
           {inAppNotifications.map((notification, index) => {
+            const isCompletion = 'isCompletion' in notification;
             const remaining = notification.targetAmount - notification.currentAmount;
             const typeLabel = notification.type === 'calls' ? 'calls' : notification.type === 'emails' ? 'emails' : 'deals';
             const icon = notification.type === 'calls' ? '📞' : notification.type === 'emails' ? '✉️' : '🤝';
+
+            if (isCompletion) {
+              const achieved = notification.currentAmount >= notification.targetAmount;
+              const difference = Math.abs(notification.targetAmount - notification.currentAmount);
+
+              return (
+                <div
+                  key={index}
+                  className={`border-2 rounded-lg p-4 shadow-lg animate-slide-in-right ${
+                    achieved
+                      ? 'bg-green-50 border-green-300'
+                      : 'bg-red-50 border-red-300'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="text-3xl">{icon}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className={`font-semibold ${achieved ? 'text-green-900' : 'text-red-900'}`}>
+                          {achieved ? '🎉 Goal Completed!' : '⏰ Time\'s Up!'}
+                        </h4>
+                        <button
+                          onClick={() => {
+                            setInAppNotifications(prev =>
+                              prev.filter((_, i) => i !== index)
+                            );
+                          }}
+                          className={achieved ? 'text-green-400 hover:text-green-600' : 'text-red-400 hover:text-red-600'}
+                        >
+                          <Minus size={18} />
+                        </button>
+                      </div>
+                      <p className={`text-sm ${achieved ? 'text-green-800' : 'text-red-800'}`}>
+                        {achieved ? (
+                          <>
+                            You completed <span className="font-semibold">{notification.currentAmount} {typeLabel}</span> and{' '}
+                            {difference > 0 ? (
+                              <>exceeded your target by <span className="font-semibold">{difference}</span>!</>
+                            ) : (
+                              <>hit your target of <span className="font-semibold">{notification.targetAmount}</span>!</>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            You completed <span className="font-semibold">{notification.currentAmount} {typeLabel}</span> but{' '}
+                            missed your target by <span className="font-semibold">{difference}</span>.
+                          </>
+                        )}
+                      </p>
+                      <div className={`mt-2 text-xs ${achieved ? 'text-green-700' : 'text-red-700'}`}>
+                        Final: {notification.currentAmount}/{notification.targetAmount} ({Math.round(notification.percentComplete)}%)
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <div
