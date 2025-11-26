@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, Mail, Fuel, X, Calendar, Clock, User, Target } from 'lucide-react';
+import { Phone, Mail, Fuel, X, Calendar, Clock, User, Target, ChevronUp, ChevronDown } from 'lucide-react';
 import { Call, Email, FuelDeal, DailyGoal, Contact } from '../lib/supabase';
 
 interface DailyStats {
@@ -32,6 +32,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
   const [summaryStartDate, setSummaryStartDate] = useState('');
   const [summaryEndDate, setSummaryEndDate] = useState('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [chartHeight, setChartHeight] = useState(300);
 
   console.log('Chart Props:', {
     callsCount: calls.length,
@@ -560,9 +561,27 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
         </label>
       </div>
 
+      <div className="flex items-center justify-end gap-2 mb-2">
+        <span className="text-xs text-gray-600 font-medium">Chart Height:</span>
+        <button
+          onClick={() => setChartHeight(Math.max(200, chartHeight - 50))}
+          className="p-1 hover:bg-gray-100 rounded transition-colors"
+          title="Decrease height"
+        >
+          <ChevronDown className="w-4 h-4 text-gray-600" />
+        </button>
+        <button
+          onClick={() => setChartHeight(Math.min(600, chartHeight + 50))}
+          className="p-1 hover:bg-gray-100 rounded transition-colors"
+          title="Increase height"
+        >
+          <ChevronUp className="w-4 h-4 text-gray-600" />
+        </button>
+      </div>
+
       <div className="overflow-x-auto">
         <div className="flex gap-4">
-          <div className="flex flex-col justify-between py-2" style={{ height: '224px' }}>
+          <div className="flex flex-col justify-between py-2" style={{ height: `${chartHeight}px` }}>
             {yAxisLabels.reverse().map((label) => (
               <div key={label} className="text-xs text-gray-500 text-right pr-2">
                 {label}
@@ -571,7 +590,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
           </div>
 
           <div className="flex-1 overflow-x-auto">
-            <div className="flex items-end gap-2 justify-start" style={{ minWidth: '100%', height: '224px' }}>
+            <div className="flex items-end gap-2 justify-start" style={{ minWidth: '100%', height: `${chartHeight}px` }}>
                 {stats.map((stat, index) => {
                   const callHeight = (stat.calls / adjustedMax) * 100;
                   const emailHeight = (stat.emails / adjustedMax) * 100;
@@ -627,7 +646,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
                           )}
                         </div>
                       </div>
-                      <div className="flex items-end justify-center gap-1 w-full relative" style={{ height: '224px' }}>
+                      <div className="flex items-end justify-center gap-1 w-full relative" style={{ height: `${chartHeight}px` }}>
                         {showCalls && (
                           <div className="relative group/bar" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
                             <div
@@ -919,9 +938,9 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
         const daysDeals = deals.filter(deal => filterByDate(new Date(deal.deal_date)));
 
         return (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[85vh] flex flex-col">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-xl flex items-center justify-between">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white w-screen h-screen flex flex-col">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Calendar className="w-6 h-6" />
                   <div>
