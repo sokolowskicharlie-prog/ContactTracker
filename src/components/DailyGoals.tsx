@@ -238,7 +238,11 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
   };
 
   const checkGoalsAndNotify = () => {
+    const today = new Date().toISOString().split('T')[0];
+
     goals.forEach(goal => {
+      if (goal.target_date !== today) return;
+
       const progress = calculateProgress(goal);
 
       if (!progress.onTrack && progress.timeRemaining !== 'Time expired') {
@@ -247,24 +251,30 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
     });
   };
 
-  const showNotification = (progress: GoalProgress) => {
+  const showNotification = async (progress: GoalProgress) => {
     const remaining = progress.targetAmount - progress.currentAmount;
     const typeLabel = progress.type === 'calls' ? 'calls' : progress.type === 'emails' ? 'emails' : 'deals';
+
+    if (!('Notification' in window)) {
+      console.warn('This browser does not support notifications');
+      return;
+    }
 
     if (Notification.permission === 'granted') {
       new Notification('Goal Progress Alert', {
         body: `You need ${remaining} more ${typeLabel} by ${progress.targetTime} to stay on track.`,
-        icon: '/favicon.ico'
+        icon: '/favicon.ico',
+        tag: 'goal-progress'
       });
-    } else if (Notification.permission !== 'denied') {
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          new Notification('Goal Progress Alert', {
-            body: `You need ${remaining} more ${typeLabel} by ${progress.targetTime} to stay on track.`,
-            icon: '/favicon.ico'
-          });
-        }
-      });
+    } else if (Notification.permission === 'default') {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        new Notification('Goal Progress Alert', {
+          body: `You need ${remaining} more ${typeLabel} by ${progress.targetTime} to stay on track.`,
+          icon: '/favicon.ico',
+          tag: 'goal-progress'
+        });
+      }
     }
   };
 
@@ -349,7 +359,25 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                 Save Settings
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
+                  if (!('Notification' in window)) {
+                    alert('Your browser does not support notifications');
+                    return;
+                  }
+
+                  if (Notification.permission === 'denied') {
+                    alert('Notifications are blocked. Please enable them in your browser settings.');
+                    return;
+                  }
+
+                  if (Notification.permission === 'default') {
+                    const permission = await Notification.requestPermission();
+                    if (permission !== 'granted') {
+                      alert('Notification permission denied');
+                      return;
+                    }
+                  }
+
                   const testProgress: GoalProgress = {
                     type: 'calls',
                     targetAmount: 10,
@@ -360,7 +388,7 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                     timeRemaining: '3h 30m',
                     requiredRate: 2.5
                   };
-                  showNotification(testProgress);
+                  await showNotification(testProgress);
                 }}
                 className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
               >
