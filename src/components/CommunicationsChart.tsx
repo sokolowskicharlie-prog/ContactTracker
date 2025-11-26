@@ -314,6 +314,27 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
         });
       }
     } else if (summaryPeriod === 'daily') {
+      const currentDay = now.getDate();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      filteredCalls = calls.filter(c => {
+        const date = new Date(c.call_date);
+        return date.getDate() === currentDay && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      });
+      filteredEmails = emails.filter(e => {
+        const date = new Date(e.email_date);
+        return date.getDate() === currentDay && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      });
+      filteredDeals = deals.filter(d => {
+        const date = new Date(d.deal_date);
+        return date.getDate() === currentDay && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      });
+      filteredGoals = goals.filter(g => {
+        const date = new Date(g.completed_at || g.created_at);
+        return date.getDate() === currentDay && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      });
+    } else if (summaryPeriod === 'monthly') {
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
 
@@ -333,47 +354,24 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
         const date = new Date(g.completed_at || g.created_at);
         return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
       });
-    } else if (summaryPeriod === 'monthly') {
-      filteredCalls = calls.filter(c => {
-        const date = new Date(c.call_date);
-        const monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
-        return monthsDiff >= 0 && monthsDiff < 12;
-      });
-      filteredEmails = emails.filter(e => {
-        const date = new Date(e.email_date);
-        const monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
-        return monthsDiff >= 0 && monthsDiff < 12;
-      });
-      filteredDeals = deals.filter(d => {
-        const date = new Date(d.deal_date);
-        const monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
-        return monthsDiff >= 0 && monthsDiff < 12;
-      });
-      filteredGoals = goals.filter(g => {
-        const date = new Date(g.completed_at || g.created_at);
-        const monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
-        return monthsDiff >= 0 && monthsDiff < 12;
-      });
     } else if (summaryPeriod === 'annual') {
+      const currentYear = now.getFullYear();
+
       filteredCalls = calls.filter(c => {
         const date = new Date(c.call_date);
-        const year = date.getFullYear();
-        return year >= now.getFullYear() - 4 && year <= now.getFullYear();
+        return date.getFullYear() === currentYear;
       });
       filteredEmails = emails.filter(e => {
         const date = new Date(e.email_date);
-        const year = date.getFullYear();
-        return year >= now.getFullYear() - 4 && year <= now.getFullYear();
+        return date.getFullYear() === currentYear;
       });
       filteredDeals = deals.filter(d => {
         const date = new Date(d.deal_date);
-        const year = date.getFullYear();
-        return year >= now.getFullYear() - 4 && year <= now.getFullYear();
+        return date.getFullYear() === currentYear;
       });
       filteredGoals = goals.filter(g => {
         const date = new Date(g.completed_at || g.created_at);
-        const year = date.getFullYear();
-        return year >= now.getFullYear() - 4 && year <= now.getFullYear();
+        return date.getFullYear() === currentYear;
       });
     }
 
@@ -407,10 +405,16 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
   const getSummaryPeriodLabel = () => {
     if (summaryPeriod === 'daily') {
       const now = new Date();
+      return now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+    if (summaryPeriod === 'monthly') {
+      const now = new Date();
       return now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     }
-    if (summaryPeriod === 'monthly') return 'Last 12 months';
-    if (summaryPeriod === 'annual') return 'Last 5 years';
+    if (summaryPeriod === 'annual') {
+      const now = new Date();
+      return now.getFullYear().toString();
+    }
     if (summaryPeriod === 'custom' && summaryStartDate && summaryEndDate) {
       return `${new Date(summaryStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(summaryEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     }
@@ -586,41 +590,40 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                   return (
                     <div
                       key={index}
-                      className="flex flex-col items-center flex-1 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors p-1"
+                      className="flex flex-col items-center flex-1 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors p-1 relative group/bar"
                       style={{ minWidth: `${groupWidth}px`, maxWidth: '100px' }}
                       onClick={() => setSelectedDate(stat.date)}
                     >
-                      <div className="flex items-end justify-center gap-1 w-full relative group/bar" style={{ height: '224px' }}>
-                        <div className="absolute -top-20 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-lg">
-                          <div className="font-semibold mb-1 text-center">{stat.date}</div>
-                          <div className="space-y-0.5">
-                            {showCalls && (
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-green-500 rounded"></div>
-                                <span>Calls: {stat.calls}</span>
-                              </div>
-                            )}
-                            {showEmails && (
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-orange-500 rounded"></div>
-                                <span>Emails: {stat.emails}</span>
-                              </div>
-                            )}
-                            {showDeals && (
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-blue-500 rounded"></div>
-                                <span>Deals: {stat.deals}</span>
-                              </div>
-                            )}
-                            {showGoals && (
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-purple-500 rounded"></div>
-                                <span>Goals: {stat.goals}</span>
-                              </div>
-                            )}
-                          </div>
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full mb-2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-lg">
+                        <div className="font-semibold mb-1 text-center">{stat.date}</div>
+                        <div className="space-y-0.5">
+                          {showCalls && (
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-green-500 rounded"></div>
+                              <span>Calls: {stat.calls}</span>
+                            </div>
+                          )}
+                          {showEmails && (
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-orange-500 rounded"></div>
+                              <span>Emails: {stat.emails}</span>
+                            </div>
+                          )}
+                          {showDeals && (
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-blue-500 rounded"></div>
+                              <span>Deals: {stat.deals}</span>
+                            </div>
+                          )}
+                          {showGoals && (
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-purple-500 rounded"></div>
+                              <span>Goals: {stat.goals}</span>
+                            </div>
+                          )}
                         </div>
-
+                      </div>
+                      <div className="flex items-end justify-center gap-1 w-full relative" style={{ height: '224px' }}>
                         {showCalls && (
                           <div style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
                             <div
