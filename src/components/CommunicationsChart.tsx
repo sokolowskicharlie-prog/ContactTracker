@@ -23,6 +23,7 @@ interface CommunicationsChartProps {
   onSummaryStartDateChange?: (date: string) => void;
   onSummaryEndDateChange?: (date: string) => void;
   hideChartPeriodButtons?: boolean;
+  externalFilterType?: 'all' | 'call' | 'email' | 'deal' | 'goal';
 }
 
 type TimePeriod = 'all' | 'daily' | 'monthly' | 'annual' | 'custom';
@@ -39,12 +40,13 @@ export default function CommunicationsChart({
   onSummaryPeriodChange,
   onSummaryStartDateChange,
   onSummaryEndDateChange,
-  hideChartPeriodButtons = false
+  hideChartPeriodButtons = false,
+  externalFilterType
 }: CommunicationsChartProps) {
-  const [showCalls, setShowCalls] = useState(true);
-  const [showEmails, setShowEmails] = useState(true);
-  const [showDeals, setShowDeals] = useState(true);
-  const [showGoals, setShowGoals] = useState(true);
+  const showCalls = externalFilterType ? (externalFilterType === 'all' || externalFilterType === 'call') : true;
+  const showEmails = externalFilterType ? (externalFilterType === 'all' || externalFilterType === 'email') : true;
+  const showDeals = externalFilterType ? (externalFilterType === 'all' || externalFilterType === 'deal') : true;
+  const showGoals = externalFilterType ? (externalFilterType === 'all' || externalFilterType === 'goal') : true;
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [chartHeight, setChartHeight] = useState(224);
   const [showBarNumbers, setShowBarNumbers] = useState(false);
@@ -625,56 +627,58 @@ export default function CommunicationsChart({
         )}
       </div>
 
-      <div className="flex gap-4 mb-4">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showCalls}
-            onChange={(e) => setShowCalls(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-          />
-          <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <div className="w-3 h-3 bg-green-500 rounded"></div>
-            Calls
-          </span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showEmails}
-            onChange={(e) => setShowEmails(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-          />
-          <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <div className="w-3 h-3 bg-orange-500 rounded"></div>
-            Emails
-          </span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showDeals}
-            onChange={(e) => setShowDeals(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <div className="w-3 h-3 bg-blue-500 rounded"></div>
-            Deals
-          </span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showGoals}
-            onChange={(e) => setShowGoals(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-          />
-          <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <div className="w-3 h-3 bg-purple-500 rounded"></div>
-            Goals
-          </span>
-        </label>
-      </div>
+      {!externalFilterType && (
+        <div className="flex gap-4 mb-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showCalls}
+              onChange={() => {}}
+              className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+            />
+            <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <div className="w-3 h-3 bg-green-500 rounded"></div>
+              Calls
+            </span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showEmails}
+              onChange={() => {}}
+              className="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+            />
+            <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <div className="w-3 h-3 bg-orange-500 rounded"></div>
+              Emails
+            </span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showDeals}
+              onChange={() => {}}
+              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <div className="w-3 h-3 bg-blue-500 rounded"></div>
+              Deals
+            </span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showGoals}
+              onChange={() => {}}
+              className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <div className="w-3 h-3 bg-purple-500 rounded"></div>
+              Goals
+            </span>
+          </label>
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <div className="flex gap-4">
