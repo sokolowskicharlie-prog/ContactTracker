@@ -158,7 +158,7 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
             </button>
           </div>
 
-          <CommunicationsChart calls={calls} emails={emails} deals={deals} goals={completedGoals} />
+          <CommunicationsChart calls={calls} emails={emails} deals={deals} goals={completedGoals} contacts={contacts} />
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">

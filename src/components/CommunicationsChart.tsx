@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Phone, Mail, Fuel, X, Calendar, Clock, User, Target } from 'lucide-react';
-import { Call, Email, FuelDeal, DailyGoal } from '../lib/supabase';
+import { Call, Email, FuelDeal, DailyGoal, Contact } from '../lib/supabase';
 
 interface DailyStats {
   date: string;
@@ -15,11 +15,12 @@ interface CommunicationsChartProps {
   emails: Email[];
   deals: FuelDeal[];
   goals: DailyGoal[];
+  contacts: Contact[];
 }
 
 type TimePeriod = 'daily' | 'monthly' | 'annual' | 'custom';
 
-export default function CommunicationsChart({ calls, emails, deals, goals }: CommunicationsChartProps) {
+export default function CommunicationsChart({ calls, emails, deals, goals, contacts }: CommunicationsChartProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
   const [summaryPeriod, setSummaryPeriod] = useState<TimePeriod>('monthly');
   const [showCalls, setShowCalls] = useState(true);
@@ -890,13 +891,13 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                         Calls ({daysCalls.length})
                       </h4>
                       <div className="text-sm text-gray-600 mb-3 font-medium">
-                        {daysCalls.map(call => call.contact_name).join(', ')}
+                        {daysCalls.map(call => contacts.find(c => c.id === call.contact_id)?.name || 'Unknown').join(', ')}
                       </div>
                       <div className="space-y-3">
                         {daysCalls.map(call => (
                           <div key={call.id} className="bg-green-50 rounded-lg p-4 border border-green-100">
                             <div className="flex items-start justify-between mb-2">
-                              <div className="text-lg font-bold text-gray-900">{call.contact_name}</div>
+                              <div className="text-lg font-bold text-gray-900">{contacts.find(c => c.id === call.contact_id)?.name || 'Unknown Contact'}</div>
                               <div className="flex items-center gap-1 text-sm text-gray-600">
                                 <Clock className="w-4 h-4" />
                                 {new Date(call.call_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -936,13 +937,13 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                         Emails ({daysEmails.length})
                       </h4>
                       <div className="text-sm text-gray-600 mb-3 font-medium">
-                        {daysEmails.map(email => email.contact_name).join(', ')}
+                        {daysEmails.map(email => contacts.find(c => c.id === email.contact_id)?.name || 'Unknown').join(', ')}
                       </div>
                       <div className="space-y-3">
                         {daysEmails.map(email => (
                           <div key={email.id} className="bg-orange-50 rounded-lg p-4 border border-orange-100">
                             <div className="flex items-start justify-between mb-2">
-                              <div className="text-lg font-bold text-gray-900">{email.contact_name}</div>
+                              <div className="text-lg font-bold text-gray-900">{contacts.find(c => c.id === email.contact_id)?.name || 'Unknown Contact'}</div>
                               <div className="flex items-center gap-1 text-sm text-gray-600">
                                 <Clock className="w-4 h-4" />
                                 {new Date(email.email_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -982,13 +983,13 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                         Deals ({daysDeals.length})
                       </h4>
                       <div className="text-sm text-gray-600 mb-3 font-medium">
-                        {daysDeals.map(deal => deal.contact_name).join(', ')}
+                        {daysDeals.map(deal => contacts.find(c => c.id === deal.contact_id)?.name || 'Unknown').join(', ')}
                       </div>
                       <div className="space-y-3">
                         {daysDeals.map(deal => (
                           <div key={deal.id} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
                             <div className="flex items-start justify-between mb-2">
-                              <div className="text-lg font-bold text-gray-900">{deal.contact_name}</div>
+                              <div className="text-lg font-bold text-gray-900">{contacts.find(c => c.id === deal.contact_id)?.name || 'Unknown Contact'}</div>
                               <div className="flex items-center gap-1 text-sm text-gray-600">
                                 <Clock className="w-4 h-4" />
                                 {new Date(deal.deal_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
