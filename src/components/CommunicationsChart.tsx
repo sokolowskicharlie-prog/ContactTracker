@@ -24,7 +24,7 @@ interface CommunicationsChartProps {
   onSummaryEndDateChange?: (date: string) => void;
 }
 
-type TimePeriod = 'daily' | 'monthly' | 'annual' | 'custom';
+type TimePeriod = 'all' | 'daily' | 'monthly' | 'annual' | 'custom';
 
 export default function CommunicationsChart({
   calls,
@@ -48,8 +48,9 @@ export default function CommunicationsChart({
   const [endDate, setEndDate] = useState('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [chartHeight, setChartHeight] = useState(224);
+  const [showBarNumbers, setShowBarNumbers] = useState(false);
 
-  const summaryPeriod = externalSummaryPeriod || 'monthly';
+  const summaryPeriod = externalSummaryPeriod || 'all';
   const summaryStartDate = externalSummaryStartDate || '';
   const summaryEndDate = externalSummaryEndDate || '';
   const setSummaryPeriod = onSummaryPeriodChange || (() => {});
@@ -69,7 +70,45 @@ export default function CommunicationsChart({
     const now = new Date();
     const statsMap = new Map<string, DailyStats>();
 
-    if (timePeriod === 'custom') {
+    if (timePeriod === 'all') {
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const dateKey = date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+        statsMap.set(dateKey, { date: dateKey, calls: 0, emails: 0, deals: 0, goals: 0 });
+      }
+
+      calls.forEach(call => {
+        const date = new Date(call.call_date);
+        const dateKey = date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+        if (statsMap.has(dateKey)) {
+          statsMap.get(dateKey)!.calls++;
+        }
+      });
+
+      emails.forEach(email => {
+        const date = new Date(email.email_date);
+        const dateKey = date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+        if (statsMap.has(dateKey)) {
+          statsMap.get(dateKey)!.emails++;
+        }
+      });
+
+      deals.forEach(deal => {
+        const date = new Date(deal.deal_date);
+        const dateKey = date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+        if (statsMap.has(dateKey)) {
+          statsMap.get(dateKey)!.deals++;
+        }
+      });
+
+      goals.forEach(goal => {
+        const date = new Date(goal.completed_at || goal.created_at);
+        const dateKey = date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+        if (statsMap.has(dateKey)) {
+          statsMap.get(dateKey)!.goals++;
+        }
+      });
+    } else if (timePeriod === 'custom') {
       if (!startDate || !endDate) return [];
 
       const start = new Date(startDate);
@@ -317,7 +356,14 @@ export default function CommunicationsChart({
     let filteredDeals = deals;
     let filteredGoals = goals;
 
-    if (summaryPeriod === 'custom') {
+    if (summaryPeriod === 'all') {
+      return {
+        calls: calls.length,
+        emails: emails.length,
+        deals: deals.length,
+        goals: goals.length
+      };
+    } else if (summaryPeriod === 'custom') {
       if (summaryStartDate && summaryEndDate) {
         const start = new Date(summaryStartDate);
         const end = new Date(summaryEndDate);
@@ -417,6 +463,7 @@ export default function CommunicationsChart({
   const totalGoals = summaryTotals.goals;
 
   const getPeriodLabel = () => {
+    if (timePeriod === 'all') return 'Last 12 months';
     if (timePeriod === 'daily') {
       const now = new Date();
       return now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -430,6 +477,9 @@ export default function CommunicationsChart({
   };
 
   const getSummaryPeriodLabel = () => {
+    if (summaryPeriod === 'all') {
+      return 'All Time';
+    }
     if (summaryPeriod === 'daily') {
       const now = new Date();
       return now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -474,7 +524,27 @@ export default function CommunicationsChart({
               />
               <span className="text-sm text-gray-600 w-12">{chartHeight}px</span>
             </div>
+            <button
+              onClick={() => setShowBarNumbers(!showBarNumbers)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                showBarNumbers
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Show Numbers
+            </button>
             <div className="flex gap-2">
+            <button
+              onClick={() => setTimePeriod('all')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                timePeriod === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              All
+            </button>
             <button
               onClick={() => setTimePeriod('daily')}
               className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
@@ -676,7 +746,12 @@ export default function CommunicationsChart({
                                 width: `${barWidth}px`
                               }}
                             >
-                              {stat.calls > 0 && (
+                              {stat.calls > 0 && showBarNumbers && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap" style={{ zIndex: 100 }}>
+                                  {stat.calls}
+                                </div>
+                              )}
+                              {stat.calls > 0 && !showBarNumbers && (
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap pointer-events-none" style={{ zIndex: 100 }}>
                                   {stat.calls}
                                 </div>
@@ -695,7 +770,12 @@ export default function CommunicationsChart({
                                 width: `${barWidth}px`
                               }}
                             >
-                              {stat.emails > 0 && (
+                              {stat.emails > 0 && showBarNumbers && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap" style={{ zIndex: 100 }}>
+                                  {stat.emails}
+                                </div>
+                              )}
+                              {stat.emails > 0 && !showBarNumbers && (
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap pointer-events-none" style={{ zIndex: 100 }}>
                                   {stat.emails}
                                 </div>
@@ -714,7 +794,12 @@ export default function CommunicationsChart({
                                 width: `${barWidth}px`
                               }}
                             >
-                              {stat.deals > 0 && (
+                              {stat.deals > 0 && showBarNumbers && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap" style={{ zIndex: 100 }}>
+                                  {stat.deals}
+                                </div>
+                              )}
+                              {stat.deals > 0 && !showBarNumbers && (
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap pointer-events-none" style={{ zIndex: 100 }}>
                                   {stat.deals}
                                 </div>
@@ -733,7 +818,12 @@ export default function CommunicationsChart({
                                 width: `${barWidth}px`
                               }}
                             >
-                              {stat.goals > 0 && (
+                              {stat.goals > 0 && showBarNumbers && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap" style={{ zIndex: 100 }}>
+                                  {stat.goals}
+                                </div>
+                              )}
+                              {stat.goals > 0 && !showBarNumbers && (
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap pointer-events-none" style={{ zIndex: 100 }}>
                                   {stat.goals}
                                 </div>

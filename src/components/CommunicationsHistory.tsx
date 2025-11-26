@@ -20,12 +20,12 @@ interface CommunicationsHistoryProps {
   onClose: () => void;
 }
 
-type TimePeriod = 'daily' | 'monthly' | 'annual' | 'custom';
+type TimePeriod = 'all' | 'daily' | 'monthly' | 'annual' | 'custom';
 
 export default function CommunicationsHistory({ calls, emails, deals, contacts, completedGoals, onClose }: CommunicationsHistoryProps) {
   const [items, setItems] = useState<CommunicationItem[]>([]);
   const [filterType, setFilterType] = useState<'all' | 'call' | 'email' | 'deal' | 'goal'>('all');
-  const [summaryPeriod, setSummaryPeriod] = useState<TimePeriod>('monthly');
+  const [summaryPeriod, setSummaryPeriod] = useState<TimePeriod>('all');
   const [summaryStartDate, setSummaryStartDate] = useState('');
   const [summaryEndDate, setSummaryEndDate] = useState('');
 
@@ -72,7 +72,9 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
     const now = new Date();
     let filtered = items;
 
-    if (summaryPeriod === 'custom') {
+    if (summaryPeriod === 'all') {
+      return items;
+    } else if (summaryPeriod === 'custom') {
       if (summaryStartDate && summaryEndDate) {
         const start = new Date(summaryStartDate);
         const end = new Date(summaryEndDate);
@@ -119,6 +121,9 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
   );
 
   const getSummaryPeriodLabel = () => {
+    if (summaryPeriod === 'all') {
+      return 'All Time';
+    }
     if (summaryPeriod === 'daily') {
       const now = new Date();
       return now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -180,6 +185,16 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <div className="flex gap-2">
+              <button
+                onClick={() => setSummaryPeriod('all')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  summaryPeriod === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All
+              </button>
               <button
                 onClick={() => setSummaryPeriod('daily')}
                 className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
