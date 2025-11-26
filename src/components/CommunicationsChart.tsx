@@ -32,6 +32,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
   const [summaryStartDate, setSummaryStartDate] = useState('');
   const [summaryEndDate, setSummaryEndDate] = useState('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [chartHeight, setChartHeight] = useState(224);
 
   console.log('Chart Props:', {
     callsCount: calls.length,
@@ -437,7 +438,21 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Activity Overview</h3>
-          <div className="flex gap-2">
+          <div className="flex gap-4 items-center">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Chart Height:</label>
+              <input
+                type="range"
+                min="150"
+                max="500"
+                step="10"
+                value={chartHeight}
+                onChange={(e) => setChartHeight(Number(e.target.value))}
+                className="w-32"
+              />
+              <span className="text-sm text-gray-600 w-12">{chartHeight}px</span>
+            </div>
+            <div className="flex gap-2">
             <button
               onClick={() => setTimePeriod('daily')}
               className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
@@ -478,6 +493,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
             >
               Custom
             </button>
+          </div>
           </div>
         </div>
 
@@ -562,7 +578,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
 
       <div className="overflow-x-auto">
         <div className="flex gap-4">
-          <div className="flex flex-col justify-between py-2" style={{ height: '224px' }}>
+          <div className="flex flex-col justify-between py-2" style={{ height: `${chartHeight}px` }}>
             {yAxisLabels.reverse().map((label) => (
               <div key={label} className="text-xs text-gray-500 text-right pr-2">
                 {label}
@@ -571,7 +587,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
           </div>
 
           <div className="flex-1 overflow-x-auto">
-            <div className="flex items-end gap-2 justify-start" style={{ minWidth: '100%', height: '224px' }}>
+            <div className="flex items-end gap-2 justify-start" style={{ minWidth: '100%', height: `${chartHeight}px` }}>
                 {stats.map((stat, index) => {
                   const callHeight = (stat.calls / adjustedMax) * 100;
                   const emailHeight = (stat.emails / adjustedMax) * 100;
@@ -627,7 +643,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
                           )}
                         </div>
                       </div>
-                      <div className="flex items-end justify-center gap-1 w-full relative" style={{ height: '224px' }}>
+                      <div className="flex items-end justify-center gap-1 w-full relative" style={{ height: `${chartHeight}px` }}>
                         {showCalls && (
                           <div className="relative group/bar" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
                             <div

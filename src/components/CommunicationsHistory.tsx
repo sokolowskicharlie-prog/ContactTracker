@@ -83,8 +83,8 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-2xl w-full h-full max-w-full max-h-full flex flex-col">
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-5 rounded-t-xl flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
