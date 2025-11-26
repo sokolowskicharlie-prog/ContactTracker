@@ -1,27 +1,30 @@
 import { useState } from 'react';
-import { Phone, Mail, Fuel, X, Calendar, Clock, User } from 'lucide-react';
-import { Call, Email, FuelDeal } from '../lib/supabase';
+import { Phone, Mail, Fuel, X, Calendar, Clock, User, Target } from 'lucide-react';
+import { Call, Email, FuelDeal, DailyGoal } from '../lib/supabase';
 
 interface DailyStats {
   date: string;
   calls: number;
   emails: number;
   deals: number;
+  goals: number;
 }
 
 interface CommunicationsChartProps {
   calls: Call[];
   emails: Email[];
   deals: FuelDeal[];
+  goals: DailyGoal[];
 }
 
 type TimePeriod = 'daily' | 'monthly' | 'annual' | 'custom';
 
-export default function CommunicationsChart({ calls, emails, deals }: CommunicationsChartProps) {
+export default function CommunicationsChart({ calls, emails, deals, goals }: CommunicationsChartProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
   const [showCalls, setShowCalls] = useState(true);
   const [showEmails, setShowEmails] = useState(true);
   const [showDeals, setShowDeals] = useState(true);
+  const [showGoals, setShowGoals] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -53,7 +56,7 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
         const date = new Date(start);
         date.setDate(date.getDate() + i);
         const dateKey = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
-        statsMap.set(dateKey, { date: dateKey, calls: 0, emails: 0, deals: 0 });
+        statsMap.set(dateKey, { date: dateKey, calls: 0, emails: 0, deals: 0, goals: 0 });
       }
 
       calls.forEach(call => {
@@ -82,6 +85,16 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
           const dateKey = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
           if (statsMap.has(dateKey)) {
             statsMap.get(dateKey)!.deals++;
+          }
+        }
+      });
+
+      goals.forEach(goal => {
+        const date = new Date(goal.completed_at || goal.created_at);
+        if (date >= start && date <= end) {
+          const dateKey = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+          if (statsMap.has(dateKey)) {
+            statsMap.get(dateKey)!.goals++;
           }
         }
       });
@@ -93,7 +106,7 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
       for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(currentYear, currentMonth, day);
         const dateKey = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
-        statsMap.set(dateKey, { date: dateKey, calls: 0, emails: 0, deals: 0 });
+        statsMap.set(dateKey, { date: dateKey, calls: 0, emails: 0, deals: 0, goals: 0 });
       }
 
       calls.forEach(call => {
@@ -125,11 +138,21 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
           }
         }
       });
+
+      goals.forEach(goal => {
+        const date = new Date(goal.completed_at || goal.created_at);
+        if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+          const dateKey = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+          if (statsMap.has(dateKey)) {
+            statsMap.get(dateKey)!.goals++;
+          }
+        }
+      });
     } else if (timePeriod === 'monthly') {
       for (let i = 11; i >= 0; i--) {
         const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const dateKey = date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
-        statsMap.set(dateKey, { date: dateKey, calls: 0, emails: 0, deals: 0 });
+        statsMap.set(dateKey, { date: dateKey, calls: 0, emails: 0, deals: 0, goals: 0 });
       }
 
       calls.forEach(call => {
@@ -172,11 +195,22 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
           }
         }
       });
+
+      goals.forEach(goal => {
+        const date = new Date(goal.completed_at || goal.created_at);
+        const monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
+        if (monthsDiff >= 0 && monthsDiff < 12) {
+          const dateKey = date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+          if (statsMap.has(dateKey)) {
+            statsMap.get(dateKey)!.goals++;
+          }
+        }
+      });
     } else {
       for (let i = 4; i >= 0; i--) {
         const year = now.getFullYear() - i;
         const dateKey = year.toString();
-        statsMap.set(dateKey, { date: dateKey, calls: 0, emails: 0, deals: 0 });
+        statsMap.set(dateKey, { date: dateKey, calls: 0, emails: 0, deals: 0, goals: 0 });
       }
 
       calls.forEach(call => {
@@ -205,6 +239,15 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
           statsMap.get(dateKey)!.deals++;
         }
       });
+
+      goals.forEach(goal => {
+        const date = new Date(goal.completed_at || goal.created_at);
+        const year = date.getFullYear();
+        const dateKey = year.toString();
+        if (statsMap.has(dateKey)) {
+          statsMap.get(dateKey)!.goals++;
+        }
+      });
     }
 
     return Array.from(statsMap.values());
@@ -217,6 +260,7 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
     if (showCalls) allValues.push(stat.calls);
     if (showEmails) allValues.push(stat.emails);
     if (showDeals) allValues.push(stat.deals);
+    if (showGoals) allValues.push(stat.goals);
   });
 
   const dataMaxValue = allValues.length > 0 ? Math.max(...allValues) : 1;
@@ -239,6 +283,7 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
   const totalCalls = stats.reduce((sum, stat) => sum + stat.calls, 0);
   const totalEmails = stats.reduce((sum, stat) => sum + stat.emails, 0);
   const totalDeals = stats.reduce((sum, stat) => sum + stat.deals, 0);
+  const totalGoals = stats.reduce((sum, stat) => sum + stat.goals, 0);
 
   const getPeriodLabel = () => {
     if (timePeriod === 'daily') {
@@ -255,7 +300,7 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
 
   const periodLabel = getPeriodLabel();
 
-  const barsPerGroup = [showCalls, showEmails, showDeals].filter(Boolean).length;
+  const barsPerGroup = [showCalls, showEmails, showDeals, showGoals].filter(Boolean).length;
   const barWidth = 20;
   const groupWidth = barsPerGroup > 0 ? barWidth * barsPerGroup + (barsPerGroup - 1) * 4 : barWidth;
 
@@ -373,6 +418,18 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
             Deals
           </span>
         </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showGoals}
+            onChange={(e) => setShowGoals(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+          />
+          <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <div className="w-3 h-3 bg-purple-500 rounded"></div>
+            Goals
+          </span>
+        </label>
       </div>
 
       <div className="overflow-x-auto">
@@ -391,6 +448,7 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
                   const callHeight = (stat.calls / yAxisMax) * 100;
                   const emailHeight = (stat.emails / yAxisMax) * 100;
                   const dealHeight = (stat.deals / yAxisMax) * 100;
+                  const goalHeight = (stat.goals / yAxisMax) * 100;
 
                   if (index === 0) {
                     console.log('First bar heights:', {
@@ -466,6 +524,24 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
                             )}
                           </div>
                         )}
+
+                        {showGoals && (
+                          <div className="relative group">
+                            <div
+                              className="bg-purple-500 hover:bg-purple-600 transition-colors rounded-t"
+                              style={{
+                                height: `${goalHeight}%`,
+                                minHeight: stat.goals > 0 ? '4px' : '0px',
+                                width: `${barWidth}px`
+                              }}
+                            />
+                            {stat.goals > 0 && (
+                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                {stat.goals}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <div className="text-xs text-gray-700 font-medium mt-2 text-center">
@@ -480,7 +556,7 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
       </div>
 
       <div className="mt-6 pt-6 border-t border-gray-200">
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-4 gap-6">
           <div className="bg-green-50 rounded-lg p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <div className="w-3 h-3 bg-green-500 rounded"></div>
@@ -505,6 +581,15 @@ export default function CommunicationsChart({ calls, emails, deals }: Communicat
               <span className="text-sm font-medium text-gray-700">Deals</span>
             </div>
             <div className="text-3xl font-bold text-blue-600">{totalDeals}</div>
+            <div className="text-xs text-gray-500 mt-1">{periodLabel}</div>
+          </div>
+
+          <div className="bg-purple-50 rounded-lg p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="w-3 h-3 bg-purple-500 rounded"></div>
+              <span className="text-sm font-medium text-gray-700">Goals</span>
+            </div>
+            <div className="text-3xl font-bold text-purple-600">{totalGoals}</div>
             <div className="text-xs text-gray-500 mt-1">{periodLabel}</div>
           </div>
         </div>
