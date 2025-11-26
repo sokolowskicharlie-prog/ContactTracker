@@ -268,11 +268,12 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
   });
 
   const dataMaxValue = allValues.length > 0 ? Math.max(...allValues) : 1;
-  const maxValue = Math.max(dataMaxValue, 5);
+  const maxValue = Math.max(dataMaxValue, 1);
 
   const yAxisMax = Math.ceil(maxValue * 1.2);
-  const yAxisSteps = 20;
+  const yAxisSteps = 5;
   const stepSize = Math.max(1, Math.ceil(yAxisMax / yAxisSteps));
+  const adjustedMax = stepSize * yAxisSteps;
   const yAxisLabels = Array.from({ length: yAxisSteps + 1 }, (_, i) => i * stepSize);
 
   console.log('Chart Debug:', {
@@ -280,7 +281,9 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
     dataMaxValue,
     maxValue,
     yAxisMax,
+    adjustedMax,
     stepSize,
+    yAxisLabels,
     stats: stats.map(s => ({ date: s.date, calls: s.calls, emails: s.emails, deals: s.deals }))
   });
 
@@ -570,10 +573,10 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
           <div className="flex-1 overflow-x-auto">
             <div className="flex items-end gap-2 justify-start" style={{ minWidth: '100%', height: '224px' }}>
                 {stats.map((stat, index) => {
-                  const callHeight = (stat.calls / yAxisMax) * 100;
-                  const emailHeight = (stat.emails / yAxisMax) * 100;
-                  const dealHeight = (stat.deals / yAxisMax) * 100;
-                  const goalHeight = (stat.goals / yAxisMax) * 100;
+                  const callHeight = (stat.calls / adjustedMax) * 100;
+                  const emailHeight = (stat.emails / adjustedMax) * 100;
+                  const dealHeight = (stat.deals / adjustedMax) * 100;
+                  const goalHeight = (stat.goals / adjustedMax) * 100;
 
                   if (index === 0) {
                     console.log('First bar heights:', {
@@ -581,7 +584,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals, conta
                       calls: stat.calls,
                       emails: stat.emails,
                       deals: stat.deals,
-                      yAxisMax,
+                      adjustedMax,
                       callHeight: `${callHeight}%`,
                       emailHeight: `${emailHeight}%`,
                       dealHeight: `${dealHeight}%`
