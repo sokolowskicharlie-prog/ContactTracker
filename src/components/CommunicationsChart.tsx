@@ -21,12 +21,15 @@ type TimePeriod = 'daily' | 'monthly' | 'annual' | 'custom';
 
 export default function CommunicationsChart({ calls, emails, deals, goals }: CommunicationsChartProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
+  const [summaryPeriod, setSummaryPeriod] = useState<TimePeriod>('monthly');
   const [showCalls, setShowCalls] = useState(true);
   const [showEmails, setShowEmails] = useState(true);
   const [showDeals, setShowDeals] = useState(true);
   const [showGoals, setShowGoals] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [summaryStartDate, setSummaryStartDate] = useState('');
+  const [summaryEndDate, setSummaryEndDate] = useState('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   console.log('Chart Props:', {
@@ -280,10 +283,113 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
     stats: stats.map(s => ({ date: s.date, calls: s.calls, emails: s.emails, deals: s.deals }))
   });
 
-  const totalCalls = stats.reduce((sum, stat) => sum + stat.calls, 0);
-  const totalEmails = stats.reduce((sum, stat) => sum + stat.emails, 0);
-  const totalDeals = stats.reduce((sum, stat) => sum + stat.deals, 0);
-  const totalGoals = stats.reduce((sum, stat) => sum + stat.goals, 0);
+  const getSummaryTotals = () => {
+    const now = new Date();
+    let filteredCalls = calls;
+    let filteredEmails = emails;
+    let filteredDeals = deals;
+    let filteredGoals = goals;
+
+    if (summaryPeriod === 'custom') {
+      if (summaryStartDate && summaryEndDate) {
+        const start = new Date(summaryStartDate);
+        const end = new Date(summaryEndDate);
+        end.setHours(23, 59, 59, 999);
+
+        filteredCalls = calls.filter(c => {
+          const date = new Date(c.call_date);
+          return date >= start && date <= end;
+        });
+        filteredEmails = emails.filter(e => {
+          const date = new Date(e.email_date);
+          return date >= start && date <= end;
+        });
+        filteredDeals = deals.filter(d => {
+          const date = new Date(d.deal_date);
+          return date >= start && date <= end;
+        });
+        filteredGoals = goals.filter(g => {
+          const date = new Date(g.completed_at || g.created_at);
+          return date >= start && date <= end;
+        });
+      }
+    } else if (summaryPeriod === 'daily') {
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      filteredCalls = calls.filter(c => {
+        const date = new Date(c.call_date);
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      });
+      filteredEmails = emails.filter(e => {
+        const date = new Date(e.email_date);
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      });
+      filteredDeals = deals.filter(d => {
+        const date = new Date(d.deal_date);
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      });
+      filteredGoals = goals.filter(g => {
+        const date = new Date(g.completed_at || g.created_at);
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      });
+    } else if (summaryPeriod === 'monthly') {
+      filteredCalls = calls.filter(c => {
+        const date = new Date(c.call_date);
+        const monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
+        return monthsDiff >= 0 && monthsDiff < 12;
+      });
+      filteredEmails = emails.filter(e => {
+        const date = new Date(e.email_date);
+        const monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
+        return monthsDiff >= 0 && monthsDiff < 12;
+      });
+      filteredDeals = deals.filter(d => {
+        const date = new Date(d.deal_date);
+        const monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
+        return monthsDiff >= 0 && monthsDiff < 12;
+      });
+      filteredGoals = goals.filter(g => {
+        const date = new Date(g.completed_at || g.created_at);
+        const monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
+        return monthsDiff >= 0 && monthsDiff < 12;
+      });
+    } else if (summaryPeriod === 'annual') {
+      filteredCalls = calls.filter(c => {
+        const date = new Date(c.call_date);
+        const year = date.getFullYear();
+        return year >= now.getFullYear() - 4 && year <= now.getFullYear();
+      });
+      filteredEmails = emails.filter(e => {
+        const date = new Date(e.email_date);
+        const year = date.getFullYear();
+        return year >= now.getFullYear() - 4 && year <= now.getFullYear();
+      });
+      filteredDeals = deals.filter(d => {
+        const date = new Date(d.deal_date);
+        const year = date.getFullYear();
+        return year >= now.getFullYear() - 4 && year <= now.getFullYear();
+      });
+      filteredGoals = goals.filter(g => {
+        const date = new Date(g.completed_at || g.created_at);
+        const year = date.getFullYear();
+        return year >= now.getFullYear() - 4 && year <= now.getFullYear();
+      });
+    }
+
+    return {
+      calls: filteredCalls.length,
+      emails: filteredEmails.length,
+      deals: filteredDeals.length,
+      goals: filteredGoals.length
+    };
+  };
+
+  const summaryTotals = getSummaryTotals();
+  const totalCalls = summaryTotals.calls;
+  const totalEmails = summaryTotals.emails;
+  const totalDeals = summaryTotals.deals;
+  const totalGoals = summaryTotals.goals;
 
   const getPeriodLabel = () => {
     if (timePeriod === 'daily') {
@@ -298,7 +404,21 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
     return 'Custom range';
   };
 
+  const getSummaryPeriodLabel = () => {
+    if (summaryPeriod === 'daily') {
+      const now = new Date();
+      return now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+    if (summaryPeriod === 'monthly') return 'Last 12 months';
+    if (summaryPeriod === 'annual') return 'Last 5 years';
+    if (summaryPeriod === 'custom' && summaryStartDate && summaryEndDate) {
+      return `${new Date(summaryStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(summaryEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    }
+    return 'Custom range';
+  };
+
   const periodLabel = getPeriodLabel();
+  const summaryPeriodLabel = getSummaryPeriodLabel();
 
   const barsPerGroup = [showCalls, showEmails, showDeals, showGoals].filter(Boolean).length;
   const barWidth = 20;
@@ -470,9 +590,39 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                       style={{ minWidth: `${groupWidth}px`, maxWidth: '100px' }}
                       onClick={() => setSelectedDate(stat.date)}
                     >
-                      <div className="flex items-end justify-center gap-1 w-full" style={{ height: '224px' }}>
+                      <div className="flex items-end justify-center gap-1 w-full relative group/bar" style={{ height: '224px' }}>
+                        <div className="absolute -top-20 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-lg">
+                          <div className="font-semibold mb-1 text-center">{stat.date}</div>
+                          <div className="space-y-0.5">
+                            {showCalls && (
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-green-500 rounded"></div>
+                                <span>Calls: {stat.calls}</span>
+                              </div>
+                            )}
+                            {showEmails && (
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-orange-500 rounded"></div>
+                                <span>Emails: {stat.emails}</span>
+                              </div>
+                            )}
+                            {showDeals && (
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-blue-500 rounded"></div>
+                                <span>Deals: {stat.deals}</span>
+                              </div>
+                            )}
+                            {showGoals && (
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-purple-500 rounded"></div>
+                                <span>Goals: {stat.goals}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
                         {showCalls && (
-                          <div className="relative group" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                          <div style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
                             <div
                               className="bg-green-500 hover:bg-green-600 transition-colors rounded-t"
                               style={{
@@ -481,16 +631,11 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                                 width: `${barWidth}px`
                               }}
                             />
-                            {stat.calls > 0 && (
-                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                {stat.calls}
-                              </div>
-                            )}
                           </div>
                         )}
 
                         {showEmails && (
-                          <div className="relative group" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                          <div style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
                             <div
                               className="bg-orange-500 hover:bg-orange-600 transition-colors rounded-t"
                               style={{
@@ -499,16 +644,11 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                                 width: `${barWidth}px`
                               }}
                             />
-                            {stat.emails > 0 && (
-                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                {stat.emails}
-                              </div>
-                            )}
                           </div>
                         )}
 
                         {showDeals && (
-                          <div className="relative group" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                          <div style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
                             <div
                               className="bg-blue-500 hover:bg-blue-600 transition-colors rounded-t"
                               style={{
@@ -517,16 +657,11 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                                 width: `${barWidth}px`
                               }}
                             />
-                            {stat.deals > 0 && (
-                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                {stat.deals}
-                              </div>
-                            )}
                           </div>
                         )}
 
                         {showGoals && (
-                          <div className="relative group" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                          <div style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
                             <div
                               className="bg-purple-500 hover:bg-purple-600 transition-colors rounded-t"
                               style={{
@@ -535,11 +670,6 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                                 width: `${barWidth}px`
                               }}
                             />
-                            {stat.goals > 0 && (
-                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                {stat.goals}
-                              </div>
-                            )}
                           </div>
                         )}
                       </div>
@@ -556,6 +686,79 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
       </div>
 
       <div className="mt-6 pt-6 border-t border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-md font-semibold text-gray-900">Summary Totals</h4>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSummaryPeriod('daily')}
+              className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
+                summaryPeriod === 'daily'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Day
+            </button>
+            <button
+              onClick={() => setSummaryPeriod('monthly')}
+              className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
+                summaryPeriod === 'monthly'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Month
+            </button>
+            <button
+              onClick={() => setSummaryPeriod('annual')}
+              className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
+                summaryPeriod === 'annual'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Year
+            </button>
+            <button
+              onClick={() => setSummaryPeriod('custom')}
+              className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
+                summaryPeriod === 'custom'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Custom
+            </button>
+          </div>
+        </div>
+
+        {summaryPeriod === 'custom' && (
+          <div className="flex gap-4 items-end mb-4">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={summaryStartDate}
+                onChange={(e) => setSummaryStartDate(e.target.value)}
+                className="w-full px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={summaryEndDate}
+                onChange={(e) => setSummaryEndDate(e.target.value)}
+                className="w-full px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-4 gap-6">
           <div className="bg-green-50 rounded-lg p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
@@ -563,7 +766,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
               <span className="text-sm font-medium text-gray-700">Calls</span>
             </div>
             <div className="text-3xl font-bold text-green-600">{totalCalls}</div>
-            <div className="text-xs text-gray-500 mt-1">{periodLabel}</div>
+            <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
           </div>
 
           <div className="bg-orange-50 rounded-lg p-4 text-center">
@@ -572,7 +775,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
               <span className="text-sm font-medium text-gray-700">Emails</span>
             </div>
             <div className="text-3xl font-bold text-orange-600">{totalEmails}</div>
-            <div className="text-xs text-gray-500 mt-1">{periodLabel}</div>
+            <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
           </div>
 
           <div className="bg-blue-50 rounded-lg p-4 text-center">
@@ -581,7 +784,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
               <span className="text-sm font-medium text-gray-700">Deals</span>
             </div>
             <div className="text-3xl font-bold text-blue-600">{totalDeals}</div>
-            <div className="text-xs text-gray-500 mt-1">{periodLabel}</div>
+            <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
           </div>
 
           <div className="bg-purple-50 rounded-lg p-4 text-center">
@@ -590,7 +793,7 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
               <span className="text-sm font-medium text-gray-700">Goals</span>
             </div>
             <div className="text-3xl font-bold text-purple-600">{totalGoals}</div>
-            <div className="text-xs text-gray-500 mt-1">{periodLabel}</div>
+            <div className="text-xs text-gray-500 mt-1">{summaryPeriodLabel}</div>
           </div>
         </div>
       </div>
