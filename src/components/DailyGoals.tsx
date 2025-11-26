@@ -177,6 +177,26 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
     }
   };
 
+  const markGoalComplete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('daily_goals')
+        .update({ is_active: false })
+        .eq('id', id);
+
+      if (error) throw error;
+      setGoals(goals.filter(g => g.id !== id));
+      setCompletedGoals(prev => new Set(prev).add(id));
+      setInAppNotifications(prev => prev.filter(n => {
+        const goal = goals.find(g => g.id === id);
+        if (!goal) return true;
+        return n.type !== goal.goal_type;
+      }));
+    } catch (error) {
+      console.error('Error marking goal complete:', error);
+    }
+  };
+
   const startEditGoal = (goal: DailyGoal) => {
     setEditingGoal(goal);
     setEditGoalType(goal.goal_type);
@@ -732,14 +752,23 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
                   </div>
                   <div className="flex gap-2">
                     <button
+                      onClick={() => markGoalComplete(goal.id)}
+                      className="text-gray-400 hover:text-green-600 transition-colors"
+                      title="Mark as complete"
+                    >
+                      <CheckCircle size={18} />
+                    </button>
+                    <button
                       onClick={() => startEditGoal(goal)}
                       className="text-gray-400 hover:text-blue-600 transition-colors"
+                      title="Edit goal"
                     >
                       <Edit2 size={18} />
                     </button>
                     <button
                       onClick={() => deleteGoal(goal.id)}
                       className="text-gray-400 hover:text-red-600 transition-colors"
+                      title="Delete goal"
                     >
                       <Trash2 size={18} />
                     </button>
