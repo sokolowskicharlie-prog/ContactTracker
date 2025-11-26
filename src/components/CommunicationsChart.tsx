@@ -22,6 +22,7 @@ interface CommunicationsChartProps {
   onSummaryPeriodChange?: (period: TimePeriod) => void;
   onSummaryStartDateChange?: (date: string) => void;
   onSummaryEndDateChange?: (date: string) => void;
+  hideChartPeriodButtons?: boolean;
 }
 
 type TimePeriod = 'all' | 'daily' | 'monthly' | 'annual' | 'custom';
@@ -37,18 +38,23 @@ export default function CommunicationsChart({
   externalSummaryEndDate,
   onSummaryPeriodChange,
   onSummaryStartDateChange,
-  onSummaryEndDateChange
+  onSummaryEndDateChange,
+  hideChartPeriodButtons = false
 }: CommunicationsChartProps) {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
   const [showCalls, setShowCalls] = useState(true);
   const [showEmails, setShowEmails] = useState(true);
   const [showDeals, setShowDeals] = useState(true);
   const [showGoals, setShowGoals] = useState(true);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [chartHeight, setChartHeight] = useState(224);
   const [showBarNumbers, setShowBarNumbers] = useState(false);
+
+  const timePeriod = externalSummaryPeriod || 'all';
+  const startDate = externalSummaryStartDate || '';
+  const endDate = externalSummaryEndDate || '';
+  const setTimePeriod = onSummaryPeriodChange || (() => {});
+  const setStartDate = onSummaryStartDateChange || (() => {});
+  const setEndDate = onSummaryEndDateChange || (() => {});
 
   const summaryPeriod = externalSummaryPeriod || 'all';
   const summaryStartDate = externalSummaryStartDate || '';
@@ -534,62 +540,64 @@ export default function CommunicationsChart({
             >
               Show Numbers
             </button>
-            <div className="flex gap-2">
-            <button
-              onClick={() => setTimePeriod('all')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                timePeriod === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setTimePeriod('daily')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                timePeriod === 'daily'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Daily
-            </button>
-            <button
-              onClick={() => setTimePeriod('monthly')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                timePeriod === 'monthly'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setTimePeriod('annual')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                timePeriod === 'annual'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Annual
-            </button>
-            <button
-              onClick={() => setTimePeriod('custom')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                timePeriod === 'custom'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Custom
-            </button>
-          </div>
+            {!hideChartPeriodButtons && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setTimePeriod('all')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    timePeriod === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setTimePeriod('daily')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    timePeriod === 'daily'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Daily
+                </button>
+                <button
+                  onClick={() => setTimePeriod('monthly')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    timePeriod === 'monthly'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setTimePeriod('annual')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    timePeriod === 'annual'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Annual
+                </button>
+                <button
+                  onClick={() => setTimePeriod('custom')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    timePeriod === 'custom'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Custom
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {timePeriod === 'custom' && (
+        {timePeriod === 'custom' && !hideChartPeriodButtons && (
           <div className="flex gap-4 items-end">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -337,6 +337,7 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
             onSummaryPeriodChange={setSummaryPeriod}
             onSummaryStartDateChange={setSummaryStartDate}
             onSummaryEndDateChange={setSummaryEndDate}
+            hideChartPeriodButtons={true}
           />
         </div>
 
