@@ -50,6 +50,7 @@ export default function CommunicationsChart({
   const showDeals = externalFilterType ? (externalFilterType === 'all' || externalFilterType === 'deal') : true;
   const showGoals = externalFilterType ? (externalFilterType === 'all' || externalFilterType === 'goal') : true;
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedHour, setSelectedHour] = useState<string | null>(null);
   const [chartHeight, setChartHeight] = useState(224);
   const [showBarNumbers, setShowBarNumbers] = useState(false);
 
@@ -784,7 +785,13 @@ export default function CommunicationsChart({
                       key={index}
                       className="flex flex-col items-center flex-1 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors p-1 relative group"
                       style={{ minWidth: `${groupWidth}px`, maxWidth: '100px' }}
-                      onClick={() => setSelectedDate(stat.date)}
+                      onClick={() => {
+                        if (timePeriod === 'hourly') {
+                          setSelectedHour(stat.date);
+                        } else {
+                          setSelectedDate(stat.date);
+                        }
+                      }}
                     >
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl">
                         <div className="font-semibold mb-1 text-center">{stat.date}</div>
@@ -1319,6 +1326,255 @@ export default function CommunicationsChart({
                     <div className="text-center py-12">
                       <Calendar className="w-16 h-16 mx-auto text-gray-400 mb-3" />
                       <p className="text-gray-500 text-lg">No activity recorded for this date</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {selectedHour && timePeriod === 'hourly' && (() => {
+        const targetDateStr = selectedDay || new Date().toISOString().split('T')[0];
+        const getLocalDateStr = (date: Date) => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+
+        const hourNum = parseInt(selectedHour.split(':')[0]);
+
+        const hourCalls = calls.filter(call => {
+          const date = new Date(call.call_date);
+          const dateStr = getLocalDateStr(date);
+          return dateStr === targetDateStr && date.getHours() === hourNum;
+        });
+
+        const hourEmails = emails.filter(email => {
+          const date = new Date(email.email_date);
+          const dateStr = getLocalDateStr(date);
+          return dateStr === targetDateStr && date.getHours() === hourNum;
+        });
+
+        const hourDeals = deals.filter(deal => {
+          const date = new Date(deal.deal_date);
+          const dateStr = getLocalDateStr(date);
+          return dateStr === targetDateStr && date.getHours() === hourNum;
+        });
+
+        const hourGoals = goals.filter(goal => {
+          const date = new Date(goal.completed_at || goal.created_at);
+          const dateStr = getLocalDateStr(date);
+          return dateStr === targetDateStr && date.getHours() === hourNum;
+        });
+
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-xl flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold">Activity at {selectedHour}</h3>
+                  <p className="text-blue-100 text-sm mt-1">
+                    {new Date(targetDateStr).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedHour(null)}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="space-y-6">
+                  {hourCalls.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <Phone className="w-5 h-5 text-green-600" />
+                        Calls ({hourCalls.length})
+                      </h4>
+                      <div className="text-sm text-gray-600 mb-3 font-medium">
+                        {hourCalls.map(call => contacts.find(c => c.id === call.contact_id)?.name || 'Unknown').join(', ')}
+                      </div>
+                      <div className="space-y-3">
+                        {hourCalls.map(call => (
+                          <div key={call.id} className="bg-green-50 rounded-lg p-4 border border-green-100">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="text-lg font-bold text-gray-900">{contacts.find(c => c.id === call.contact_id)?.name || 'Unknown Contact'}</div>
+                              <div className="flex items-center gap-1 text-sm text-gray-600">
+                                <Clock className="w-4 h-4" />
+                                {new Date(call.call_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                            {call.spoke_with && (
+                              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2 ml-1">
+                                <User className="w-4 h-4" />
+                                <span className="font-medium">Contact Person: {call.spoke_with}</span>
+                              </div>
+                            )}
+                            {call.phone_number && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Phone: {call.phone_number}
+                              </div>
+                            )}
+                            {call.duration && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Duration: {call.duration} minutes
+                              </div>
+                            )}
+                            {call.notes && (
+                              <div className="mt-2 text-sm text-gray-700 bg-white p-2 rounded">
+                                {call.notes}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {hourEmails.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <Mail className="w-5 h-5 text-orange-600" />
+                        Emails ({hourEmails.length})
+                      </h4>
+                      <div className="text-sm text-gray-600 mb-3 font-medium">
+                        {hourEmails.map(email => contacts.find(c => c.id === email.contact_id)?.name || 'Unknown').join(', ')}
+                      </div>
+                      <div className="space-y-3">
+                        {hourEmails.map(email => (
+                          <div key={email.id} className="bg-orange-50 rounded-lg p-4 border border-orange-100">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="text-lg font-bold text-gray-900">{contacts.find(c => c.id === email.contact_id)?.name || 'Unknown Contact'}</div>
+                              <div className="flex items-center gap-1 text-sm text-gray-600">
+                                <Clock className="w-4 h-4" />
+                                {new Date(email.email_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                            {email.emailed_to && (
+                              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2 ml-1">
+                                <User className="w-4 h-4" />
+                                <span className="font-medium">Contact Person: {email.emailed_to}</span>
+                              </div>
+                            )}
+                            {email.subject && (
+                              <div className="text-sm font-medium text-gray-900 mb-1">
+                                Subject: {email.subject}
+                              </div>
+                            )}
+                            {email.email_address && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Email: {email.email_address}
+                              </div>
+                            )}
+                            {email.notes && (
+                              <div className="mt-2 text-sm text-gray-700 bg-white p-2 rounded">
+                                {email.notes}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {hourDeals.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <Fuel className="w-5 h-5 text-blue-600" />
+                        Deals ({hourDeals.length})
+                      </h4>
+                      <div className="text-sm text-gray-600 mb-3 font-medium">
+                        {hourDeals.map(deal => contacts.find(c => c.id === deal.contact_id)?.name || 'Unknown').join(', ')}
+                      </div>
+                      <div className="space-y-3">
+                        {hourDeals.map(deal => (
+                          <div key={deal.id} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="text-lg font-bold text-gray-900">{contacts.find(c => c.id === deal.contact_id)?.name || 'Unknown Contact'}</div>
+                              <div className="flex items-center gap-1 text-sm text-gray-600">
+                                <Clock className="w-4 h-4" />
+                                {new Date(deal.deal_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                            {deal.vessel_name && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Vessel: {deal.vessel_name}
+                              </div>
+                            )}
+                            {deal.fuel_type && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Fuel Type: {deal.fuel_type}
+                              </div>
+                            )}
+                            {deal.fuel_quantity && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Quantity: {deal.fuel_quantity} MT
+                              </div>
+                            )}
+                            {deal.port && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Port: {deal.port}
+                              </div>
+                            )}
+                            {deal.notes && (
+                              <div className="mt-2 text-sm text-gray-700 bg-white p-2 rounded">
+                                {deal.notes}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {hourGoals.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <Target className="w-5 h-5 text-purple-600" />
+                        Goals ({hourGoals.length})
+                      </h4>
+                      <div className="space-y-3">
+                        {hourGoals.map(goal => {
+                          const goalTypeLabel = goal.goal_type === 'calls' ? 'Calls' :
+                                               goal.goal_type === 'emails' ? 'Emails' : 'Deals';
+                          return (
+                            <div key={goal.id} className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="text-lg font-bold text-gray-900">{goalTypeLabel} Goal Completed</div>
+                                <div className="flex items-center gap-1 text-sm text-gray-600">
+                                  <Clock className="w-4 h-4" />
+                                  {new Date(goal.completed_at || goal.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-600 mb-1">
+                                Target: {goal.target_amount} {goalTypeLabel.toLowerCase()}
+                              </div>
+                              <div className="text-sm text-gray-600 mb-1">
+                                Manual Count: {goal.manual_count}
+                              </div>
+                              {goal.notes && (
+                                <div className="mt-2 text-sm text-gray-700 bg-white p-2 rounded">
+                                  {goal.notes}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {hourCalls.length === 0 && hourEmails.length === 0 && hourDeals.length === 0 && hourGoals.length === 0 && (
+                    <div className="text-center py-12">
+                      <div className="text-gray-400 mb-3">
+                        <Calendar className="w-16 h-16 mx-auto" />
+                      </div>
+                      <p className="text-gray-500 text-lg">No activity during this hour</p>
                     </div>
                   )}
                 </div>
