@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Phone, Mail, ArrowLeft, Calendar, Clock, User, MessageSquare, Fuel } from 'lucide-react';
-import { Call, Email, Contact, FuelDeal } from '../lib/supabase';
+import { Phone, Mail, ArrowLeft, Calendar, Clock, User, MessageSquare, Fuel, Target } from 'lucide-react';
+import { Call, Email, Contact, FuelDeal, DailyGoal } from '../lib/supabase';
 import CommunicationsChart from './CommunicationsChart';
 
 interface CommunicationItem {
   id: string;
-  type: 'call' | 'email' | 'deal';
+  type: 'call' | 'email' | 'deal' | 'goal';
   date: string;
-  contact: Contact;
-  details: Call | Email | FuelDeal;
+  contact?: Contact;
+  details: Call | Email | FuelDeal | DailyGoal;
 }
 
 interface CommunicationsHistoryProps {
@@ -16,12 +16,13 @@ interface CommunicationsHistoryProps {
   emails: Email[];
   deals: FuelDeal[];
   contacts: Contact[];
+  completedGoals: DailyGoal[];
   onClose: () => void;
 }
 
-export default function CommunicationsHistory({ calls, emails, deals, contacts, onClose }: CommunicationsHistoryProps) {
+export default function CommunicationsHistory({ calls, emails, deals, contacts, completedGoals, onClose }: CommunicationsHistoryProps) {
   const [items, setItems] = useState<CommunicationItem[]>([]);
-  const [filterType, setFilterType] = useState<'all' | 'call' | 'email' | 'deal'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'call' | 'email' | 'deal' | 'goal'>('all');
 
   useEffect(() => {
     const callItems: CommunicationItem[] = calls.map(call => ({
@@ -48,12 +49,19 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
       details: deal,
     }));
 
-    const combined = [...callItems, ...emailItems, ...dealItems].sort((a, b) =>
+    const goalItems: CommunicationItem[] = completedGoals.map(goal => ({
+      id: goal.id,
+      type: 'goal' as const,
+      date: goal.completed_at || goal.created_at,
+      details: goal,
+    }));
+
+    const combined = [...callItems, ...emailItems, ...dealItems, ...goalItems].sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
     setItems(combined);
-  }, [calls, emails, deals, contacts]);
+  }, [calls, emails, deals, contacts, completedGoals]);
 
   const filteredItems = items.filter(item =>
     filterType === 'all' || item.type === filterType
@@ -137,6 +145,17 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
               <Fuel className="w-4 h-4" />
               Deals ({deals.length})
             </button>
+            <button
+              onClick={() => setFilterType('goal')}
+              className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                filterType === 'goal'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Target className="w-4 h-4" />
+              Goals ({completedGoals.length})
+            </button>
           </div>
 
           <CommunicationsChart calls={calls} emails={emails} deals={deals} />
@@ -152,12 +171,14 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
                   <Mail className="w-16 h-16 mx-auto" />
                 ) : filterType === 'deal' ? (
                   <Fuel className="w-16 h-16 mx-auto" />
+                ) : filterType === 'goal' ? (
+                  <Target className="w-16 h-16 mx-auto" />
                 ) : (
                   <MessageSquare className="w-16 h-16 mx-auto" />
                 )}
               </div>
               <p className="text-gray-500 text-lg">
-                No {filterType === 'all' ? 'communications' : filterType === 'deal' ? 'deals' : filterType + 's'} found
+                No {filterType === 'all' ? 'communications' : filterType === 'deal' ? 'deals' : filterType === 'goal' ? 'goals' : filterType + 's'} found
               </p>
             </div>
           ) : (
@@ -167,7 +188,54 @@ export default function CommunicationsHistory({ calls, emails, deals, contacts, 
                 const isCall = item.type === 'call';
                 const isEmail = item.type === 'email';
                 const isDeal = item.type === 'deal';
-                const details = item.details as (Call | Email | FuelDeal);
+                const isGoal = item.type === 'goal';
+                const details = item.details as (Call | Email | FuelDeal | DailyGoal);
+
+                if (isGoal) {
+                  const goalDetails = details as DailyGoal;
+                  const goalTypeLabel = goalDetails.goal_type === 'calls' ? 'Calls' :
+                                       goalDetails.goal_type === 'emails' ? 'Emails' : 'Deals';
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-white border border-purple-200 rounded-lg p-5 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-lg bg-purple-100">
+                          <Target className="w-5 h-5 text-purple-600" />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-4 mb-3">
+                            <div>
+                              <h3 className="font-semibold text-gray-900 text-lg">
+                                {goalTypeLabel} Goal Completed
+                              </h3>
+                              <p className="text-gray-600 text-sm">Target: {goalDetails.target_amount} {goalDetails.goal_type}</p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="flex items-center gap-1 text-gray-600 text-sm">
+                                <Calendar className="w-4 h-4" />
+                                {date}
+                              </div>
+                              <div className="flex items-center gap-1 text-gray-500 text-sm mt-1">
+                                <Clock className="w-4 h-4" />
+                                {time}
+                              </div>
+                            </div>
+                          </div>
+
+                          {goalDetails.notes && (
+                            <div className="mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
+                              <p className="text-sm text-gray-700 italic">{goalDetails.notes}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
 
                 return (
                   <div

@@ -205,6 +205,7 @@ export type DailyGoal = {
   manual_count: number;
   notes?: string;
   is_active: boolean;
+  completed_at?: string;
   created_at: string;
   updated_at: string;
 };

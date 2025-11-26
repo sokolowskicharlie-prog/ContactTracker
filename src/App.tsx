@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import AuthForm from './components/AuthForm';
-import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, Task, TaskWithRelated, Contact } from './lib/supabase';
+import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, Task, TaskWithRelated, Contact, DailyGoal } from './lib/supabase';
 import { getTimezoneForCountry } from './lib/timezones';
 import * as XLSX from 'xlsx';
 import ContactList from './components/ContactList';
@@ -132,6 +132,7 @@ function App() {
   const [allCalls, setAllCalls] = useState<Call[]>([]);
   const [allEmails, setAllEmails] = useState<Email[]>([]);
   const [allDeals, setAllDeals] = useState<FuelDeal[]>([]);
+  const [completedGoals, setCompletedGoals] = useState<DailyGoal[]>([]);
   const [showButtonOrderSettings, setShowButtonOrderSettings] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
@@ -408,9 +409,19 @@ function App() {
 
       if (tasksError) throw tasksError;
 
+      const { data: completedGoalsData, error: completedGoalsError } = await supabase
+        .from('daily_goals')
+        .select('*')
+        .eq('is_active', false)
+        .not('completed_at', 'is', null)
+        .order('completed_at', { ascending: false });
+
+      if (completedGoalsError) throw completedGoalsError;
+
       setAllCalls(callsData || []);
       setAllEmails(emailsData || []);
       setAllDeals(fuelDealsData || []);
+      setCompletedGoals(completedGoalsData || []);
 
       const now = new Date();
       const contactsWithActivity: ContactWithActivity[] = (contactsData || []).map((contact) => {
@@ -2643,6 +2654,7 @@ function App() {
           emails={allEmails}
           deals={allDeals}
           contacts={contacts}
+          completedGoals={completedGoals}
           onClose={() => setShowCommunicationsHistory(false)}
         />
       )}

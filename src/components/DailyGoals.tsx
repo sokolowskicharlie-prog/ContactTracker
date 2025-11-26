@@ -181,7 +181,10 @@ export default function DailyGoals({ calls, emails, deals }: DailyGoalsProps) {
     try {
       const { error } = await supabase
         .from('daily_goals')
-        .update({ is_active: false })
+        .update({
+          is_active: false,
+          completed_at: new Date().toISOString()
+        })
         .eq('id', id);
 
       if (error) throw error;
