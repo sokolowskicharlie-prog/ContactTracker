@@ -885,10 +885,13 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
                 <div className="space-y-6">
                   {daysCalls.length > 0 && (
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
                         <Phone className="w-5 h-5 text-green-600" />
                         Calls ({daysCalls.length})
                       </h4>
+                      <div className="text-sm text-gray-600 mb-3 font-medium">
+                        {daysCalls.map(call => call.contact_name).join(', ')}
+                      </div>
                       <div className="space-y-3">
                         {daysCalls.map(call => (
                           <div key={call.id} className="bg-green-50 rounded-lg p-4 border border-green-100">
@@ -928,10 +931,13 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
 
                   {daysEmails.length > 0 && (
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
                         <Mail className="w-5 h-5 text-orange-600" />
                         Emails ({daysEmails.length})
                       </h4>
+                      <div className="text-sm text-gray-600 mb-3 font-medium">
+                        {daysEmails.map(email => email.contact_name).join(', ')}
+                      </div>
                       <div className="space-y-3">
                         {daysEmails.map(email => (
                           <div key={email.id} className="bg-orange-50 rounded-lg p-4 border border-orange-100">
@@ -970,10 +976,13 @@ export default function CommunicationsChart({ calls, emails, deals, goals }: Com
 
                   {daysDeals.length > 0 && (
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
                         <Fuel className="w-5 h-5 text-blue-600" />
                         Deals ({daysDeals.length})
                       </h4>
+                      <div className="text-sm text-gray-600 mb-3 font-medium">
+                        {daysDeals.map(deal => deal.contact_name).join(', ')}
+                      </div>
                       <div className="space-y-3">
                         {daysDeals.map(deal => (
                           <div key={deal.id} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
