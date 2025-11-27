@@ -2570,6 +2570,7 @@ function App() {
         <CallModal
           call={editingCall}
           contactName={selectedContact.name}
+          contactPersons={selectedContact.contact_persons}
           onClose={() => {
             setShowCallModal(false);
             setEditingCall(undefined);

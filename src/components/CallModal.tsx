@@ -1,15 +1,16 @@
 import { X, User, Phone } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Call } from '../lib/supabase';
+import { Call, ContactPerson } from '../lib/supabase';
 
 interface CallModalProps {
   call?: Call;
   contactName: string;
+  contactPersons?: ContactPerson[];
   onClose: () => void;
   onSave: (call: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string }) => void;
 }
 
-export default function CallModal({ call, contactName, onClose, onSave }: CallModalProps) {
+export default function CallModal({ call, contactName, contactPersons = [], onClose, onSave }: CallModalProps) {
   const [callDate, setCallDate] = useState(
     new Date().toISOString().slice(0, 16)
   );
@@ -17,6 +18,7 @@ export default function CallModal({ call, contactName, onClose, onSave }: CallMo
   const [spokeWith, setSpokeWith] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [notes, setNotes] = useState('');
+  const [selectedPersonId, setSelectedPersonId] = useState('');
 
   useEffect(() => {
     if (call) {
@@ -90,22 +92,90 @@ export default function CallModal({ call, contactName, onClose, onSave }: CallMo
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Spoke With
             </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                value={spokeWith}
-                onChange={(e) => setSpokeWith(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Name of person"
-              />
-            </div>
+            {contactPersons.length > 0 ? (
+              <div className="space-y-2">
+                <select
+                  value={selectedPersonId}
+                  onChange={(e) => {
+                    const personId = e.target.value;
+                    setSelectedPersonId(personId);
+                    if (personId) {
+                      const person = contactPersons.find(p => p.id === personId);
+                      if (person) {
+                        setSpokeWith(person.name);
+                        const phones = [];
+                        if (person.mobile) phones.push(person.mobile);
+                        if (person.phone) phones.push(person.phone);
+                        if (person.direct_line) phones.push(person.direct_line);
+                        if (phones.length > 0) {
+                          setPhoneNumber(phones[0]);
+                        }
+                      }
+                    } else {
+                      setSpokeWith('');
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select a person or type manually below</option>
+                  {contactPersons.map(person => (
+                    <option key={person.id} value={person.id}>
+                      {person.name}{person.job_title ? ` - ${person.job_title}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    value={spokeWith}
+                    onChange={(e) => {
+                      setSpokeWith(e.target.value);
+                      setSelectedPersonId('');
+                    }}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Or type name manually"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  value={spokeWith}
+                  onChange={(e) => setSpokeWith(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Name of person"
+                />
+              </div>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Phone Number
             </label>
+            {selectedPersonId && (() => {
+              const person = contactPersons.find(p => p.id === selectedPersonId);
+              const phones = [];
+              if (person?.mobile) phones.push({ label: 'Mobile', number: person.mobile });
+              if (person?.phone) phones.push({ label: 'Phone', number: person.phone });
+              if (person?.direct_line) phones.push({ label: 'Direct Line', number: person.direct_line });
+              return phones.length > 1 ? (
+                <select
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2"
+                >
+                  {phones.map((phone, idx) => (
+                    <option key={idx} value={phone.number}>
+                      {phone.label}: {phone.number}
+                    </option>
+                  ))}
+                </select>
+              ) : null;
+            })()}
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
