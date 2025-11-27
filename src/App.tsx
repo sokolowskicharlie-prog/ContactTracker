@@ -2419,6 +2419,7 @@ function App() {
               calls={contacts.flatMap(c => c.calls)}
               emails={contacts.flatMap(c => c.emails)}
               deals={contacts.flatMap(c => c.fuel_deals)}
+              contacts={contacts}
             />
             <TaskList
               tasks={filteredTasks}
