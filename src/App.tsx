@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog } from 'lucide-react';
+import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import AuthForm from './components/AuthForm';
 import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, Task, TaskWithRelated, Contact, DailyGoal } from './lib/supabase';
@@ -31,6 +31,7 @@ import DuplicatesModal from './components/DuplicatesModal';
 import SupplierImportModal from './components/SupplierImportModal';
 import DailyGoals from './components/DailyGoals';
 import GlobalGoalNotifications from './components/GlobalGoalNotifications';
+import GoalProgressBox from './components/GoalProgressBox';
 
 interface NotificationSettings {
   id?: string;
@@ -137,6 +138,10 @@ function App() {
   const [showButtonOrderSettings, setShowButtonOrderSettings] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
+  const [showGoalProgressBox, setShowGoalProgressBox] = useState(() => {
+    const saved = localStorage.getItem('goalProgressBoxVisible');
+    return saved !== null ? saved === 'true' : true;
+  });
   const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'add-contact']);
   const { user, loading: authLoading, signOut } = useAuth();
 
@@ -1808,6 +1813,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <GlobalGoalNotifications />
+      {showGoalProgressBox && <GoalProgressBox />}
       <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -1832,6 +1838,22 @@ function App() {
               </h1>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const newValue = !showGoalProgressBox;
+                  setShowGoalProgressBox(newValue);
+                  localStorage.setItem('goalProgressBoxVisible', String(newValue));
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  showGoalProgressBox
+                    ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                }`}
+                title={showGoalProgressBox ? 'Hide Goals' : 'Show Goals'}
+              >
+                <Target className="w-5 h-5" />
+                <span className="hidden sm:inline">Goals</span>
+              </button>
               <button
                 onClick={() => setShowAccountSettings(true)}
                 className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg transition-colors"
