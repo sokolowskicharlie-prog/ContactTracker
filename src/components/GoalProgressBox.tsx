@@ -176,6 +176,14 @@ export default function GoalProgressBox() {
     }]);
 
     if (!error) {
+      await supabase
+        .from('contacts')
+        .update({
+          last_activity_date: newCall.call_date,
+          last_activity_type: 'call'
+        })
+        .eq('id', newCall.contact_id);
+
       setNewCall({
         contact_id: '',
         call_date: new Date().toISOString(),
@@ -203,6 +211,14 @@ export default function GoalProgressBox() {
     }]);
 
     if (!error) {
+      await supabase
+        .from('contacts')
+        .update({
+          last_activity_date: newEmail.email_date,
+          last_activity_type: 'email'
+        })
+        .eq('id', newEmail.contact_id);
+
       setNewEmail({
         contact_id: '',
         email_date: new Date().toISOString(),
@@ -231,6 +247,14 @@ export default function GoalProgressBox() {
     }]);
 
     if (!error) {
+      await supabase
+        .from('contacts')
+        .update({
+          last_activity_date: newDeal.deal_date,
+          last_activity_type: 'deal'
+        })
+        .eq('id', newDeal.contact_id);
+
       setNewDeal({
         contact_id: '',
         deal_date: new Date().toISOString(),
