@@ -3,7 +3,11 @@ import { Target, ChevronDown, ChevronUp, Phone, Mail, Fuel, Clock, X, User, Cale
 import { supabase, DailyGoal, Call, Email, FuelDeal, Contact, ContactPerson } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
-export default function GoalProgressBox() {
+interface GoalProgressBoxProps {
+  onSelectContact?: (contactId: string) => void;
+}
+
+export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProps) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
@@ -636,9 +640,12 @@ export default function GoalProgressBox() {
                         {goalCalls.map(call => (
                           <div key={call.id} className="bg-green-50 rounded-lg p-4 border border-green-100">
                             <div className="flex items-start justify-between mb-2">
-                              <div className="text-lg font-bold text-gray-900">
+                              <button
+                                onClick={() => onSelectContact?.(call.contact_id)}
+                                className="text-lg font-bold text-gray-900 hover:text-green-700 underline decoration-transparent hover:decoration-green-700 transition-all cursor-pointer text-left"
+                              >
                                 {contacts.find(c => c.id === call.contact_id)?.name || 'Unknown Contact'}
-                              </div>
+                              </button>
                               <div className="flex items-center gap-1 text-sm text-gray-600">
                                 <Clock className="w-4 h-4" />
                                 {new Date(call.call_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -788,9 +795,12 @@ export default function GoalProgressBox() {
                         {goalEmails.map(email => (
                           <div key={email.id} className="bg-orange-50 rounded-lg p-4 border border-orange-100">
                             <div className="flex items-start justify-between mb-2">
-                              <div className="text-lg font-bold text-gray-900">
+                              <button
+                                onClick={() => onSelectContact?.(email.contact_id)}
+                                className="text-lg font-bold text-gray-900 hover:text-orange-700 underline decoration-transparent hover:decoration-orange-700 transition-all cursor-pointer text-left"
+                              >
                                 {contacts.find(c => c.id === email.contact_id)?.name || 'Unknown Contact'}
-                              </div>
+                              </button>
                               <div className="flex items-center gap-1 text-sm text-gray-600">
                                 <Clock className="w-4 h-4" />
                                 {new Date(email.email_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -951,9 +961,12 @@ export default function GoalProgressBox() {
                         {goalDeals.map(deal => (
                           <div key={deal.id} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
                             <div className="flex items-start justify-between mb-2">
-                              <div className="text-lg font-bold text-gray-900">
+                              <button
+                                onClick={() => onSelectContact?.(deal.contact_id)}
+                                className="text-lg font-bold text-gray-900 hover:text-blue-700 underline decoration-transparent hover:decoration-blue-700 transition-all cursor-pointer text-left"
+                              >
                                 {contacts.find(c => c.id === deal.contact_id)?.name || 'Unknown Contact'}
-                              </div>
+                              </button>
                               <div className="flex items-center gap-1 text-sm text-gray-600">
                                 <Clock className="w-4 h-4" />
                                 {new Date(deal.deal_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
