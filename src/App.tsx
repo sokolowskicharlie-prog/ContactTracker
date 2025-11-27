@@ -2481,6 +2481,10 @@ function App() {
             setSelectedContact(undefined);
             loadContacts();
           }}
+          onEdit={() => {
+            setEditingContact(selectedContact);
+            setShowContactModal(true);
+          }}
           onLogCall={() => {
             setEditingCall(undefined);
             setShowCallModal(true);

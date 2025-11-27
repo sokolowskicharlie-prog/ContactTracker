@@ -1,10 +1,11 @@
-import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, Edit2 } from 'lucide-react';
 import { ContactWithActivity, Vessel, FuelDeal, Call, Email, TaskWithRelated } from '../lib/supabase';
 
 interface ContactDetailProps {
   contact: ContactWithActivity;
   tasks: TaskWithRelated[];
   onClose: () => void;
+  onEdit: () => void;
   onLogCall: () => void;
   onLogEmail: () => void;
   onEditCall: (call: Call) => void;
@@ -22,7 +23,7 @@ interface ContactDetailProps {
   onDeleteTask: (taskId: string) => void;
 }
 
-export default function ContactDetail({ contact, tasks, onClose, onLogCall, onLogEmail, onEditCall, onEditEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask }: ContactDetailProps) {
+export default function ContactDetail({ contact, tasks, onClose, onEdit, onLogCall, onLogEmail, onEditCall, onEditEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask }: ContactDetailProps) {
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       month: 'short',
@@ -86,7 +87,16 @@ export default function ContactDetail({ contact, tasks, onClose, onLogCall, onLo
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex-1">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">{contact.name}</h2>
+            <div className="flex items-center gap-3 mb-3">
+              <h2 className="text-2xl font-semibold text-gray-900">{contact.name}</h2>
+              <button
+                onClick={onEdit}
+                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                title="Edit contact"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={() => onUpdateStatus('has_traction', !contact.has_traction)}
