@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Target, Plus, Trash2, Bell, BellOff, Clock, TrendingUp, TrendingDown, Minus, CheckCircle, Edit2, X, Phone, Mail, Fuel, User, Calendar } from 'lucide-react';
-import { supabase, DailyGoal, GoalNotificationSettings, Call, Email, FuelDeal, Contact } from '../lib/supabase';
+import { supabase, DailyGoal, GoalNotificationSettings, Call, Email, FuelDeal, Contact, ContactPerson } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
 interface DailyGoalsProps {
@@ -50,11 +50,42 @@ export default function DailyGoals({ calls, emails, deals, contacts = [] }: Dail
   const [completedGoals, setCompletedGoals] = useState<Set<string>>(new Set());
   const [motivationalMessages, setMotivationalMessages] = useState<Array<{id: string; message: string; type: 'success' | 'warning' | 'info'}>>([]);
   const [selectedGoal, setSelectedGoal] = useState<DailyGoal | null>(null);
+  const [showAddActivityForGoal, setShowAddActivityForGoal] = useState<string | null>(null);
+  const [contactPersons, setContactPersons] = useState<ContactPerson[]>([]);
+
+  const [newCall, setNewCall] = useState({
+    contact_id: '',
+    call_date: new Date().toISOString(),
+    spoke_with: '',
+    phone_number: '',
+    duration: '',
+    notes: ''
+  });
+
+  const [newEmail, setNewEmail] = useState({
+    contact_id: '',
+    email_date: new Date().toISOString(),
+    emailed_to: '',
+    email_address: '',
+    subject: '',
+    notes: ''
+  });
+
+  const [newDeal, setNewDeal] = useState({
+    contact_id: '',
+    deal_date: new Date().toISOString(),
+    vessel_name: '',
+    fuel_type: '',
+    fuel_quantity: '',
+    port: '',
+    notes: ''
+  });
 
   useEffect(() => {
     if (user) {
       loadGoals();
       loadSettings();
+      loadContactPersons();
     }
   }, [user]);
 
@@ -136,6 +167,99 @@ export default function DailyGoals({ calls, emails, deals, contacts = [] }: Dail
       }
     } catch (error) {
       console.error('Error loading settings:', error);
+    }
+  };
+
+  const loadContactPersons = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('contact_persons')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (!error) {
+      setContactPersons(data || []);
+    }
+  };
+
+  const handleAddCall = async (goalId: string) => {
+    if (!user || !newCall.contact_id) return;
+
+    const { error } = await supabase.from('calls').insert([{
+      user_id: user.id,
+      contact_id: newCall.contact_id,
+      call_date: newCall.call_date,
+      spoke_with: newCall.spoke_with || null,
+      phone_number: newCall.phone_number || null,
+      duration: newCall.duration ? parseInt(newCall.duration) : null,
+      notes: newCall.notes || null
+    }]);
+
+    if (!error) {
+      setNewCall({
+        contact_id: '',
+        call_date: new Date().toISOString(),
+        spoke_with: '',
+        phone_number: '',
+        duration: '',
+        notes: ''
+      });
+      setShowAddActivityForGoal(null);
+    }
+  };
+
+  const handleAddEmail = async (goalId: string) => {
+    if (!user || !newEmail.contact_id) return;
+
+    const { error } = await supabase.from('emails').insert([{
+      user_id: user.id,
+      contact_id: newEmail.contact_id,
+      email_date: newEmail.email_date,
+      emailed_to: newEmail.emailed_to || null,
+      email_address: newEmail.email_address || null,
+      subject: newEmail.subject || null,
+      notes: newEmail.notes || null
+    }]);
+
+    if (!error) {
+      setNewEmail({
+        contact_id: '',
+        email_date: new Date().toISOString(),
+        emailed_to: '',
+        email_address: '',
+        subject: '',
+        notes: ''
+      });
+      setShowAddActivityForGoal(null);
+    }
+  };
+
+  const handleAddDeal = async (goalId: string) => {
+    if (!user || !newDeal.contact_id) return;
+
+    const { error } = await supabase.from('fuel_deals').insert([{
+      user_id: user.id,
+      contact_id: newDeal.contact_id,
+      deal_date: newDeal.deal_date,
+      vessel_name: newDeal.vessel_name || null,
+      fuel_type: newDeal.fuel_type || null,
+      fuel_quantity: newDeal.fuel_quantity ? parseFloat(newDeal.fuel_quantity) : null,
+      port: newDeal.port || null,
+      notes: newDeal.notes || null
+    }]);
+
+    if (!error) {
+      setNewDeal({
+        contact_id: '',
+        deal_date: new Date().toISOString(),
+        vessel_name: '',
+        fuel_type: '',
+        fuel_quantity: '',
+        port: '',
+        notes: ''
+      });
+      setShowAddActivityForGoal(null);
     }
   };
 
@@ -816,9 +940,9 @@ export default function DailyGoals({ calls, emails, deals, contacts = [] }: Dail
                         <Minus size={14} className="text-gray-700" />
                       </button>
                       <button
-                        onClick={() => updateManualCount(goal.id, 1)}
+                        onClick={() => setShowAddActivityForGoal(showAddActivityForGoal === goal.id ? null : goal.id)}
                         className="p-1 rounded bg-purple-100 hover:bg-purple-200 transition-colors"
-                        title="Increase manual count"
+                        title="Add activity"
                       >
                         <Plus size={14} className="text-purple-700" />
                       </button>
@@ -875,6 +999,275 @@ export default function DailyGoals({ calls, emails, deals, contacts = [] }: Dail
                   {goal.notes && (
                     <div className="mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
                       <p className="text-xs text-gray-700 italic">{goal.notes}</p>
+                    </div>
+                  )}
+
+                  {showAddActivityForGoal === goal.id && (
+                    <div className="mt-4 p-4 bg-white rounded-lg border-2 border-purple-300 shadow-sm">
+                      {goal.goal_type === 'calls' && (
+                        <>
+                          <h5 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-green-600" />
+                            Add New Call
+                          </h5>
+                          <div className="space-y-2">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Contact *</label>
+                              <select
+                                value={newCall.contact_id}
+                                onChange={(e) => setNewCall({ ...newCall, contact_id: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                required
+                              >
+                                <option value="">Select a contact</option>
+                                {contacts.map(contact => (
+                                  <option key={contact.id} value={contact.id}>{contact.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Contact Person</label>
+                              <select
+                                value={newCall.spoke_with}
+                                onChange={(e) => setNewCall({ ...newCall, spoke_with: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                              >
+                                <option value="">Select contact person (optional)</option>
+                                {newCall.contact_id && contactPersons
+                                  .filter(cp => cp.contact_id === newCall.contact_id)
+                                  .map(cp => (
+                                    <option key={cp.id} value={cp.name}>{cp.name}</option>
+                                  ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number</label>
+                              <input
+                                type="text"
+                                value={newCall.phone_number}
+                                onChange={(e) => setNewCall({ ...newCall, phone_number: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Phone number"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Duration (min)</label>
+                              <input
+                                type="number"
+                                value={newCall.duration}
+                                onChange={(e) => setNewCall({ ...newCall, duration: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Minutes"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+                              <textarea
+                                value={newCall.notes}
+                                onChange={(e) => setNewCall({ ...newCall, notes: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                rows={2}
+                                placeholder="Call notes"
+                              />
+                            </div>
+                            <div className="flex gap-2 mt-3">
+                              <button
+                                onClick={() => handleAddCall(goal.id)}
+                                disabled={!newCall.contact_id}
+                                className="flex-1 bg-green-600 text-white px-3 py-1.5 text-sm rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                              >
+                                Save Call
+                              </button>
+                              <button
+                                onClick={() => setShowAddActivityForGoal(null)}
+                                className="flex-1 bg-gray-200 text-gray-700 px-3 py-1.5 text-sm rounded-lg hover:bg-gray-300 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {goal.goal_type === 'emails' && (
+                        <>
+                          <h5 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-orange-600" />
+                            Add New Email
+                          </h5>
+                          <div className="space-y-2">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Contact *</label>
+                              <select
+                                value={newEmail.contact_id}
+                                onChange={(e) => setNewEmail({ ...newEmail, contact_id: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                required
+                              >
+                                <option value="">Select a contact</option>
+                                {contacts.map(contact => (
+                                  <option key={contact.id} value={contact.id}>{contact.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Contact Person</label>
+                              <select
+                                value={newEmail.emailed_to}
+                                onChange={(e) => setNewEmail({ ...newEmail, emailed_to: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                              >
+                                <option value="">Select contact person (optional)</option>
+                                {newEmail.contact_id && contactPersons
+                                  .filter(cp => cp.contact_id === newEmail.contact_id)
+                                  .map(cp => (
+                                    <option key={cp.id} value={cp.name}>{cp.name}</option>
+                                  ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Email Address</label>
+                              <input
+                                type="email"
+                                value={newEmail.email_address}
+                                onChange={(e) => setNewEmail({ ...newEmail, email_address: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                placeholder="email@example.com"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Subject</label>
+                              <input
+                                type="text"
+                                value={newEmail.subject}
+                                onChange={(e) => setNewEmail({ ...newEmail, subject: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                placeholder="Subject"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+                              <textarea
+                                value={newEmail.notes}
+                                onChange={(e) => setNewEmail({ ...newEmail, notes: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                rows={2}
+                                placeholder="Email notes"
+                              />
+                            </div>
+                            <div className="flex gap-2 mt-3">
+                              <button
+                                onClick={() => handleAddEmail(goal.id)}
+                                disabled={!newEmail.contact_id}
+                                className="flex-1 bg-orange-600 text-white px-3 py-1.5 text-sm rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                              >
+                                Save Email
+                              </button>
+                              <button
+                                onClick={() => setShowAddActivityForGoal(null)}
+                                className="flex-1 bg-gray-200 text-gray-700 px-3 py-1.5 text-sm rounded-lg hover:bg-gray-300 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {goal.goal_type === 'deals' && (
+                        <>
+                          <h5 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <Fuel className="w-4 h-4 text-blue-600" />
+                            Add New Deal
+                          </h5>
+                          <div className="space-y-2">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Contact *</label>
+                              <select
+                                value={newDeal.contact_id}
+                                onChange={(e) => setNewDeal({ ...newDeal, contact_id: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required
+                              >
+                                <option value="">Select a contact</option>
+                                {contacts.map(contact => (
+                                  <option key={contact.id} value={contact.id}>{contact.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Vessel Name</label>
+                              <input
+                                type="text"
+                                value={newDeal.vessel_name}
+                                onChange={(e) => setNewDeal({ ...newDeal, vessel_name: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Vessel name"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Fuel Type</label>
+                              <select
+                                value={newDeal.fuel_type}
+                                onChange={(e) => setNewDeal({ ...newDeal, fuel_type: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              >
+                                <option value="">Select type</option>
+                                <option value="MGO">MGO</option>
+                                <option value="VLSFO">VLSFO</option>
+                                <option value="LSMGO">LSMGO</option>
+                                <option value="HFO">HFO</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Quantity (MT)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={newDeal.fuel_quantity}
+                                onChange={(e) => setNewDeal({ ...newDeal, fuel_quantity: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Quantity"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Port</label>
+                              <input
+                                type="text"
+                                value={newDeal.port}
+                                onChange={(e) => setNewDeal({ ...newDeal, port: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Port name"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+                              <textarea
+                                value={newDeal.notes}
+                                onChange={(e) => setNewDeal({ ...newDeal, notes: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                rows={2}
+                                placeholder="Deal notes"
+                              />
+                            </div>
+                            <div className="flex gap-2 mt-3">
+                              <button
+                                onClick={() => handleAddDeal(goal.id)}
+                                disabled={!newDeal.contact_id}
+                                className="flex-1 bg-blue-600 text-white px-3 py-1.5 text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                              >
+                                Save Deal
+                              </button>
+                              <button
+                                onClick={() => setShowAddActivityForGoal(null)}
+                                className="flex-1 bg-gray-200 text-gray-700 px-3 py-1.5 text-sm rounded-lg hover:bg-gray-300 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
