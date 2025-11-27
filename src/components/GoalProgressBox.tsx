@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Target, ChevronDown, ChevronUp, Phone, Mail, Fuel, Clock, X, User, Calendar } from 'lucide-react';
-import { supabase, DailyGoal, Call, Email, FuelDeal, Contact } from '../lib/supabase';
+import { Target, ChevronDown, ChevronUp, Phone, Mail, Fuel, Clock, X, User, Calendar, Plus } from 'lucide-react';
+import { supabase, DailyGoal, Call, Email, FuelDeal, Contact, ContactPerson } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
 export default function GoalProgressBox() {
@@ -10,14 +10,45 @@ export default function GoalProgressBox() {
   const [emails, setEmails] = useState<Email[]>([]);
   const [deals, setDeals] = useState<FuelDeal[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contactPersons, setContactPersons] = useState<ContactPerson[]>([]);
   const [isExpanded, setIsExpanded] = useState(true);
   const [selectedGoal, setSelectedGoal] = useState<DailyGoal | null>(null);
+  const [showAddActivity, setShowAddActivity] = useState(false);
+
+  const [newCall, setNewCall] = useState({
+    contact_id: '',
+    call_date: new Date().toISOString(),
+    spoke_with: '',
+    phone_number: '',
+    duration: '',
+    notes: ''
+  });
+
+  const [newEmail, setNewEmail] = useState({
+    contact_id: '',
+    email_date: new Date().toISOString(),
+    emailed_to: '',
+    email_address: '',
+    subject: '',
+    notes: ''
+  });
+
+  const [newDeal, setNewDeal] = useState({
+    contact_id: '',
+    deal_date: new Date().toISOString(),
+    vessel_name: '',
+    fuel_type: '',
+    fuel_quantity: '',
+    port: '',
+    notes: ''
+  });
 
   useEffect(() => {
     if (user) {
       loadGoals();
       loadActivities();
       loadContacts();
+      loadContactPersons();
 
       const callsSubscription = supabase
         .channel('calls_progress')
@@ -115,6 +146,102 @@ export default function GoalProgressBox() {
 
     if (!error) {
       setContacts(data || []);
+    }
+  };
+
+  const loadContactPersons = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('contact_persons')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (!error) {
+      setContactPersons(data || []);
+    }
+  };
+
+  const handleAddCall = async () => {
+    if (!user || !selectedGoal || !newCall.contact_id) return;
+
+    const { error } = await supabase.from('calls').insert([{
+      user_id: user.id,
+      contact_id: newCall.contact_id,
+      call_date: newCall.call_date,
+      spoke_with: newCall.spoke_with || null,
+      phone_number: newCall.phone_number || null,
+      duration: newCall.duration ? parseInt(newCall.duration) : null,
+      notes: newCall.notes || null
+    }]);
+
+    if (!error) {
+      setNewCall({
+        contact_id: '',
+        call_date: new Date().toISOString(),
+        spoke_with: '',
+        phone_number: '',
+        duration: '',
+        notes: ''
+      });
+      setShowAddActivity(false);
+      loadActivities();
+    }
+  };
+
+  const handleAddEmail = async () => {
+    if (!user || !selectedGoal || !newEmail.contact_id) return;
+
+    const { error } = await supabase.from('emails').insert([{
+      user_id: user.id,
+      contact_id: newEmail.contact_id,
+      email_date: newEmail.email_date,
+      emailed_to: newEmail.emailed_to || null,
+      email_address: newEmail.email_address || null,
+      subject: newEmail.subject || null,
+      notes: newEmail.notes || null
+    }]);
+
+    if (!error) {
+      setNewEmail({
+        contact_id: '',
+        email_date: new Date().toISOString(),
+        emailed_to: '',
+        email_address: '',
+        subject: '',
+        notes: ''
+      });
+      setShowAddActivity(false);
+      loadActivities();
+    }
+  };
+
+  const handleAddDeal = async () => {
+    if (!user || !selectedGoal || !newDeal.contact_id) return;
+
+    const { error } = await supabase.from('fuel_deals').insert([{
+      user_id: user.id,
+      contact_id: newDeal.contact_id,
+      deal_date: newDeal.deal_date,
+      vessel_name: newDeal.vessel_name || null,
+      fuel_type: newDeal.fuel_type || null,
+      fuel_quantity: newDeal.fuel_quantity ? parseFloat(newDeal.fuel_quantity) : null,
+      port: newDeal.port || null,
+      notes: newDeal.notes || null
+    }]);
+
+    if (!error) {
+      setNewDeal({
+        contact_id: '',
+        deal_date: new Date().toISOString(),
+        vessel_name: '',
+        fuel_type: '',
+        fuel_quantity: '',
+        port: '',
+        notes: ''
+      });
+      setShowAddActivity(false);
+      loadActivities();
     }
   };
 
@@ -368,12 +495,119 @@ export default function GoalProgressBox() {
                 </div>
 
                 <div className="space-y-6">
-                  {selectedGoal.goal_type === 'calls' && goalCalls.length > 0 && (
+                  {selectedGoal.goal_type === 'calls' && (
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Phone className="w-5 h-5 text-green-600" />
-                        Calls Made ({goalCalls.length})
-                      </h4>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                          <Phone className="w-5 h-5 text-green-600" />
+                          Calls Made ({goalCalls.length})
+                        </h4>
+                        <button
+                          onClick={() => setShowAddActivity(!showAddActivity)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Call
+                        </button>
+                      </div>
+
+                      {showAddActivity && selectedGoal.goal_type === 'calls' && (
+                        <div className="mb-4 p-4 bg-white rounded-lg border-2 border-green-300 shadow-sm">
+                          <h5 className="font-semibold text-gray-900 mb-3">Add New Call</h5>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Contact *</label>
+                              <select
+                                value={newCall.contact_id}
+                                onChange={(e) => setNewCall({ ...newCall, contact_id: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                required
+                              >
+                                <option value="">Select a contact</option>
+                                {contacts.map(contact => (
+                                  <option key={contact.id} value={contact.id}>{contact.name}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+                              <input
+                                type="datetime-local"
+                                value={newCall.call_date.slice(0, 16)}
+                                onChange={(e) => setNewCall({ ...newCall, call_date: new Date(e.target.value).toISOString() })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                              <select
+                                value={newCall.spoke_with}
+                                onChange={(e) => setNewCall({ ...newCall, spoke_with: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                              >
+                                <option value="">Select contact person (optional)</option>
+                                {newCall.contact_id && contactPersons
+                                  .filter(cp => cp.contact_id === newCall.contact_id)
+                                  .map(cp => (
+                                    <option key={cp.id} value={cp.name}>{cp.name}</option>
+                                  ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                              <input
+                                type="text"
+                                value={newCall.phone_number}
+                                onChange={(e) => setNewCall({ ...newCall, phone_number: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Phone number"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+                              <input
+                                type="number"
+                                value={newCall.duration}
+                                onChange={(e) => setNewCall({ ...newCall, duration: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Duration in minutes"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                              <textarea
+                                value={newCall.notes}
+                                onChange={(e) => setNewCall({ ...newCall, notes: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                rows={3}
+                                placeholder="Call notes"
+                              />
+                            </div>
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleAddCall}
+                                disabled={!newCall.contact_id}
+                                className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                              >
+                                Save Call
+                              </button>
+                              <button
+                                onClick={() => setShowAddActivity(false)}
+                                className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="space-y-3">
                         {goalCalls.map(call => (
                           <div key={call.id} className="bg-green-50 rounded-lg p-4 border border-green-100">
@@ -413,12 +647,119 @@ export default function GoalProgressBox() {
                     </div>
                   )}
 
-                  {selectedGoal.goal_type === 'emails' && goalEmails.length > 0 && (
+                  {selectedGoal.goal_type === 'emails' && (
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Mail className="w-5 h-5 text-orange-600" />
-                        Emails Sent ({goalEmails.length})
-                      </h4>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                          <Mail className="w-5 h-5 text-orange-600" />
+                          Emails Sent ({goalEmails.length})
+                        </h4>
+                        <button
+                          onClick={() => setShowAddActivity(!showAddActivity)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Email
+                        </button>
+                      </div>
+
+                      {showAddActivity && selectedGoal.goal_type === 'emails' && (
+                        <div className="mb-4 p-4 bg-white rounded-lg border-2 border-orange-300 shadow-sm">
+                          <h5 className="font-semibold text-gray-900 mb-3">Add New Email</h5>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Contact *</label>
+                              <select
+                                value={newEmail.contact_id}
+                                onChange={(e) => setNewEmail({ ...newEmail, contact_id: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                required
+                              >
+                                <option value="">Select a contact</option>
+                                {contacts.map(contact => (
+                                  <option key={contact.id} value={contact.id}>{contact.name}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+                              <input
+                                type="datetime-local"
+                                value={newEmail.email_date.slice(0, 16)}
+                                onChange={(e) => setNewEmail({ ...newEmail, email_date: new Date(e.target.value).toISOString() })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                              <select
+                                value={newEmail.emailed_to}
+                                onChange={(e) => setNewEmail({ ...newEmail, emailed_to: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                              >
+                                <option value="">Select contact person (optional)</option>
+                                {newEmail.contact_id && contactPersons
+                                  .filter(cp => cp.contact_id === newEmail.contact_id)
+                                  .map(cp => (
+                                    <option key={cp.id} value={cp.name}>{cp.name}</option>
+                                  ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                              <input
+                                type="email"
+                                value={newEmail.email_address}
+                                onChange={(e) => setNewEmail({ ...newEmail, email_address: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                placeholder="email@example.com"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                              <input
+                                type="text"
+                                value={newEmail.subject}
+                                onChange={(e) => setNewEmail({ ...newEmail, subject: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                placeholder="Email subject"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                              <textarea
+                                value={newEmail.notes}
+                                onChange={(e) => setNewEmail({ ...newEmail, notes: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                rows={3}
+                                placeholder="Email notes"
+                              />
+                            </div>
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleAddEmail}
+                                disabled={!newEmail.contact_id}
+                                className="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                              >
+                                Save Email
+                              </button>
+                              <button
+                                onClick={() => setShowAddActivity(false)}
+                                className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="space-y-3">
                         {goalEmails.map(email => (
                           <div key={email.id} className="bg-orange-50 rounded-lg p-4 border border-orange-100">
@@ -458,12 +799,130 @@ export default function GoalProgressBox() {
                     </div>
                   )}
 
-                  {selectedGoal.goal_type === 'deals' && goalDeals.length > 0 && (
+                  {selectedGoal.goal_type === 'deals' && (
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Fuel className="w-5 h-5 text-blue-600" />
-                        Deals Closed ({goalDeals.length})
-                      </h4>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                          <Fuel className="w-5 h-5 text-blue-600" />
+                          Deals Closed ({goalDeals.length})
+                        </h4>
+                        <button
+                          onClick={() => setShowAddActivity(!showAddActivity)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Deal
+                        </button>
+                      </div>
+
+                      {showAddActivity && selectedGoal.goal_type === 'deals' && (
+                        <div className="mb-4 p-4 bg-white rounded-lg border-2 border-blue-300 shadow-sm">
+                          <h5 className="font-semibold text-gray-900 mb-3">Add New Deal</h5>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Contact *</label>
+                              <select
+                                value={newDeal.contact_id}
+                                onChange={(e) => setNewDeal({ ...newDeal, contact_id: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required
+                              >
+                                <option value="">Select a contact</option>
+                                {contacts.map(contact => (
+                                  <option key={contact.id} value={contact.id}>{contact.name}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+                              <input
+                                type="datetime-local"
+                                value={newDeal.deal_date.slice(0, 16)}
+                                onChange={(e) => setNewDeal({ ...newDeal, deal_date: new Date(e.target.value).toISOString() })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Vessel Name</label>
+                              <input
+                                type="text"
+                                value={newDeal.vessel_name}
+                                onChange={(e) => setNewDeal({ ...newDeal, vessel_name: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Vessel name"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Fuel Type</label>
+                              <select
+                                value={newDeal.fuel_type}
+                                onChange={(e) => setNewDeal({ ...newDeal, fuel_type: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              >
+                                <option value="">Select fuel type</option>
+                                <option value="MGO">MGO</option>
+                                <option value="VLSFO">VLSFO</option>
+                                <option value="LSMGO">LSMGO</option>
+                                <option value="HFO">HFO</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Quantity (MT)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={newDeal.fuel_quantity}
+                                onChange={(e) => setNewDeal({ ...newDeal, fuel_quantity: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Quantity in metric tons"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Port</label>
+                              <input
+                                type="text"
+                                value={newDeal.port}
+                                onChange={(e) => setNewDeal({ ...newDeal, port: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Port name"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                              <textarea
+                                value={newDeal.notes}
+                                onChange={(e) => setNewDeal({ ...newDeal, notes: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                rows={3}
+                                placeholder="Deal notes"
+                              />
+                            </div>
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleAddDeal}
+                                disabled={!newDeal.contact_id}
+                                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                              >
+                                Save Deal
+                              </button>
+                              <button
+                                onClick={() => setShowAddActivity(false)}
+                                className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="space-y-3">
                         {goalDeals.map(deal => (
                           <div key={deal.id} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
