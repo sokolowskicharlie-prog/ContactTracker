@@ -1205,6 +1205,42 @@ function App() {
     }
   };
 
+  const handleDeleteCall = async (callId: string) => {
+    try {
+      const { error } = await supabase.from('calls').delete().eq('id', callId);
+
+      if (error) throw error;
+      await loadContacts();
+
+      if (selectedContact) {
+        const updatedContact = contacts.find(c => c.id === selectedContact.id);
+        if (updatedContact) {
+          setSelectedContact(updatedContact);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting call:', error);
+    }
+  };
+
+  const handleDeleteEmail = async (emailId: string) => {
+    try {
+      const { error } = await supabase.from('emails').delete().eq('id', emailId);
+
+      if (error) throw error;
+      await loadContacts();
+
+      if (selectedContact) {
+        const updatedContact = contacts.find(c => c.id === selectedContact.id);
+        if (updatedContact) {
+          setSelectedContact(updatedContact);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting email:', error);
+    }
+  };
+
   const handleSaveFuelDeal = async (dealData: Partial<FuelDeal>) => {
     if (!selectedContact) return;
 
@@ -2528,6 +2564,8 @@ function App() {
             setEditingEmail(email);
             setShowEmailModal(true);
           }}
+          onDeleteCall={handleDeleteCall}
+          onDeleteEmail={handleDeleteEmail}
           onAddVessel={() => {
             setEditingVessel(undefined);
             setShowVesselModal(true);

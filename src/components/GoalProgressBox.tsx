@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, ChevronDown, ChevronUp, Phone, Mail, Fuel, Clock, X, User, Calendar, Plus } from 'lucide-react';
+import { Target, ChevronDown, ChevronUp, Phone, Mail, Fuel, Clock, X, User, Calendar, Plus, Trash2 } from 'lucide-react';
 import { supabase, DailyGoal, Call, Email, FuelDeal, Contact, ContactPerson } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
@@ -506,12 +506,27 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedGoal(null)}
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async () => {
+                      if (confirm('Are you sure you want to delete this goal?')) {
+                        await supabase.from('daily_goals').delete().eq('id', selectedGoal.id);
+                        setSelectedGoal(null);
+                        loadGoals();
+                      }
+                    }}
+                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                    title="Delete goal"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setSelectedGoal(null)}
+                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6">
@@ -741,9 +756,23 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                               >
                                 {contacts.find(c => c.id === call.contact_id)?.name || 'Unknown Contact'}
                               </button>
-                              <div className="flex items-center gap-1 text-sm text-gray-600">
-                                <Clock className="w-4 h-4" />
-                                {new Date(call.call_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 text-sm text-gray-600">
+                                  <Clock className="w-4 h-4" />
+                                  {new Date(call.call_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm('Are you sure you want to delete this call?')) {
+                                      await supabase.from('calls').delete().eq('id', call.id);
+                                      loadActivities();
+                                    }
+                                  }}
+                                  className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                  title="Delete call"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </div>
                             </div>
                             {call.spoke_with && (
@@ -896,9 +925,23 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                               >
                                 {contacts.find(c => c.id === email.contact_id)?.name || 'Unknown Contact'}
                               </button>
-                              <div className="flex items-center gap-1 text-sm text-gray-600">
-                                <Clock className="w-4 h-4" />
-                                {new Date(email.email_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 text-sm text-gray-600">
+                                  <Clock className="w-4 h-4" />
+                                  {new Date(email.email_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm('Are you sure you want to delete this email?')) {
+                                      await supabase.from('emails').delete().eq('id', email.id);
+                                      loadActivities();
+                                    }
+                                  }}
+                                  className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                  title="Delete email"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </div>
                             </div>
                             {email.emailed_to && (
@@ -1062,9 +1105,23 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                               >
                                 {contacts.find(c => c.id === deal.contact_id)?.name || 'Unknown Contact'}
                               </button>
-                              <div className="flex items-center gap-1 text-sm text-gray-600">
-                                <Clock className="w-4 h-4" />
-                                {new Date(deal.deal_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 text-sm text-gray-600">
+                                  <Clock className="w-4 h-4" />
+                                  {new Date(deal.deal_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm('Are you sure you want to delete this deal?')) {
+                                      await supabase.from('fuel_deals').delete().eq('id', deal.id);
+                                      loadActivities();
+                                    }
+                                  }}
+                                  className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                  title="Delete deal"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </div>
                             </div>
                             {deal.vessel_name && (

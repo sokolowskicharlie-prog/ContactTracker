@@ -10,6 +10,8 @@ interface ContactDetailProps {
   onLogEmail: () => void;
   onEditCall: (call: Call) => void;
   onEditEmail: (email: Email) => void;
+  onDeleteCall: (callId: string) => void;
+  onDeleteEmail: (emailId: string) => void;
   onAddVessel: () => void;
   onEditVessel: (vessel: Vessel) => void;
   onDeleteVessel: (vesselId: string) => void;
@@ -23,7 +25,7 @@ interface ContactDetailProps {
   onDeleteTask: (taskId: string) => void;
 }
 
-export default function ContactDetail({ contact, tasks, onClose, onEdit, onLogCall, onLogEmail, onEditCall, onEditEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask }: ContactDetailProps) {
+export default function ContactDetail({ contact, tasks, onClose, onEdit, onLogCall, onLogEmail, onEditCall, onEditEmail, onDeleteCall, onDeleteEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask }: ContactDetailProps) {
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       month: 'short',
@@ -665,6 +667,17 @@ export default function ContactDetail({ contact, tasks, onClose, onEdit, onLogCa
                           >
                             <Edit className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => {
+                              if (confirm('Are you sure you want to delete this call?')) {
+                                onDeleteCall(call.id);
+                              }
+                            }}
+                            className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Delete call"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                       {(call.spoke_with || call.phone_number) && (
@@ -725,13 +738,26 @@ export default function ContactDetail({ contact, tasks, onClose, onEdit, onLogCa
                             <Calendar className="w-4 h-4 mr-2" />
                             {formatDateTime(email.email_date)}
                           </div>
-                          <button
-                            onClick={() => onEditEmail(email)}
-                            className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="Edit email"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => onEditEmail(email)}
+                              className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              title="Edit email"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm('Are you sure you want to delete this email?')) {
+                                  onDeleteEmail(email.id);
+                                }
+                              }}
+                              className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                              title="Delete email"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                         {email.subject && (
                           <p className="text-gray-900 font-medium text-sm mb-1">{email.subject}</p>
