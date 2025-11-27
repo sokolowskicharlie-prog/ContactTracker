@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, ChevronDown, ChevronUp, Phone, Mail, Fuel, Clock, X, User, Calendar, Plus, Trash2 } from 'lucide-react';
+import { Target, ChevronDown, ChevronUp, Phone, Mail, Fuel, Clock, X, User, Calendar, Plus, Trash2, Edit2 } from 'lucide-react';
 import { supabase, DailyGoal, Call, Email, FuelDeal, Contact, ContactPerson } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
@@ -18,6 +18,9 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
   const [isExpanded, setIsExpanded] = useState(true);
   const [selectedGoal, setSelectedGoal] = useState<DailyGoal | null>(null);
   const [showAddActivity, setShowAddActivity] = useState(false);
+  const [editingCall, setEditingCall] = useState<Call | null>(null);
+  const [editingEmail, setEditingEmail] = useState<Email | null>(null);
+  const [editingDeal, setEditingDeal] = useState<FuelDeal | null>(null);
 
   const [newCall, setNewCall] = useState({
     contact_id: '',
@@ -171,7 +174,7 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
   const handleAddCall = async () => {
     if (!user || !selectedGoal || !newCall.contact_id) return;
 
-    if (newCall.use_manual_entry && newCall.spoke_with && newCall.phone_number) {
+    if (newCall.use_manual_entry && newCall.spoke_with && newCall.phone_number && !editingCall) {
       const existingPerson = contactPersons.find(cp =>
         cp.contact_id === newCall.contact_id &&
         cp.name.toLowerCase() === newCall.spoke_with.toLowerCase()
@@ -188,15 +191,31 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
       }
     }
 
-    const { error } = await supabase.from('calls').insert([{
-      user_id: user.id,
-      contact_id: newCall.contact_id,
-      call_date: newCall.call_date,
-      spoke_with: newCall.spoke_with || null,
-      phone_number: newCall.phone_number || null,
-      duration: newCall.duration ? parseInt(newCall.duration) : null,
-      notes: newCall.notes || null
-    }]);
+    let error;
+    if (editingCall) {
+      const { error: updateError } = await supabase
+        .from('calls')
+        .update({
+          call_date: newCall.call_date,
+          spoke_with: newCall.spoke_with || null,
+          phone_number: newCall.phone_number || null,
+          duration: newCall.duration ? parseInt(newCall.duration) : null,
+          notes: newCall.notes || null
+        })
+        .eq('id', editingCall.id);
+      error = updateError;
+    } else {
+      const { error: insertError } = await supabase.from('calls').insert([{
+        user_id: user.id,
+        contact_id: newCall.contact_id,
+        call_date: newCall.call_date,
+        spoke_with: newCall.spoke_with || null,
+        phone_number: newCall.phone_number || null,
+        duration: newCall.duration ? parseInt(newCall.duration) : null,
+        notes: newCall.notes || null
+      }]);
+      error = insertError;
+    }
 
     if (!error) {
       await supabase
@@ -217,6 +236,7 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
         use_manual_entry: false,
         selected_person_id: ''
       });
+      setEditingCall(null);
       setShowAddActivity(false);
       loadActivities();
     }
@@ -225,15 +245,31 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
   const handleAddEmail = async () => {
     if (!user || !selectedGoal || !newEmail.contact_id) return;
 
-    const { error } = await supabase.from('emails').insert([{
-      user_id: user.id,
-      contact_id: newEmail.contact_id,
-      email_date: newEmail.email_date,
-      emailed_to: newEmail.emailed_to || null,
-      email_address: newEmail.email_address || null,
-      subject: newEmail.subject || null,
-      notes: newEmail.notes || null
-    }]);
+    let error;
+    if (editingEmail) {
+      const { error: updateError } = await supabase
+        .from('emails')
+        .update({
+          email_date: newEmail.email_date,
+          emailed_to: newEmail.emailed_to || null,
+          email_address: newEmail.email_address || null,
+          subject: newEmail.subject || null,
+          notes: newEmail.notes || null
+        })
+        .eq('id', editingEmail.id);
+      error = updateError;
+    } else {
+      const { error: insertError } = await supabase.from('emails').insert([{
+        user_id: user.id,
+        contact_id: newEmail.contact_id,
+        email_date: newEmail.email_date,
+        emailed_to: newEmail.emailed_to || null,
+        email_address: newEmail.email_address || null,
+        subject: newEmail.subject || null,
+        notes: newEmail.notes || null
+      }]);
+      error = insertError;
+    }
 
     if (!error) {
       await supabase
@@ -252,6 +288,7 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
         subject: '',
         notes: ''
       });
+      setEditingEmail(null);
       setShowAddActivity(false);
       loadActivities();
     }
@@ -260,16 +297,33 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
   const handleAddDeal = async () => {
     if (!user || !selectedGoal || !newDeal.contact_id) return;
 
-    const { error } = await supabase.from('fuel_deals').insert([{
-      user_id: user.id,
-      contact_id: newDeal.contact_id,
-      deal_date: newDeal.deal_date,
-      vessel_name: newDeal.vessel_name || null,
-      fuel_type: newDeal.fuel_type || null,
-      fuel_quantity: newDeal.fuel_quantity ? parseFloat(newDeal.fuel_quantity) : null,
-      port: newDeal.port || null,
-      notes: newDeal.notes || null
-    }]);
+    let error;
+    if (editingDeal) {
+      const { error: updateError } = await supabase
+        .from('fuel_deals')
+        .update({
+          deal_date: newDeal.deal_date,
+          vessel_name: newDeal.vessel_name || null,
+          fuel_type: newDeal.fuel_type || null,
+          fuel_quantity: newDeal.fuel_quantity ? parseFloat(newDeal.fuel_quantity) : null,
+          port: newDeal.port || null,
+          notes: newDeal.notes || null
+        })
+        .eq('id', editingDeal.id);
+      error = updateError;
+    } else {
+      const { error: insertError } = await supabase.from('fuel_deals').insert([{
+        user_id: user.id,
+        contact_id: newDeal.contact_id,
+        deal_date: newDeal.deal_date,
+        vessel_name: newDeal.vessel_name || null,
+        fuel_type: newDeal.fuel_type || null,
+        fuel_quantity: newDeal.fuel_quantity ? parseFloat(newDeal.fuel_quantity) : null,
+        port: newDeal.port || null,
+        notes: newDeal.notes || null
+      }]);
+      error = insertError;
+    }
 
     if (!error) {
       await supabase
@@ -289,6 +343,7 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
         port: '',
         notes: ''
       });
+      setEditingDeal(null);
       setShowAddActivity(false);
       loadActivities();
     }
@@ -567,7 +622,20 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                           Calls Made ({goalCalls.length})
                         </h4>
                         <button
-                          onClick={() => setShowAddActivity(!showAddActivity)}
+                          onClick={() => {
+                            setEditingCall(null);
+                            setNewCall({
+                              contact_id: '',
+                              call_date: new Date().toISOString(),
+                              spoke_with: '',
+                              phone_number: '',
+                              duration: '',
+                              notes: '',
+                              use_manual_entry: false,
+                              selected_person_id: ''
+                            });
+                            setShowAddActivity(!showAddActivity);
+                          }}
                           className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                         >
                           <Plus className="w-4 h-4" />
@@ -577,7 +645,7 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
 
                       {showAddActivity && selectedGoal.goal_type === 'calls' && (
                         <div className="mb-4 p-4 bg-white rounded-lg border-2 border-green-300 shadow-sm">
-                          <h5 className="font-semibold text-gray-900 mb-3">Add New Call</h5>
+                          <h5 className="font-semibold text-gray-900 mb-3">{editingCall ? 'Edit Call' : 'Add New Call'}</h5>
                           <div className="space-y-3">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Contact *</label>
@@ -733,10 +801,23 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                                 disabled={!newCall.contact_id}
                                 className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                               >
-                                Save Call
+                                {editingCall ? 'Update Call' : 'Save Call'}
                               </button>
                               <button
-                                onClick={() => setShowAddActivity(false)}
+                                onClick={() => {
+                                  setShowAddActivity(false);
+                                  setEditingCall(null);
+                                  setNewCall({
+                                    contact_id: '',
+                                    call_date: new Date().toISOString(),
+                                    spoke_with: '',
+                                    phone_number: '',
+                                    duration: '',
+                                    notes: '',
+                                    use_manual_entry: false,
+                                    selected_person_id: ''
+                                  });
+                                }}
                                 className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
                               >
                                 Cancel
@@ -761,6 +842,27 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                                   <Clock className="w-4 h-4" />
                                   {new Date(call.call_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                 </div>
+                                <button
+                                  onClick={() => {
+                                    setEditingCall(call);
+                                    setShowAddActivity(true);
+                                    const matchedPerson = contactPersons.find(p => p.name === call.spoke_with);
+                                    setNewCall({
+                                      contact_id: call.contact_id,
+                                      call_date: call.call_date,
+                                      spoke_with: call.spoke_with || '',
+                                      phone_number: call.phone_number || '',
+                                      duration: call.duration ? call.duration.toString() : '',
+                                      notes: call.notes || '',
+                                      use_manual_entry: !matchedPerson,
+                                      selected_person_id: matchedPerson?.id || ''
+                                    });
+                                  }}
+                                  className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                  title="Edit call"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
                                 <button
                                   onClick={async () => {
                                     if (confirm('Are you sure you want to delete this call?')) {
@@ -820,7 +922,7 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
 
                       {showAddActivity && selectedGoal.goal_type === 'emails' && (
                         <div className="mb-4 p-4 bg-white rounded-lg border-2 border-orange-300 shadow-sm">
-                          <h5 className="font-semibold text-gray-900 mb-3">Add New Email</h5>
+                          <h5 className="font-semibold text-gray-900 mb-3">{editingEmail ? 'Edit Email' : 'Add New Email'}</h5>
                           <div className="space-y-3">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Contact *</label>
@@ -902,7 +1004,7 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                                 disabled={!newEmail.contact_id}
                                 className="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                               >
-                                Save Email
+                                {editingEmail ? 'Update Email' : 'Save Email'}
                               </button>
                               <button
                                 onClick={() => setShowAddActivity(false)}
@@ -930,6 +1032,24 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                                   <Clock className="w-4 h-4" />
                                   {new Date(email.email_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                 </div>
+                                <button
+                                  onClick={() => {
+                                    setEditingEmail(email);
+                                    setShowAddActivity(true);
+                                    setNewEmail({
+                                      contact_id: email.contact_id,
+                                      email_date: email.email_date,
+                                      emailed_to: email.emailed_to || '',
+                                      email_address: email.email_address || '',
+                                      subject: email.subject || '',
+                                      notes: email.notes || ''
+                                    });
+                                  }}
+                                  className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                  title="Edit email"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
                                 <button
                                   onClick={async () => {
                                     if (confirm('Are you sure you want to delete this email?')) {
@@ -989,7 +1109,7 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
 
                       {showAddActivity && selectedGoal.goal_type === 'deals' && (
                         <div className="mb-4 p-4 bg-white rounded-lg border-2 border-blue-300 shadow-sm">
-                          <h5 className="font-semibold text-gray-900 mb-3">Add New Deal</h5>
+                          <h5 className="font-semibold text-gray-900 mb-3">{editingDeal ? 'Edit Deal' : 'Add New Deal'}</h5>
                           <div className="space-y-3">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Contact *</label>
@@ -1082,7 +1202,7 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                                 disabled={!newDeal.contact_id}
                                 className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                               >
-                                Save Deal
+                                {editingDeal ? 'Update Deal' : 'Save Deal'}
                               </button>
                               <button
                                 onClick={() => setShowAddActivity(false)}
@@ -1110,6 +1230,25 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                                   <Clock className="w-4 h-4" />
                                   {new Date(deal.deal_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                 </div>
+                                <button
+                                  onClick={() => {
+                                    setEditingDeal(deal);
+                                    setShowAddActivity(true);
+                                    setNewDeal({
+                                      contact_id: deal.contact_id,
+                                      deal_date: deal.deal_date,
+                                      vessel_name: deal.vessel_name || '',
+                                      fuel_type: deal.fuel_type || '',
+                                      fuel_quantity: deal.fuel_quantity ? deal.fuel_quantity.toString() : '',
+                                      port: deal.port || '',
+                                      notes: deal.notes || ''
+                                    });
+                                  }}
+                                  className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                  title="Edit deal"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
                                 <button
                                   onClick={async () => {
                                     if (confirm('Are you sure you want to delete this deal?')) {
