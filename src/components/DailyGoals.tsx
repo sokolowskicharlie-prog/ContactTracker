@@ -59,7 +59,9 @@ export default function DailyGoals({ calls, emails, deals, contacts = [] }: Dail
     spoke_with: '',
     phone_number: '',
     duration: '',
-    notes: ''
+    notes: '',
+    use_manual_entry: false,
+    selected_person_id: ''
   });
 
   const [newEmail, setNewEmail] = useState({
@@ -186,6 +188,23 @@ export default function DailyGoals({ calls, emails, deals, contacts = [] }: Dail
   const handleAddCall = async (goalId: string) => {
     if (!user || !newCall.contact_id) return;
 
+    if (newCall.use_manual_entry && newCall.spoke_with && newCall.phone_number) {
+      const existingPerson = contactPersons.find(cp =>
+        cp.contact_id === newCall.contact_id &&
+        cp.name.toLowerCase() === newCall.spoke_with.toLowerCase()
+      );
+
+      if (!existingPerson) {
+        await supabase.from('contact_persons').insert([{
+          user_id: user.id,
+          contact_id: newCall.contact_id,
+          name: newCall.spoke_with,
+          phone: newCall.phone_number
+        }]);
+        await loadContactPersons();
+      }
+    }
+
     const { error } = await supabase.from('calls').insert([{
       user_id: user.id,
       contact_id: newCall.contact_id,
@@ -211,7 +230,9 @@ export default function DailyGoals({ calls, emails, deals, contacts = [] }: Dail
         spoke_with: '',
         phone_number: '',
         duration: '',
-        notes: ''
+        notes: '',
+        use_manual_entry: false,
+        selected_person_id: ''
       });
       setShowAddActivityForGoal(null);
     }
@@ -1049,23 +1070,96 @@ export default function DailyGoals({ calls, emails, deals, contacts = [] }: Dail
                                 ))}
                               </select>
                             </div>
+                            {newCall.contact_id && contactPersons.filter(cp => cp.contact_id === newCall.contact_id).length > 0 && (
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setNewCall({ ...newCall, use_manual_entry: false, spoke_with: '', phone_number: '' })}
+                                  className={`flex-1 px-2 py-1 text-xs rounded-lg transition-colors ${
+                                    !newCall.use_manual_entry
+                                      ? 'bg-green-100 text-green-700 font-medium'
+                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                  }`}
+                                >
+                                  Select PIC
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setNewCall({ ...newCall, use_manual_entry: true, selected_person_id: '', spoke_with: '', phone_number: '' })}
+                                  className={`flex-1 px-2 py-1 text-xs rounded-lg transition-colors ${
+                                    newCall.use_manual_entry
+                                      ? 'bg-green-100 text-green-700 font-medium'
+                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                  }`}
+                                >
+                                  Type Manually
+                                </button>
+                              </div>
+                            )}
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Contact Person</label>
-                              <select
-                                value={newCall.spoke_with}
-                                onChange={(e) => setNewCall({ ...newCall, spoke_with: e.target.value })}
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              >
-                                <option value="">Select contact person (optional)</option>
-                                {newCall.contact_id && contactPersons
-                                  .filter(cp => cp.contact_id === newCall.contact_id)
-                                  .map(cp => (
-                                    <option key={cp.id} value={cp.name}>{cp.name}</option>
-                                  ))}
-                              </select>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Spoke With</label>
+                              {!newCall.use_manual_entry && newCall.contact_id && contactPersons.filter(cp => cp.contact_id === newCall.contact_id).length > 0 ? (
+                                <select
+                                  value={newCall.selected_person_id}
+                                  onChange={(e) => {
+                                    const personId = e.target.value;
+                                    const person = contactPersons.find(cp => cp.id === personId);
+                                    if (person) {
+                                      const phones = [];
+                                      if (person.mobile) phones.push(person.mobile);
+                                      if (person.phone) phones.push(person.phone);
+                                      if (person.direct_line) phones.push(person.direct_line);
+                                      setNewCall({
+                                        ...newCall,
+                                        selected_person_id: personId,
+                                        spoke_with: person.name,
+                                        phone_number: phones.length > 0 ? phones[0] : ''
+                                      });
+                                    } else {
+                                      setNewCall({ ...newCall, selected_person_id: '', spoke_with: '', phone_number: '' });
+                                    }
+                                  }}
+                                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                >
+                                  <option value="">Select a person</option>
+                                  {contactPersons
+                                    .filter(cp => cp.contact_id === newCall.contact_id)
+                                    .map(cp => (
+                                      <option key={cp.id} value={cp.id}>{cp.name}{cp.job_title ? ` - ${cp.job_title}` : ''}</option>
+                                    ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={newCall.spoke_with}
+                                  onChange={(e) => setNewCall({ ...newCall, spoke_with: e.target.value })}
+                                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                  placeholder="Name of person"
+                                />
+                              )}
                             </div>
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number</label>
+                              {newCall.selected_person_id && (() => {
+                                const person = contactPersons.find(cp => cp.id === newCall.selected_person_id);
+                                const phones = [];
+                                if (person?.mobile) phones.push({ label: 'Mobile', number: person.mobile });
+                                if (person?.phone) phones.push({ label: 'Phone', number: person.phone });
+                                if (person?.direct_line) phones.push({ label: 'Direct Line', number: person.direct_line });
+                                return phones.length > 1 ? (
+                                  <select
+                                    value={newCall.phone_number}
+                                    onChange={(e) => setNewCall({ ...newCall, phone_number: e.target.value })}
+                                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent mb-1"
+                                  >
+                                    {phones.map((phone, idx) => (
+                                      <option key={idx} value={phone.number}>
+                                        {phone.label}: {phone.number}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : null;
+                              })()}
                               <input
                                 type="text"
                                 value={newCall.phone_number}

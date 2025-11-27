@@ -659,10 +659,23 @@ function App() {
     }
   };
 
-  const handleSaveCall = async (callData: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string }) => {
+  const handleSaveCall = async (callData: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string }, newPIC?: { name: string; phone: string }) => {
     if (!selectedContact) return;
 
     try {
+      if (newPIC) {
+        const { error: picError } = await supabase
+          .from('contact_persons')
+          .insert([{
+            user_id: user.id,
+            contact_id: selectedContact.id,
+            name: newPIC.name,
+            phone: newPIC.phone,
+          }]);
+
+        if (picError) throw picError;
+      }
+
       if (callData.id) {
         const { id, ...updateData } = callData;
         const { error } = await supabase
@@ -2569,6 +2582,7 @@ function App() {
       {showCallModal && selectedContact && (
         <CallModal
           call={editingCall}
+          contactId={selectedContact.id}
           contactName={selectedContact.name}
           contactPersons={selectedContact.contact_persons}
           onClose={() => {
