@@ -2483,6 +2483,7 @@ function App() {
           }}
           onEdit={() => {
             setEditingContact(selectedContact);
+            setShowContactDetail(false);
             setShowContactModal(true);
           }}
           onLogCall={() => {
