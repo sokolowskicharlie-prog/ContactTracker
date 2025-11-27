@@ -116,10 +116,12 @@ function App() {
     hasTraction: boolean;
     isClient: boolean;
     isJammed: boolean;
+    none: boolean;
   }>({
     hasTraction: false,
     isClient: false,
     isJammed: false,
+    none: false,
   });
   const [filterPort, setFilterPort] = useState<string>('all');
   const [filterFuelType, setFilterFuelType] = useState<string>('all');
@@ -224,12 +226,13 @@ function App() {
     }
 
     // Apply status filters (OR logic - show contacts matching ANY selected status)
-    const hasActiveStatusFilter = statusFilters.hasTraction || statusFilters.isClient || statusFilters.isJammed;
+    const hasActiveStatusFilter = statusFilters.hasTraction || statusFilters.isClient || statusFilters.isJammed || statusFilters.none;
     if (hasActiveStatusFilter) {
       filtered = filtered.filter((contact) => {
         if (statusFilters.hasTraction && contact.has_traction) return true;
         if (statusFilters.isClient && contact.is_client) return true;
         if (statusFilters.isJammed && contact.is_jammed) return true;
+        if (statusFilters.none && !contact.has_traction && !contact.is_client && !contact.is_jammed) return true;
         return false;
       });
     }
@@ -2115,6 +2118,16 @@ function App() {
                 >
                   Is Jammed
                 </button>
+                <button
+                  onClick={() => setStatusFilters(prev => ({ ...prev, none: !prev.none }))}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                    statusFilters.none
+                      ? 'bg-gray-700 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  None
+                </button>
               </div>
             </div>
 
@@ -2267,7 +2280,7 @@ function App() {
                 </select>
               </div>
             </div>
-          {(filterNames.length > 0 || filterCompanies.length > 0 || filterCompanySizes.length > 0 || filterEmails.length > 0 || filterPhones.length > 0 || filterCities.length > 0 || filterPostCodes.length > 0 || filterWebsites.length > 0 || filterAddresses.length > 0 || filterCountries.length > 0 || filterTimezones.length > 0 || statusFilters.hasTraction || statusFilters.isClient || statusFilters.isJammed || activityDateFilter !== 'all') && (
+          {(filterNames.length > 0 || filterCompanies.length > 0 || filterCompanySizes.length > 0 || filterEmails.length > 0 || filterPhones.length > 0 || filterCities.length > 0 || filterPostCodes.length > 0 || filterWebsites.length > 0 || filterAddresses.length > 0 || filterCountries.length > 0 || filterTimezones.length > 0 || statusFilters.hasTraction || statusFilters.isClient || statusFilters.isJammed || statusFilters.none || activityDateFilter !== 'all') && (
             <div className="mt-3 flex items-center gap-2">
               <span className="text-sm text-gray-600">
                 Showing {filteredContacts.length} of {contacts.length} contacts
@@ -2285,7 +2298,7 @@ function App() {
                   setFilterAddresses([]);
                   setFilterCountries([]);
                   setFilterTimezones([]);
-                  setStatusFilters({ hasTraction: false, isClient: false, isJammed: false });
+                  setStatusFilters({ hasTraction: false, isClient: false, isJammed: false, none: false });
                   setActivityDateFilter('all');
                 }}
                 className="text-sm text-blue-600 hover:text-blue-800 underline"
