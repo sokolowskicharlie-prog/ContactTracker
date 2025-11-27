@@ -30,6 +30,7 @@ import AccountSettings from './components/AccountSettings';
 import DuplicatesModal from './components/DuplicatesModal';
 import SupplierImportModal from './components/SupplierImportModal';
 import DailyGoals from './components/DailyGoals';
+import GlobalGoalNotifications from './components/GlobalGoalNotifications';
 
 interface NotificationSettings {
   id?: string;
@@ -1806,6 +1807,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <GlobalGoalNotifications />
       <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
