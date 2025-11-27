@@ -29,20 +29,68 @@ export default function GlobalGoalNotifications() {
       loadGoals();
       loadActivities();
       loadNotificationSettings();
+
+      const callsSubscription = supabase
+        .channel('calls_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'calls', filter: `user_id=eq.${user.id}` }, () => {
+          loadActivities();
+        })
+        .subscribe();
+
+      const emailsSubscription = supabase
+        .channel('emails_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'emails', filter: `user_id=eq.${user.id}` }, () => {
+          loadActivities();
+        })
+        .subscribe();
+
+      const dealsSubscription = supabase
+        .channel('deals_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'fuel_deals', filter: `user_id=eq.${user.id}` }, () => {
+          loadActivities();
+        })
+        .subscribe();
+
+      const goalsSubscription = supabase
+        .channel('goals_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_goals', filter: `user_id=eq.${user.id}` }, () => {
+          loadGoals();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(callsSubscription);
+        supabase.removeChannel(emailsSubscription);
+        supabase.removeChannel(dealsSubscription);
+        supabase.removeChannel(goalsSubscription);
+      };
     }
   }, [user]);
 
   useEffect(() => {
-    if (!enableNotifications || goals.length === 0) return;
+    if (!user || !enableNotifications) return;
 
-    const interval = setInterval(() => {
+    const checkInterval = setInterval(() => {
+      loadGoals();
+      loadActivities();
       checkGoalsProgress();
     }, notificationFrequency * 60 * 1000);
 
-    checkGoalsProgress();
+    const initialCheck = setTimeout(() => {
+      checkGoalsProgress();
+    }, 1000);
 
-    return () => clearInterval(interval);
-  }, [goals, calls, emails, deals, enableNotifications, notificationFrequency]);
+    return () => {
+      clearInterval(checkInterval);
+      clearTimeout(initialCheck);
+    };
+  }, [user, enableNotifications, notificationFrequency]);
+
+  useEffect(() => {
+    if (goals.length > 0 && enableNotifications) {
+      checkGoalsProgress();
+    }
+  }, [goals, calls, emails, deals]);
 
   const loadGoals = async () => {
     if (!user) return;
@@ -57,10 +105,11 @@ export default function GlobalGoalNotifications() {
       .eq('is_active', true);
 
     if (error) {
-      console.error('Error loading goals:', error);
+      console.error('[GlobalGoalNotifications] Error loading goals:', error);
       return;
     }
 
+    console.log('[GlobalGoalNotifications] Loaded goals:', data?.length || 0);
     setGoals(data || []);
   };
 
@@ -90,6 +139,12 @@ export default function GlobalGoalNotifications() {
         .order('deal_date', { ascending: false })
     ]);
 
+    console.log('[GlobalGoalNotifications] Loaded activities:', {
+      calls: callsResult.data?.length || 0,
+      emails: emailsResult.data?.length || 0,
+      deals: dealsResult.data?.length || 0
+    });
+
     if (!callsResult.error) setCalls(callsResult.data || []);
     if (!emailsResult.error) setEmails(emailsResult.data || []);
     if (!dealsResult.error) setDeals(dealsResult.data || []);
@@ -105,8 +160,16 @@ export default function GlobalGoalNotifications() {
       .maybeSingle();
 
     if (!error && data) {
+      console.log('[GlobalGoalNotifications] Loaded settings:', {
+        enabled: data.enable_goal_notifications ?? true,
+        frequency: data.goal_notification_frequency ?? 30
+      });
       setEnableNotifications(data.enable_goal_notifications ?? true);
       setNotificationFrequency(data.goal_notification_frequency ?? 30);
+    } else {
+      console.log('[GlobalGoalNotifications] Using default settings');
+      setEnableNotifications(true);
+      setNotificationFrequency(30);
     }
   };
 
@@ -166,6 +229,12 @@ export default function GlobalGoalNotifications() {
   };
 
   const checkGoalsProgress = () => {
+    console.log('[GlobalGoalNotifications] Checking goals progress', {
+      goalsCount: goals.length,
+      enableNotifications,
+      notificationFrequency
+    });
+
     goals.forEach(goal => {
       const progress = calculateProgress(goal);
       const now = new Date();
@@ -174,10 +243,22 @@ export default function GlobalGoalNotifications() {
       targetDateTime.setHours(targetHour, targetMinute, 0, 0);
       const timeExpired = now >= targetDateTime;
 
+      console.log('[GlobalGoalNotifications] Goal progress', {
+        goalId: goal.id,
+        type: goal.goal_type,
+        progress: progress.currentAmount,
+        target: progress.targetAmount,
+        onTrack: progress.onTrack,
+        timeExpired,
+        timeRemaining: progress.timeRemaining
+      });
+
       if (timeExpired && !completedGoals.has(goal.id)) {
+        console.log('[GlobalGoalNotifications] Showing completion notification');
         showCompletionNotification(goal, progress);
         setCompletedGoals(prev => new Set(prev).add(goal.id));
       } else if (!progress.onTrack && progress.timeRemaining !== 'Time expired') {
+        console.log('[GlobalGoalNotifications] Showing behind schedule notification');
         showNotification(progress);
       }
     });
