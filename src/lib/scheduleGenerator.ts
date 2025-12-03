@@ -283,6 +283,11 @@ export function generateCallSchedule(
   const callsPerTimezone = Math.ceil(targetCalls / timezonePriority.length);
 
   for (const timezone of timezonePriority) {
+    const tzEndOfBusiness = getTimezoneEndOfBusinessGMT(timezone, now);
+    if (now >= tzEndOfBusiness) {
+      continue;
+    }
+
     const tzContacts = contactsByTimezone[timezone];
     const tzLabel = getTimezoneLabel(timezone);
 
