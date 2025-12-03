@@ -374,12 +374,9 @@ function App() {
 
   const loadContacts = async () => {
     try {
-      if (!user?.id) return;
-
       const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
         .select('*')
-        .eq('user_id', user.id)
         .order('name');
 
       if (contactsError) throw contactsError;
@@ -387,7 +384,6 @@ function App() {
       const { data: callsData, error: callsError } = await supabase
         .from('calls')
         .select('*')
-        .eq('user_id', user.id)
         .order('call_date', { ascending: false });
 
       if (callsError) throw callsError;
@@ -395,44 +391,38 @@ function App() {
       const { data: emailsData, error: emailsError } = await supabase
         .from('emails')
         .select('*')
-        .eq('user_id', user.id)
         .order('email_date', { ascending: false });
 
       if (emailsError) throw emailsError;
 
       const { data: contactPersonsData, error: contactPersonsError } = await supabase
         .from('contact_persons')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('*');
 
       if (contactPersonsError) throw contactPersonsError;
 
       const { data: vesselsData, error: vesselsError } = await supabase
         .from('vessels')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('*');
 
       if (vesselsError) throw vesselsError;
 
       const { data: fuelDealsData, error: fuelDealsError } = await supabase
         .from('fuel_deals')
         .select('*')
-        .eq('user_id', user.id)
         .order('deal_date', { ascending: false });
 
       if (fuelDealsError) throw fuelDealsError;
 
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('*');
 
       if (tasksError) throw tasksError;
 
       const { data: completedGoalsData, error: completedGoalsError } = await supabase
         .from('daily_goals')
         .select('*')
-        .eq('user_id', user.id)
         .eq('is_active', false)
         .not('completed_at', 'is', null)
         .order('completed_at', { ascending: false });
@@ -871,12 +861,9 @@ function App() {
 
   const loadSuppliers = async () => {
     try {
-      if (!user?.id) return;
-
       const { data: suppliersData, error: suppliersError } = await supabase
         .from('suppliers')
         .select('*')
-        .eq('user_id', user.id)
         .order('company_name');
 
       if (suppliersError) throw suppliersError;
@@ -884,7 +871,6 @@ function App() {
       const { data: ordersData, error: ordersError} = await supabase
         .from('supplier_orders')
         .select('*')
-        .eq('user_id', user.id)
         .order('order_date', { ascending: false });
 
       if (ordersError) throw ordersError;
@@ -892,7 +878,6 @@ function App() {
       const { data: contactsData, error: contactsError } = await supabase
         .from('supplier_contacts')
         .select('*')
-        .eq('user_id', user.id)
         .order('is_primary', { ascending: false });
 
       if (contactsError) throw contactsError;
@@ -932,12 +917,9 @@ function App() {
 
   const loadNotificationSettings = async () => {
     try {
-      if (!user?.id) return;
-
       const { data, error } = await supabase
         .from('notification_settings')
         .select('*')
-        .eq('user_id', user.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -1635,27 +1617,22 @@ function App() {
 
   const loadTasks = async () => {
     try {
-      if (!user?.id) return;
-
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
-        .eq('user_id', user.id)
         .order('due_date', { ascending: true });
 
       if (tasksError) throw tasksError;
 
       const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('*');
 
       if (contactsError) throw contactsError;
 
       const { data: suppliersData, error: suppliersError } = await supabase
         .from('suppliers')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('*');
 
       if (suppliersError) throw suppliersError;
 
