@@ -1893,238 +1893,6 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                   )}
                 </div>
 
-                {showAddActivityForGoal === selectedGoal.id && selectedGoal.goal_type === 'calls' && (
-                  <div className="mb-6 p-4 bg-white rounded-lg border-2 border-green-300 shadow-sm">
-                    <h5 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <Phone className="w-5 h-5 text-green-600" />
-                      Add New Call
-                    </h5>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Contact *</label>
-                        <select
-                          value={newCall.contact_id}
-                          onChange={(e) => setNewCall({ ...newCall, contact_id: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                          required
-                        >
-                          <option value="">Select a contact</option>
-                          {contacts.map(contact => (
-                            <option key={contact.id} value={contact.id}>{contact.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      {newCall.contact_id && contactPersons.filter(cp => cp.contact_id === newCall.contact_id).length > 0 && (
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setNewCall({ ...newCall, use_manual_entry: false, spoke_with: '', phone_number: '' })}
-                            className={`flex-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                              !newCall.use_manual_entry
-                                ? 'bg-green-100 text-green-700 font-medium'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                          >
-                            Select PIC
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setNewCall({ ...newCall, use_manual_entry: true, selected_person_id: '', spoke_with: '', phone_number: '' })}
-                            className={`flex-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                              newCall.use_manual_entry
-                                ? 'bg-green-100 text-green-700 font-medium'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                          >
-                            Type Manually
-                          </button>
-                        </div>
-                      )}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Spoke With</label>
-                        {!newCall.use_manual_entry && newCall.contact_id && contactPersons.filter(cp => cp.contact_id === newCall.contact_id).length > 0 ? (
-                          <select
-                            value={newCall.selected_person_id}
-                            onChange={(e) => {
-                              const personId = e.target.value;
-                              const person = contactPersons.find(cp => cp.id === personId);
-                              if (person) {
-                                const phones = [];
-                                if (person.mobile) phones.push(person.mobile);
-                                if (person.phone) phones.push(person.phone);
-                                if (person.direct_line) phones.push(person.direct_line);
-                                setNewCall({
-                                  ...newCall,
-                                  selected_person_id: personId,
-                                  spoke_with: person.name,
-                                  phone_number: phones.length > 0 ? phones[0] : ''
-                                });
-                              } else {
-                                setNewCall({ ...newCall, selected_person_id: '', spoke_with: '', phone_number: '' });
-                              }
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                          >
-                            <option value="">Select a person</option>
-                            {contactPersons
-                              .filter(cp => cp.contact_id === newCall.contact_id)
-                              .map(cp => (
-                                <option key={cp.id} value={cp.id}>{cp.name}{cp.job_title ? ` - ${cp.job_title}` : ''}</option>
-                              ))}
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            value={newCall.spoke_with}
-                            onChange={(e) => setNewCall({ ...newCall, spoke_with: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            placeholder="Name of person"
-                          />
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                        {newCall.selected_person_id && (() => {
-                          const person = contactPersons.find(cp => cp.id === newCall.selected_person_id);
-                          const phones = [];
-                          if (person?.mobile) phones.push({ label: 'Mobile', number: person.mobile });
-                          if (person?.phone) phones.push({ label: 'Phone', number: person.phone });
-                          if (person?.direct_line) phones.push({ label: 'Direct Line', number: person.direct_line });
-                          return phones.length > 1 ? (
-                            <select
-                              value={newCall.phone_number}
-                              onChange={(e) => setNewCall({ ...newCall, phone_number: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent mb-2"
-                            >
-                              {phones.map((phone, idx) => (
-                                <option key={idx} value={phone.number}>
-                                  {phone.label}: {phone.number}
-                                </option>
-                              ))}
-                            </select>
-                          ) : null;
-                        })()}
-                        <input
-                          type="text"
-                          value={newCall.phone_number}
-                          onChange={(e) => setNewCall({ ...newCall, phone_number: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                          placeholder="Phone number"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
-                        <input
-                          type="number"
-                          value={newCall.duration}
-                          onChange={(e) => setNewCall({ ...newCall, duration: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                          placeholder="Duration in minutes"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                        <textarea
-                          value={newCall.notes}
-                          onChange={(e) => setNewCall({ ...newCall, notes: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                          rows={3}
-                          placeholder="Call notes"
-                        />
-                      </div>
-
-                      <div className="border-t pt-3 mt-3">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={createCallTask}
-                            onChange={(e) => setCreateCallTask(e.target.checked)}
-                            className="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-500"
-                          />
-                          <CheckSquare className="w-4 h-4 text-green-600" />
-                          <span className="text-sm font-medium text-gray-700">Create follow-up task</span>
-                        </label>
-
-                        {createCallTask && (
-                          <div className="mt-3 space-y-2 pl-6 border-l-2 border-green-200">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Task Type *
-                              </label>
-                              <select
-                                value={callTaskType}
-                                onChange={(e) => setCallTaskType(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                required={createCallTask}
-                              >
-                                <option value="call_back">Call Back</option>
-                                <option value="email_back">Email Back</option>
-                                <option value="text_back">Text Back</option>
-                                <option value="other">Other</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Task Title *
-                              </label>
-                              <input
-                                type="text"
-                                value={callTaskTitle}
-                                onChange={(e) => setCallTaskTitle(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="Follow up on..."
-                                required={createCallTask}
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Due Date & Time
-                              </label>
-                              <input
-                                type="datetime-local"
-                                value={callTaskDueDate}
-                                onChange={(e) => setCallTaskDueDate(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Task Notes
-                              </label>
-                              <textarea
-                                value={callTaskNotes}
-                                onChange={(e) => setCallTaskNotes(e.target.value)}
-                                rows={2}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="Task details..."
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAddCall(selectedGoal.id)}
-                          disabled={!newCall.contact_id}
-                          className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                        >
-                          Save Call
-                        </button>
-                        <button
-                          onClick={() => setShowAddActivityForGoal(null)}
-                          className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {selectedGoal.goal_type === 'calls' && callSchedules.length > 0 && (
                   <div className="mb-6">
                     <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -2279,6 +2047,238 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                           </div>
                         ))}
                       </div>
+
+                      {showAddActivityForGoal === selectedGoal.id && selectedGoal.goal_type === 'calls' && (
+                        <div className="mt-4 p-4 bg-white rounded-lg border-2 border-green-300 shadow-sm">
+                          <h5 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <Phone className="w-5 h-5 text-green-600" />
+                            Add New Call
+                          </h5>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Contact *</label>
+                              <select
+                                value={newCall.contact_id}
+                                onChange={(e) => setNewCall({ ...newCall, contact_id: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                required
+                              >
+                                <option value="">Select a contact</option>
+                                {contacts.map(contact => (
+                                  <option key={contact.id} value={contact.id}>{contact.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            {newCall.contact_id && contactPersons.filter(cp => cp.contact_id === newCall.contact_id).length > 0 && (
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setNewCall({ ...newCall, use_manual_entry: false, spoke_with: '', phone_number: '' })}
+                                  className={`flex-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                    !newCall.use_manual_entry
+                                      ? 'bg-green-100 text-green-700 font-medium'
+                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                  }`}
+                                >
+                                  Select PIC
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setNewCall({ ...newCall, use_manual_entry: true, selected_person_id: '', spoke_with: '', phone_number: '' })}
+                                  className={`flex-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                    newCall.use_manual_entry
+                                      ? 'bg-green-100 text-green-700 font-medium'
+                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                  }`}
+                                >
+                                  Type Manually
+                                </button>
+                              </div>
+                            )}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Spoke With</label>
+                              {!newCall.use_manual_entry && newCall.contact_id && contactPersons.filter(cp => cp.contact_id === newCall.contact_id).length > 0 ? (
+                                <select
+                                  value={newCall.selected_person_id}
+                                  onChange={(e) => {
+                                    const personId = e.target.value;
+                                    const person = contactPersons.find(cp => cp.id === personId);
+                                    if (person) {
+                                      const phones = [];
+                                      if (person.mobile) phones.push(person.mobile);
+                                      if (person.phone) phones.push(person.phone);
+                                      if (person.direct_line) phones.push(person.direct_line);
+                                      setNewCall({
+                                        ...newCall,
+                                        selected_person_id: personId,
+                                        spoke_with: person.name,
+                                        phone_number: phones.length > 0 ? phones[0] : ''
+                                      });
+                                    } else {
+                                      setNewCall({ ...newCall, selected_person_id: '', spoke_with: '', phone_number: '' });
+                                    }
+                                  }}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                >
+                                  <option value="">Select a person</option>
+                                  {contactPersons
+                                    .filter(cp => cp.contact_id === newCall.contact_id)
+                                    .map(cp => (
+                                      <option key={cp.id} value={cp.id}>{cp.name}{cp.job_title ? ` - ${cp.job_title}` : ''}</option>
+                                    ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={newCall.spoke_with}
+                                  onChange={(e) => setNewCall({ ...newCall, spoke_with: e.target.value })}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                  placeholder="Name of person"
+                                />
+                              )}
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                              {newCall.selected_person_id && (() => {
+                                const person = contactPersons.find(cp => cp.id === newCall.selected_person_id);
+                                const phones = [];
+                                if (person?.mobile) phones.push({ label: 'Mobile', number: person.mobile });
+                                if (person?.phone) phones.push({ label: 'Phone', number: person.phone });
+                                if (person?.direct_line) phones.push({ label: 'Direct Line', number: person.direct_line });
+                                return phones.length > 1 ? (
+                                  <select
+                                    value={newCall.phone_number}
+                                    onChange={(e) => setNewCall({ ...newCall, phone_number: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent mb-2"
+                                  >
+                                    {phones.map((phone, idx) => (
+                                      <option key={idx} value={phone.number}>
+                                        {phone.label}: {phone.number}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : null;
+                              })()}
+                              <input
+                                type="text"
+                                value={newCall.phone_number}
+                                onChange={(e) => setNewCall({ ...newCall, phone_number: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Phone number"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+                              <input
+                                type="number"
+                                value={newCall.duration}
+                                onChange={(e) => setNewCall({ ...newCall, duration: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Duration in minutes"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                              <textarea
+                                value={newCall.notes}
+                                onChange={(e) => setNewCall({ ...newCall, notes: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                rows={3}
+                                placeholder="Call notes"
+                              />
+                            </div>
+
+                            <div className="border-t pt-3 mt-3">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={createCallTask}
+                                  onChange={(e) => setCreateCallTask(e.target.checked)}
+                                  className="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                                />
+                                <CheckSquare className="w-4 h-4 text-green-600" />
+                                <span className="text-sm font-medium text-gray-700">Create follow-up task</span>
+                              </label>
+
+                              {createCallTask && (
+                                <div className="mt-3 space-y-2 pl-6 border-l-2 border-green-200">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Task Type *
+                                    </label>
+                                    <select
+                                      value={callTaskType}
+                                      onChange={(e) => setCallTaskType(e.target.value)}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                      required={createCallTask}
+                                    >
+                                      <option value="call_back">Call Back</option>
+                                      <option value="email_back">Email Back</option>
+                                      <option value="text_back">Text Back</option>
+                                      <option value="other">Other</option>
+                                    </select>
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Task Title *
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={callTaskTitle}
+                                      onChange={(e) => setCallTaskTitle(e.target.value)}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                      placeholder="Follow up on..."
+                                      required={createCallTask}
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Due Date & Time
+                                    </label>
+                                    <input
+                                      type="datetime-local"
+                                      value={callTaskDueDate}
+                                      onChange={(e) => setCallTaskDueDate(e.target.value)}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Task Notes
+                                    </label>
+                                    <textarea
+                                      value={callTaskNotes}
+                                      onChange={(e) => setCallTaskNotes(e.target.value)}
+                                      rows={2}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                      placeholder="Task details..."
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleAddCall(selectedGoal.id)}
+                                disabled={!newCall.contact_id}
+                                className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                              >
+                                Save Call
+                              </button>
+                              <button
+                                onClick={() => setShowAddActivityForGoal(null)}
+                                className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
