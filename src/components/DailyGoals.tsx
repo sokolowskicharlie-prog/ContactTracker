@@ -1721,6 +1721,17 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                       <p className="text-sm text-gray-700">{selectedGoal.notes}</p>
                     </div>
                   )}
+                  {selectedGoal.goal_type === 'calls' && onAddTask && (
+                    <div className="mt-3 pt-3 border-t border-blue-200">
+                      <button
+                        onClick={onAddTask}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <CheckSquare className="w-4 h-4" />
+                        Create New Task
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-6">
