@@ -5,9 +5,10 @@ import { useAuth } from '../lib/auth';
 
 interface GoalProgressBoxProps {
   onSelectContact?: (contactId: string) => void;
+  onLogCall?: (contactId: string) => void;
 }
 
-export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProps) {
+export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProgressBoxProps) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
@@ -207,20 +208,26 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
     const schedule = callSchedules.find(s => s.id === scheduleId);
     if (!schedule) return;
 
+    const isMarkingComplete = !schedule.completed;
+
     const { error } = await supabase
       .from('call_schedules')
       .update({
-        completed: !schedule.completed,
-        completed_at: !schedule.completed ? new Date().toISOString() : null
+        completed: isMarkingComplete,
+        completed_at: isMarkingComplete ? new Date().toISOString() : null
       })
       .eq('id', scheduleId);
 
     if (!error) {
       setCallSchedules(callSchedules.map(s =>
         s.id === scheduleId
-          ? { ...s, completed: !s.completed, completed_at: !s.completed ? new Date().toISOString() : null }
+          ? { ...s, completed: isMarkingComplete, completed_at: isMarkingComplete ? new Date().toISOString() : null }
           : s
       ));
+
+      if (isMarkingComplete && schedule.contact_id && onLogCall) {
+        onLogCall(schedule.contact_id);
+      }
     }
   };
 
