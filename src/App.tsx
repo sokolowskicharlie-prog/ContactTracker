@@ -1763,6 +1763,15 @@ function App() {
     }
   };
 
+  const handleLogCallFromSchedule = (contactId: string) => {
+    const contact = contacts.find(c => c.id === contactId);
+    if (contact) {
+      setSelectedContact(contact);
+      setEditingCall(undefined);
+      setShowCallModal(true);
+    }
+  };
+
   const loadButtonOrder = async () => {
     if (!user) return;
 
@@ -2647,6 +2656,7 @@ function App() {
                 setShowTaskModal(true);
               }}
               onSelectContact={handleSelectContactFromGoals}
+              onLogCall={handleLogCallFromSchedule}
             />
             <TaskList
               tasks={filteredTasks}
