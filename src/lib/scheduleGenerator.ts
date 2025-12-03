@@ -341,21 +341,69 @@ export function generateCallSchedule(
     }
   }
 
-  // If we still need more calls, add generic suggestions
+  // If we still need more calls, cycle through remaining contacts from all timezones
+  const scheduledContactIds = new Set(schedule.map(s => s.contact_id).filter(Boolean));
+  const remainingContacts = activeContacts.filter(c => !scheduledContactIds.has(c.id));
+
+  let contactIndex = 0;
   while (schedule.length < targetCalls && currentTime < deadline) {
-    schedule.push({
-      goal_id: goalId,
-      scheduled_time: currentTime.toISOString(),
-      contact_name: `Prospect #${schedule.length + 1}`,
-      priority_label: 'Cold',
-      contact_status: 'none',
-      is_suggested: true,
-      completed: false,
-      call_duration_mins: callDurationMins,
-      timezone_label: 'To be assigned',
-      notes: 'New prospect - manual assignment needed',
-      user_id: userId
-    });
+    let contactToSchedule: SuggestedContact;
+
+    if (contactIndex < remainingContacts.length) {
+      const contact = remainingContacts[contactIndex];
+      const priority = analyzeContactPriority(contact);
+      const timezone = contact.timezone || 'Europe/London';
+      const tzLabel = getTimezoneLabel(timezone);
+
+      let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+      if (contact.is_jammed) {
+        contactStatus = 'jammed';
+      } else if (contact.is_client) {
+        contactStatus = 'client';
+      } else if (contact.has_traction) {
+        contactStatus = 'traction';
+      }
+
+      contactToSchedule = {
+        contact: contact,
+        contactName: contact.name || contact.company || 'Unknown',
+        priorityLabel: priority,
+        timezoneLabel: tzLabel,
+        reason: getReasonText(contact, priority)
+      };
+
+      schedule.push({
+        goal_id: goalId,
+        scheduled_time: currentTime.toISOString(),
+        contact_id: contact.id,
+        contact_name: contactToSchedule.contactName,
+        priority_label: contactToSchedule.priorityLabel,
+        contact_status: contactStatus,
+        is_suggested: false,
+        completed: false,
+        call_duration_mins: callDurationMins,
+        timezone_label: contactToSchedule.timezoneLabel,
+        notes: contactToSchedule.reason,
+        user_id: userId
+      });
+
+      contactIndex++;
+    } else {
+      // Only use generic labels if we've exhausted all contacts
+      schedule.push({
+        goal_id: goalId,
+        scheduled_time: currentTime.toISOString(),
+        contact_name: 'Unassigned slot',
+        priority_label: 'Cold',
+        contact_status: 'none',
+        is_suggested: true,
+        completed: false,
+        call_duration_mins: callDurationMins,
+        timezone_label: 'To be assigned',
+        notes: 'Manual assignment needed',
+        user_id: userId
+      });
+    }
 
     const interval = fillRestOfDay ? callDurationMins : (callDurationMins + 5);
     currentTime = new Date(currentTime.getTime() + interval * 60 * 1000);
