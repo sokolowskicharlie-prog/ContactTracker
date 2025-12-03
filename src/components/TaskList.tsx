@@ -35,6 +35,21 @@ function TaskList({ tasks, onToggleComplete, onDeleteTask, onEditTask }: TaskLis
     }
   };
 
+  const getContactStatus = (contact?: TaskWithRelated['contact']) => {
+    if (!contact) return null;
+
+    if (contact.is_client) {
+      return { label: 'Client', color: 'bg-green-50 text-green-700 border-green-200' };
+    }
+    if (contact.has_traction) {
+      return { label: 'Traction', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' };
+    }
+    if (contact.is_jammed) {
+      return { label: 'Jammed', color: 'bg-red-50 text-red-700 border-red-200' };
+    }
+    return { label: 'None', color: 'bg-gray-50 text-gray-700 border-gray-200' };
+  };
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'No due date';
     const date = new Date(dateString);
@@ -102,6 +117,11 @@ function TaskList({ tasks, onToggleComplete, onDeleteTask, onEditTask }: TaskLis
                         {getTaskTypeIcon(task.task_type)}
                         {getTaskTypeLabel(task.task_type)}
                       </div>
+                      {task.contact && getContactStatus(task.contact) && (
+                        <div className={`px-2 py-0.5 rounded text-xs font-medium border ${getContactStatus(task.contact)!.color}`}>
+                          {getContactStatus(task.contact)!.label}
+                        </div>
+                      )}
                       {task.is_overdue && !task.completed && (
                         <div className="flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-700 rounded text-xs font-medium">
                           <AlertCircle className="w-3 h-3" />

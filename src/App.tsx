@@ -1170,19 +1170,28 @@ function App() {
       }
     });
 
-    const tasksData = tasks.map(task => ({
-      'Title': task.title,
-      'Contact Name': task.contact?.name || '',
-      'Supplier Name': task.supplier?.company_name || '',
-      'Due Date': task.due_date ? new Date(task.due_date).toLocaleString() : '',
-      'Completed': task.completed ? 'Yes' : 'No',
-      'Completed At': task.completed_at ? new Date(task.completed_at).toLocaleString() : '',
-      'Priority': task.priority || 'medium',
-      'Is Overdue': task.is_overdue ? 'Yes' : 'No',
-      'Days Until Due': task.days_until_due || '',
-      'Notes': task.notes || '',
-      'Created At': new Date(task.created_at).toLocaleString(),
-    }));
+    const tasksData = tasks.map(task => {
+      let contactStatus = 'None';
+      if (task.contact) {
+        if (task.contact.is_client) contactStatus = 'Client';
+        else if (task.contact.has_traction) contactStatus = 'Traction';
+        else if (task.contact.is_jammed) contactStatus = 'Jammed';
+      }
+
+      return {
+        'Title': task.title,
+        'Contact Name': task.contact?.name || '',
+        'Contact Status': task.contact ? contactStatus : '',
+        'Supplier Name': task.supplier?.company_name || '',
+        'Due Date': task.due_date ? new Date(task.due_date).toLocaleString() : '',
+        'Completed': task.completed ? 'Yes' : 'No',
+        'Completed At': task.completed_at ? new Date(task.completed_at).toLocaleString() : '',
+        'Is Overdue': task.is_overdue ? 'Yes' : 'No',
+        'Days Until Due': task.days_until_due || '',
+        'Notes': task.notes || '',
+        'Created At': new Date(task.created_at).toLocaleString(),
+      };
+    });
 
     const contactsSheet = XLSX.utils.json_to_sheet(contactsData);
     XLSX.utils.book_append_sheet(workbook, contactsSheet, 'Contacts');
