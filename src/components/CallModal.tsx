@@ -1,17 +1,19 @@
 import { X, User, Phone, CheckSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Call, ContactPerson } from '../lib/supabase';
+import { Call, ContactPerson, Contact, Supplier } from '../lib/supabase';
 
 interface CallModalProps {
   call?: Call;
   contactId: string;
   contactName: string;
   contactPersons?: ContactPerson[];
+  contacts: Contact[];
+  suppliers: Supplier[];
   onClose: () => void;
-  onSave: (call: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string }, newPIC?: { name: string; phone: string }, task?: { title: string; due_date: string; priority: string; notes: string }) => void;
+  onSave: (call: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string }, newPIC?: { name: string; phone: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => void;
 }
 
-export default function CallModal({ call, contactId, contactName, contactPersons = [], onClose, onSave }: CallModalProps) {
+export default function CallModal({ call, contactId, contactName, contactPersons = [], contacts, suppliers, onClose, onSave }: CallModalProps) {
   const [callDate, setCallDate] = useState(
     new Date().toISOString().slice(0, 16)
   );
@@ -22,14 +24,17 @@ export default function CallModal({ call, contactId, contactName, contactPersons
   const [notes, setNotes] = useState('');
   const [useManualEntry, setUseManualEntry] = useState(false);
   const [createTask, setCreateTask] = useState(false);
+  const [taskType, setTaskType] = useState('call_back');
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDueDate, setTaskDueDate] = useState(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().slice(0, 16);
   });
-  const [taskPriority, setTaskPriority] = useState('medium');
   const [taskNotes, setTaskNotes] = useState('');
+  const [taskEntityType, setTaskEntityType] = useState<'contact' | 'supplier'>('contact');
+  const [taskContactId, setTaskContactId] = useState(contactId);
+  const [taskSupplierId, setTaskSupplierId] = useState('');
 
   useEffect(() => {
     if (call) {
@@ -95,10 +100,12 @@ export default function CallModal({ call, contactId, contactName, contactPersons
     }
 
     const taskData = createTask && taskTitle.trim() ? {
+      task_type: taskType,
       title: taskTitle.trim(),
-      due_date: new Date(taskDueDate).toISOString(),
-      priority: taskPriority,
-      notes: taskNotes.trim()
+      due_date: taskDueDate ? new Date(taskDueDate).toISOString() : undefined,
+      notes: taskNotes.trim(),
+      contact_id: taskEntityType === 'contact' ? taskContactId : undefined,
+      supplier_id: taskEntityType === 'supplier' ? taskSupplierId : undefined,
     } : undefined;
 
     onSave({
@@ -281,6 +288,81 @@ export default function CallModal({ call, contactId, contactName, contactPersons
               <div className="mt-4 space-y-3 pl-6 border-l-2 border-blue-200">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Task Type *
+                  </label>
+                  <select
+                    value={taskType}
+                    onChange={(e) => setTaskType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required={createTask}
+                  >
+                    <option value="call_back">Call Back</option>
+                    <option value="email_back">Email Back</option>
+                    <option value="text_back">Text Back</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Related To *
+                  </label>
+                  <div className="flex gap-4 mb-2">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="contact"
+                        checked={taskEntityType === 'contact'}
+                        onChange={(e) => setTaskEntityType(e.target.value as 'contact')}
+                        className="mr-2"
+                      />
+                      Contact
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="supplier"
+                        checked={taskEntityType === 'supplier'}
+                        onChange={(e) => setTaskEntityType(e.target.value as 'supplier')}
+                        className="mr-2"
+                      />
+                      Supplier
+                    </label>
+                  </div>
+
+                  {taskEntityType === 'contact' ? (
+                    <select
+                      value={taskContactId}
+                      onChange={(e) => setTaskContactId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required={createTask}
+                    >
+                      <option value="">Select a contact</option>
+                      {contacts.map((contact) => (
+                        <option key={contact.id} value={contact.id}>
+                          {contact.name} {contact.company ? `- ${contact.company}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={taskSupplierId}
+                      onChange={(e) => setTaskSupplierId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required={createTask}
+                    >
+                      <option value="">Select a supplier</option>
+                      {suppliers.map((supplier) => (
+                        <option key={supplier.id} value={supplier.id}>
+                          {supplier.company_name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Task Title *
                   </label>
                   <input
@@ -293,39 +375,21 @@ export default function CallModal({ call, contactId, contactName, contactPersons
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Due Date *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={taskDueDate}
-                      onChange={(e) => setTaskDueDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required={createTask}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Priority
-                    </label>
-                    <select
-                      value={taskPriority}
-                      onChange={(e) => setTaskPriority(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Due Date & Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={taskDueDate}
+                    onChange={(e) => setTaskDueDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Task Notes
+                    Notes
                   </label>
                   <textarea
                     value={taskNotes}

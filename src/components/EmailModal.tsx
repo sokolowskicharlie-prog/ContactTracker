@@ -1,15 +1,18 @@
 import { X, User, Mail, CheckSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Email } from '../lib/supabase';
+import { Email, Contact, Supplier } from '../lib/supabase';
 
 interface EmailModalProps {
   email?: Email;
+  contactId: string;
   contactName: string;
+  contacts: Contact[];
+  suppliers: Supplier[];
   onClose: () => void;
-  onSave: (email: { id?: string; email_date: string; subject?: string; emailed_to?: string; email_address?: string; notes?: string }, task?: { title: string; due_date: string; priority: string; notes: string }) => void;
+  onSave: (email: { id?: string; email_date: string; subject?: string; emailed_to?: string; email_address?: string; notes?: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => void;
 }
 
-export default function EmailModal({ email, contactName, onClose, onSave }: EmailModalProps) {
+export default function EmailModal({ email, contactId, contactName, contacts, suppliers, onClose, onSave }: EmailModalProps) {
   const [emailDate, setEmailDate] = useState(
     new Date().toISOString().slice(0, 16)
   );
@@ -18,14 +21,17 @@ export default function EmailModal({ email, contactName, onClose, onSave }: Emai
   const [emailAddress, setEmailAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [createTask, setCreateTask] = useState(false);
+  const [taskType, setTaskType] = useState('email_back');
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDueDate, setTaskDueDate] = useState(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().slice(0, 16);
   });
-  const [taskPriority, setTaskPriority] = useState('medium');
   const [taskNotes, setTaskNotes] = useState('');
+  const [taskEntityType, setTaskEntityType] = useState<'contact' | 'supplier'>('contact');
+  const [taskContactId, setTaskContactId] = useState(contactId);
+  const [taskSupplierId, setTaskSupplierId] = useState('');
 
   useEffect(() => {
     if (email) {
@@ -41,10 +47,12 @@ export default function EmailModal({ email, contactName, onClose, onSave }: Emai
     e.preventDefault();
 
     const taskData = createTask && taskTitle.trim() ? {
+      task_type: taskType,
       title: taskTitle.trim(),
-      due_date: new Date(taskDueDate).toISOString(),
-      priority: taskPriority,
-      notes: taskNotes.trim()
+      due_date: taskDueDate ? new Date(taskDueDate).toISOString() : undefined,
+      notes: taskNotes.trim(),
+      contact_id: taskEntityType === 'contact' ? taskContactId : undefined,
+      supplier_id: taskEntityType === 'supplier' ? taskSupplierId : undefined,
     } : undefined;
 
     onSave({
@@ -162,6 +170,81 @@ export default function EmailModal({ email, contactName, onClose, onSave }: Emai
               <div className="mt-4 space-y-3 pl-6 border-l-2 border-blue-200">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Task Type *
+                  </label>
+                  <select
+                    value={taskType}
+                    onChange={(e) => setTaskType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required={createTask}
+                  >
+                    <option value="call_back">Call Back</option>
+                    <option value="email_back">Email Back</option>
+                    <option value="text_back">Text Back</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Related To *
+                  </label>
+                  <div className="flex gap-4 mb-2">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="contact"
+                        checked={taskEntityType === 'contact'}
+                        onChange={(e) => setTaskEntityType(e.target.value as 'contact')}
+                        className="mr-2"
+                      />
+                      Contact
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="supplier"
+                        checked={taskEntityType === 'supplier'}
+                        onChange={(e) => setTaskEntityType(e.target.value as 'supplier')}
+                        className="mr-2"
+                      />
+                      Supplier
+                    </label>
+                  </div>
+
+                  {taskEntityType === 'contact' ? (
+                    <select
+                      value={taskContactId}
+                      onChange={(e) => setTaskContactId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required={createTask}
+                    >
+                      <option value="">Select a contact</option>
+                      {contacts.map((contact) => (
+                        <option key={contact.id} value={contact.id}>
+                          {contact.name} {contact.company ? `- ${contact.company}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={taskSupplierId}
+                      onChange={(e) => setTaskSupplierId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required={createTask}
+                    >
+                      <option value="">Select a supplier</option>
+                      {suppliers.map((supplier) => (
+                        <option key={supplier.id} value={supplier.id}>
+                          {supplier.company_name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Task Title *
                   </label>
                   <input
@@ -174,39 +257,21 @@ export default function EmailModal({ email, contactName, onClose, onSave }: Emai
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Due Date *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={taskDueDate}
-                      onChange={(e) => setTaskDueDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required={createTask}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Priority
-                    </label>
-                    <select
-                      value={taskPriority}
-                      onChange={(e) => setTaskPriority(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Due Date & Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={taskDueDate}
+                    onChange={(e) => setTaskDueDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Task Notes
+                    Notes
                   </label>
                   <textarea
                     value={taskNotes}

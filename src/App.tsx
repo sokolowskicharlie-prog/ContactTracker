@@ -661,7 +661,7 @@ function App() {
     }
   };
 
-  const handleSaveCall = async (callData: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string }, newPIC?: { name: string; phone: string }, task?: { title: string; due_date: string; priority: string; notes: string }) => {
+  const handleSaveCall = async (callData: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string }, newPIC?: { name: string; phone: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => {
     if (!selectedContact) return;
 
     try {
@@ -702,10 +702,11 @@ function App() {
         const { error: taskError } = await supabase.from('tasks').insert([
           {
             user_id: user.id,
-            contact_id: selectedContact.id,
+            task_type: task.task_type,
+            contact_id: task.contact_id || null,
+            supplier_id: task.supplier_id || null,
             title: task.title,
-            due_date: task.due_date,
-            priority: task.priority,
+            due_date: task.due_date || null,
             notes: task.notes || null,
             status: 'pending',
           },
@@ -738,12 +739,31 @@ function App() {
         setSelectedContact(updatedContact);
       }
       setEditingCall(undefined);
+
+      if (!callData.id) {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: activeGoal } = await supabase
+          .from('daily_goals')
+          .select('id, manual_count')
+          .eq('user_id', user.id)
+          .eq('goal_type', 'calls')
+          .eq('target_date', today)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (activeGoal) {
+          await supabase
+            .from('daily_goals')
+            .update({ manual_count: (activeGoal.manual_count || 0) + 1 })
+            .eq('id', activeGoal.id);
+        }
+      }
     } catch (error) {
       console.error('Error saving call:', error);
     }
   };
 
-  const handleSaveEmail = async (emailData: { id?: string; email_date: string; subject?: string; emailed_to?: string; email_address?: string; notes?: string }, task?: { title: string; due_date: string; priority: string; notes: string }) => {
+  const handleSaveEmail = async (emailData: { id?: string; email_date: string; subject?: string; emailed_to?: string; email_address?: string; notes?: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => {
     if (!selectedContact) return;
 
     try {
@@ -771,10 +791,11 @@ function App() {
         const { error: taskError } = await supabase.from('tasks').insert([
           {
             user_id: user.id,
-            contact_id: selectedContact.id,
+            task_type: task.task_type,
+            contact_id: task.contact_id || null,
+            supplier_id: task.supplier_id || null,
             title: task.title,
-            due_date: task.due_date,
-            priority: task.priority,
+            due_date: task.due_date || null,
             notes: task.notes || null,
             status: 'pending',
           },
@@ -1275,7 +1296,7 @@ function App() {
     }
   };
 
-  const handleSaveFuelDeal = async (dealData: Partial<FuelDeal>, task?: { title: string; due_date: string; priority: string; notes: string }) => {
+  const handleSaveFuelDeal = async (dealData: Partial<FuelDeal>, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => {
     if (!selectedContact) return;
 
     try {
@@ -1302,10 +1323,11 @@ function App() {
         const { error: taskError } = await supabase.from('tasks').insert([
           {
             user_id: user.id,
-            contact_id: selectedContact.id,
+            task_type: task.task_type,
+            contact_id: task.contact_id || null,
+            supplier_id: task.supplier_id || null,
             title: task.title,
-            due_date: task.due_date,
-            priority: task.priority,
+            due_date: task.due_date || null,
             notes: task.notes || null,
             status: 'pending',
           },
@@ -2668,7 +2690,10 @@ function App() {
         <FuelDealModal
           deal={editingFuelDeal}
           vessels={selectedContact.vessels || []}
+          contactId={selectedContact.id}
           contactName={selectedContact.name}
+          contacts={contacts}
+          suppliers={suppliers}
           onClose={() => {
             setShowFuelDealModal(false);
             setEditingFuelDeal(undefined);
@@ -2683,6 +2708,8 @@ function App() {
           contactId={selectedContact.id}
           contactName={selectedContact.name}
           contactPersons={selectedContact.contact_persons}
+          contacts={contacts}
+          suppliers={suppliers}
           onClose={() => {
             setShowCallModal(false);
             setEditingCall(undefined);
@@ -2694,7 +2721,10 @@ function App() {
       {showEmailModal && selectedContact && (
         <EmailModal
           email={editingEmail}
+          contactId={selectedContact.id}
           contactName={selectedContact.name}
+          contacts={contacts}
+          suppliers={suppliers}
           onClose={() => {
             setShowEmailModal(false);
             setEditingEmail(undefined);
