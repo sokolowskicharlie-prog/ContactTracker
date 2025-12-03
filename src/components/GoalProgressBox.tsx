@@ -646,7 +646,31 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
                 <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold text-gray-900">Goal Summary</h4>
-                    <span className="text-sm text-gray-600">Target: {selectedGoal.target_time}</span>
+                    <div className="flex items-center gap-2">
+                      {selectedGoal.goal_type === 'calls' && (
+                        <button
+                          onClick={() => {
+                            setEditingCall(null);
+                            setNewCall({
+                              contact_id: '',
+                              call_date: new Date().toISOString(),
+                              spoke_with: '',
+                              phone_number: '',
+                              duration: '',
+                              notes: '',
+                              use_manual_entry: false,
+                              selected_person_id: ''
+                            });
+                            setShowAddActivity(!showAddActivity);
+                          }}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add New Call
+                        </button>
+                      )}
+                      <span className="text-sm text-gray-600">Target: {selectedGoal.target_time}</span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div>
