@@ -1,4 +1,4 @@
-import { X, User, Phone } from 'lucide-react';
+import { X, User, Phone, CheckSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Call, ContactPerson } from '../lib/supabase';
 
@@ -8,7 +8,7 @@ interface CallModalProps {
   contactName: string;
   contactPersons?: ContactPerson[];
   onClose: () => void;
-  onSave: (call: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string }, newPIC?: { name: string; phone: string }) => void;
+  onSave: (call: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string }, newPIC?: { name: string; phone: string }, task?: { title: string; due_date: string; priority: string; notes: string }) => void;
 }
 
 export default function CallModal({ call, contactId, contactName, contactPersons = [], onClose, onSave }: CallModalProps) {
@@ -21,6 +21,15 @@ export default function CallModal({ call, contactId, contactName, contactPersons
   const [selectedPhoneNumber, setSelectedPhoneNumber] = useState('');
   const [notes, setNotes] = useState('');
   const [useManualEntry, setUseManualEntry] = useState(false);
+  const [createTask, setCreateTask] = useState(false);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskDueDate, setTaskDueDate] = useState(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().slice(0, 16);
+  });
+  const [taskPriority, setTaskPriority] = useState('medium');
+  const [taskNotes, setTaskNotes] = useState('');
 
   useEffect(() => {
     if (call) {
@@ -85,6 +94,13 @@ export default function CallModal({ call, contactId, contactName, contactPersons
       spokeWith = person?.name || '';
     }
 
+    const taskData = createTask && taskTitle.trim() ? {
+      title: taskTitle.trim(),
+      due_date: new Date(taskDueDate).toISOString(),
+      priority: taskPriority,
+      notes: taskNotes.trim()
+    } : undefined;
+
     onSave({
       ...(call ? { id: call.id } : {}),
       call_date: new Date(callDate).toISOString(),
@@ -92,7 +108,7 @@ export default function CallModal({ call, contactId, contactName, contactPersons
       spoke_with: spokeWith || undefined,
       phone_number: phoneNumber || undefined,
       notes: notes.trim() || undefined,
-    }, newPIC);
+    }, newPIC, taskData);
 
     onClose();
   };
@@ -247,6 +263,80 @@ export default function CallModal({ call, contactId, contactName, contactPersons
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="What did you discuss?"
             />
+          </div>
+
+          <div className="border-t pt-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={createTask}
+                onChange={(e) => setCreateTask(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <CheckSquare className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-gray-700">Create follow-up task</span>
+            </label>
+
+            {createTask && (
+              <div className="mt-4 space-y-3 pl-6 border-l-2 border-blue-200">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Task Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Follow up on..."
+                    required={createTask}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Due Date *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={taskDueDate}
+                      onChange={(e) => setTaskDueDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required={createTask}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Priority
+                    </label>
+                    <select
+                      value={taskPriority}
+                      onChange={(e) => setTaskPriority(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Task Notes
+                  </label>
+                  <textarea
+                    value={taskNotes}
+                    onChange={(e) => setTaskNotes(e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Task details..."
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">

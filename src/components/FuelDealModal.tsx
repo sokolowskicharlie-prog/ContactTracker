@@ -1,4 +1,4 @@
-import { X, Ship, Droplet, Calendar, Anchor, FileText } from 'lucide-react';
+import { X, Ship, Droplet, Calendar, Anchor, FileText, CheckSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Vessel } from '../lib/supabase';
 
@@ -18,7 +18,7 @@ interface FuelDealModalProps {
   vessels: Vessel[];
   contactName: string;
   onClose: () => void;
-  onSave: (deal: FuelDeal) => void;
+  onSave: (deal: FuelDeal, task?: { title: string; due_date: string; priority: string; notes: string }) => void;
 }
 
 const FUEL_TYPES = [
@@ -42,6 +42,15 @@ export default function FuelDealModal({ deal, vessels, contactName, onClose, onS
   const [dealDate, setDealDate] = useState('');
   const [port, setPort] = useState('');
   const [notes, setNotes] = useState('');
+  const [createTask, setCreateTask] = useState(false);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskDueDate, setTaskDueDate] = useState(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().slice(0, 16);
+  });
+  const [taskPriority, setTaskPriority] = useState('medium');
+  const [taskNotes, setTaskNotes] = useState('');
 
   useEffect(() => {
     if (deal) {
@@ -72,6 +81,13 @@ export default function FuelDealModal({ deal, vessels, contactName, onClose, onS
     e.preventDefault();
     if (!vesselName.trim() || !fuelQuantity || !fuelType || !dealDate || !port.trim()) return;
 
+    const taskData = createTask && taskTitle.trim() ? {
+      title: taskTitle.trim(),
+      due_date: new Date(taskDueDate).toISOString(),
+      priority: taskPriority,
+      notes: taskNotes.trim()
+    } : undefined;
+
     onSave({
       ...(deal?.id ? { id: deal.id } : {}),
       vessel_id: vesselId || undefined,
@@ -81,7 +97,7 @@ export default function FuelDealModal({ deal, vessels, contactName, onClose, onS
       deal_date: new Date(dealDate).toISOString(),
       port: port.trim(),
       notes: notes.trim() || undefined,
-    });
+    }, taskData);
 
     onClose();
   };
@@ -242,6 +258,80 @@ export default function FuelDealModal({ deal, vessels, contactName, onClose, onS
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Additional details about the deal (price, terms, contact person, etc.)"
             />
+          </div>
+
+          <div className="border-t pt-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={createTask}
+                onChange={(e) => setCreateTask(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <CheckSquare className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-gray-700">Create follow-up task</span>
+            </label>
+
+            {createTask && (
+              <div className="mt-4 space-y-3 pl-6 border-l-2 border-blue-200">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Task Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Follow up on..."
+                    required={createTask}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Due Date *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={taskDueDate}
+                      onChange={(e) => setTaskDueDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required={createTask}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Priority
+                    </label>
+                    <select
+                      value={taskPriority}
+                      onChange={(e) => setTaskPriority(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Task Notes
+                  </label>
+                  <textarea
+                    value={taskNotes}
+                    onChange={(e) => setTaskNotes(e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Task details..."
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">

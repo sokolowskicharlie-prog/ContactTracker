@@ -661,7 +661,7 @@ function App() {
     }
   };
 
-  const handleSaveCall = async (callData: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string }, newPIC?: { name: string; phone: string }) => {
+  const handleSaveCall = async (callData: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string }, newPIC?: { name: string; phone: string }, task?: { title: string; due_date: string; priority: string; notes: string }) => {
     if (!selectedContact) return;
 
     try {
@@ -698,6 +698,22 @@ function App() {
         if (error) throw error;
       }
 
+      if (task) {
+        const { error: taskError } = await supabase.from('tasks').insert([
+          {
+            user_id: user.id,
+            contact_id: selectedContact.id,
+            title: task.title,
+            due_date: task.due_date,
+            priority: task.priority,
+            notes: task.notes || null,
+            status: 'pending',
+          },
+        ]);
+
+        if (taskError) throw taskError;
+      }
+
       const { data: allCalls } = await supabase
         .from('calls')
         .select('call_date')
@@ -727,7 +743,7 @@ function App() {
     }
   };
 
-  const handleSaveEmail = async (emailData: { id?: string; email_date: string; subject?: string; emailed_to?: string; email_address?: string; notes?: string }) => {
+  const handleSaveEmail = async (emailData: { id?: string; email_date: string; subject?: string; emailed_to?: string; email_address?: string; notes?: string }, task?: { title: string; due_date: string; priority: string; notes: string }) => {
     if (!selectedContact) return;
 
     try {
@@ -749,6 +765,22 @@ function App() {
         ]);
 
         if (error) throw error;
+      }
+
+      if (task) {
+        const { error: taskError } = await supabase.from('tasks').insert([
+          {
+            user_id: user.id,
+            contact_id: selectedContact.id,
+            title: task.title,
+            due_date: task.due_date,
+            priority: task.priority,
+            notes: task.notes || null,
+            status: 'pending',
+          },
+        ]);
+
+        if (taskError) throw taskError;
       }
 
       const { data: allEmails } = await supabase
@@ -1243,7 +1275,7 @@ function App() {
     }
   };
 
-  const handleSaveFuelDeal = async (dealData: Partial<FuelDeal>) => {
+  const handleSaveFuelDeal = async (dealData: Partial<FuelDeal>, task?: { title: string; due_date: string; priority: string; notes: string }) => {
     if (!selectedContact) return;
 
     try {
@@ -1264,6 +1296,22 @@ function App() {
         ]);
 
         if (error) throw error;
+      }
+
+      if (task) {
+        const { error: taskError } = await supabase.from('tasks').insert([
+          {
+            user_id: user.id,
+            contact_id: selectedContact.id,
+            title: task.title,
+            due_date: task.due_date,
+            priority: task.priority,
+            notes: task.notes || null,
+            status: 'pending',
+          },
+        ]);
+
+        if (taskError) throw taskError;
       }
 
       await loadContacts();
