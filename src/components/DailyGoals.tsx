@@ -1886,8 +1886,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                         onClick={onAddTask}
                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                       >
-                        <CheckSquare className="w-4 h-4" />
-                        Create New Task
+                        <Plus className="w-4 h-4" />
+                        Add New Call
                       </button>
                     </div>
                   )}
@@ -2009,7 +2009,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                             className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
                           >
                             <Plus className="w-4 h-4" />
-                            New Task
+                            Add New Call
                           </button>
                         )}
                       </div>
@@ -2160,7 +2160,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                           className="mt-4 flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors mx-auto"
                         >
                           <Plus className="w-5 h-5" />
-                          Add New Task
+                          Add New Call
                         </button>
                       )}
                     </div>
