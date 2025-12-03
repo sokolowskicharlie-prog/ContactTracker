@@ -710,7 +710,12 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                                       {schedTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} GMT
                                     </span>
                                     <span className="mx-2 text-gray-400">–</span>
-                                    <span className="font-semibold text-gray-900">{schedule.contact_name}</span>
+                                    <button
+                                      onClick={() => onSelectContact?.(schedule.contact_id)}
+                                      className="font-semibold text-gray-900 hover:text-blue-600 underline decoration-transparent hover:decoration-blue-600 transition-all"
+                                    >
+                                      {schedule.contact_name}
+                                    </button>
                                   </div>
                                   <span className={`px-2 py-0.5 text-xs font-medium rounded border ${priorityColors[schedule.priority_label]}`}>
                                     {schedule.priority_label}
