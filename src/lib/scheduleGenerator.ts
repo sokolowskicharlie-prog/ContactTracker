@@ -1,22 +1,23 @@
 import { Contact, ContactWithActivity, CallSchedule } from './supabase';
 
-// Timezone data with business hours
+// Timezone data with business hours (using GMT offset format from database)
 const TIMEZONE_DATA = {
-  'Asia/Singapore': { offset: '+08:00', endOfBusiness: 18, label: 'Singapore' },
-  'Asia/Dubai': { offset: '+04:00', endOfBusiness: 18, label: 'Dubai' },
-  'Asia/Hong_Kong': { offset: '+08:00', endOfBusiness: 18, label: 'Hong Kong' },
-  'Asia/Tokyo': { offset: '+09:00', endOfBusiness: 18, label: 'Tokyo' },
-  'Asia/Shanghai': { offset: '+08:00', endOfBusiness: 18, label: 'Shanghai' },
-  'Asia/Kolkata': { offset: '+05:30', endOfBusiness: 18, label: 'India' },
-  'Europe/London': { offset: '+00:00', endOfBusiness: 17, label: 'UK' },
-  'Europe/Paris': { offset: '+01:00', endOfBusiness: 18, label: 'France' },
-  'Europe/Berlin': { offset: '+01:00', endOfBusiness: 18, label: 'Germany' },
-  'Europe/Amsterdam': { offset: '+01:00', endOfBusiness: 18, label: 'Netherlands' },
-  'Europe/Athens': { offset: '+02:00', endOfBusiness: 18, label: 'Greece' },
-  'America/New_York': { offset: '-05:00', endOfBusiness: 17, label: 'US East' },
-  'America/Chicago': { offset: '-06:00', endOfBusiness: 17, label: 'US Central' },
-  'America/Los_Angeles': { offset: '-08:00', endOfBusiness: 17, label: 'US West' },
-  'America/Toronto': { offset: '-05:00', endOfBusiness: 17, label: 'Canada' },
+  'GMT+0': { offset: '+00:00', endOfBusiness: 17, label: 'GMT+0' },
+  'GMT+1': { offset: '+01:00', endOfBusiness: 18, label: 'GMT+1' },
+  'GMT+2': { offset: '+02:00', endOfBusiness: 18, label: 'GMT+2' },
+  'GMT+3': { offset: '+03:00', endOfBusiness: 18, label: 'GMT+3' },
+  'GMT+4': { offset: '+04:00', endOfBusiness: 18, label: 'GMT+4' },
+  'GMT+5:30': { offset: '+05:30', endOfBusiness: 18, label: 'GMT+5:30' },
+  'GMT+7': { offset: '+07:00', endOfBusiness: 18, label: 'GMT+7' },
+  'GMT+8': { offset: '+08:00', endOfBusiness: 18, label: 'GMT+8' },
+  'GMT+9': { offset: '+09:00', endOfBusiness: 18, label: 'GMT+9' },
+  'GMT+10': { offset: '+10:00', endOfBusiness: 18, label: 'GMT+10' },
+  'GMT+12': { offset: '+12:00', endOfBusiness: 17, label: 'GMT+12' },
+  'GMT-3': { offset: '-03:00', endOfBusiness: 17, label: 'GMT-3' },
+  'GMT-4': { offset: '-04:00', endOfBusiness: 17, label: 'GMT-4' },
+  'GMT-5': { offset: '-05:00', endOfBusiness: 17, label: 'GMT-5' },
+  'GMT-6': { offset: '-06:00', endOfBusiness: 17, label: 'GMT-6' },
+  'GMT-8': { offset: '-08:00', endOfBusiness: 17, label: 'GMT-8' },
 };
 
 export type PriorityLabel = 'Warm' | 'Follow-Up' | 'High Value' | 'Cold';
@@ -258,7 +259,7 @@ export function generateCallSchedule(
   // Group contacts by timezone and filter by current business hours
   const contactsByTimezone: Record<string, (Contact | ContactWithActivity)[]> = {};
   activeContacts.forEach(c => {
-    const tz = c.timezone || 'Europe/London';
+    const tz = c.timezone || 'GMT+0';
 
     // Only include contacts if their current local time is between 9 AM - 5 PM
     if (!isWithinBusinessHours(now, tz)) {
@@ -352,7 +353,7 @@ export function generateCallSchedule(
   const scheduledContactIds = new Set(schedule.map(s => s.contact_id).filter(Boolean));
   const remainingContacts = activeContacts.filter(c => {
     if (scheduledContactIds.has(c.id)) return false;
-    const tz = c.timezone || 'Europe/London';
+    const tz = c.timezone || 'GMT+0';
     return isWithinBusinessHours(now, tz);
   });
 
@@ -363,7 +364,7 @@ export function generateCallSchedule(
     if (contactIndex < remainingContacts.length) {
       const contact = remainingContacts[contactIndex];
       const priority = analyzeContactPriority(contact);
-      const timezone = contact.timezone || 'Europe/London';
+      const timezone = contact.timezone || 'GMT+0';
       const tzLabel = getTimezoneLabel(timezone);
 
       let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
