@@ -173,9 +173,12 @@ export function generateCallSchedule(
   // Start from current time
   let currentTime = new Date(now);
 
+  // Filter out jammed contacts
+  const activeContacts = contacts.filter(c => !c.jammed);
+
   // Group contacts by timezone
   const contactsByTimezone: Record<string, (Contact | ContactWithActivity)[]> = {};
-  contacts.forEach(c => {
+  activeContacts.forEach(c => {
     const tz = c.timezone || 'Europe/London';
     if (!contactsByTimezone[tz]) {
       contactsByTimezone[tz] = [];
