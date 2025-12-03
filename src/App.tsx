@@ -713,6 +713,7 @@ function App() {
         ]);
 
         if (taskError) throw taskError;
+        await loadTasks();
       }
 
       const { data: allCalls } = await supabase
@@ -802,6 +803,7 @@ function App() {
         ]);
 
         if (taskError) throw taskError;
+        await loadTasks();
       }
 
       const { data: allEmails } = await supabase
@@ -1334,6 +1336,7 @@ function App() {
         ]);
 
         if (taskError) throw taskError;
+        await loadTasks();
       }
 
       await loadContacts();
