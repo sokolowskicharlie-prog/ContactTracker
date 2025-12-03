@@ -32,6 +32,7 @@ import SupplierImportModal from './components/SupplierImportModal';
 import DailyGoals from './components/DailyGoals';
 import GlobalGoalNotifications from './components/GlobalGoalNotifications';
 import GoalProgressBox from './components/GoalProgressBox';
+import BulkSearchModal from './components/BulkSearchModal';
 
 interface NotificationSettings {
   id?: string;
@@ -62,6 +63,7 @@ function App() {
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showSupplierContactModal, setShowSupplierContactModal] = useState(false);
   const [showSupplierImportModal, setShowSupplierImportModal] = useState(false);
+  const [showBulkSearchModal, setShowBulkSearchModal] = useState(false);
   const [editingVessel, setEditingVessel] = useState<Vessel | undefined>();
   const [editingFuelDeal, setEditingFuelDeal] = useState<FuelDeal | undefined>();
   const [editingCall, setEditingCall] = useState<Call | undefined>();
@@ -144,7 +146,7 @@ function App() {
     const saved = localStorage.getItem('goalProgressBoxVisible');
     return saved !== null ? saved === 'true' : true;
   });
-  const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'add-contact']);
+  const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact']);
   const { user, loading: authLoading, signOut } = useAuth();
 
   useEffect(() => {
@@ -1829,6 +1831,16 @@ function App() {
           Import Excel
         </button>
       ),
+      'bulk-search': (
+        <button
+          key="bulk-search"
+          onClick={() => setShowBulkSearchModal(true)}
+          className="px-6 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+        >
+          <Search className="w-5 h-5" />
+          Bulk Search
+        </button>
+      ),
       'add-contact': (
         <button
           key="add-contact"
@@ -2779,6 +2791,14 @@ function App() {
             loadContacts();
           }}
           onDelete={handleDeleteContact}
+        />
+      )}
+
+      {showBulkSearchModal && (
+        <BulkSearchModal
+          contacts={contacts}
+          onClose={() => setShowBulkSearchModal(false)}
+          onSelectContact={handleContactClick}
         />
       )}
 
