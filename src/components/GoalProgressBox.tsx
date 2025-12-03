@@ -430,8 +430,6 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
       }).length;
     }
 
-    currentCount += goal.manual_count;
-
     const percentComplete = (currentCount / goal.target_amount) * 100;
 
     const now = new Date();
@@ -659,12 +657,6 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
                         {Math.round(calculateProgress(selectedGoal).percentComplete)}% Complete
                       </p>
                     </div>
-                    {selectedGoal.manual_count > 0 && (
-                      <div className="ml-auto text-right">
-                        <p className="text-sm text-gray-600">Manual Count</p>
-                        <p className="text-xl font-semibold text-purple-600">{selectedGoal.manual_count}</p>
-                      </div>
-                    )}
                   </div>
                   {selectedGoal.notes && (
                     <div className="mt-3 pt-3 border-t border-blue-200">
@@ -1475,11 +1467,6 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
                         <Calendar className="w-16 h-16 mx-auto" />
                       </div>
                       <p className="text-gray-500 text-lg">No {goalTypeLabel.toLowerCase()} recorded for this day</p>
-                      {selectedGoal.manual_count > 0 && (
-                        <p className="text-sm text-gray-400 mt-2">
-                          Manual count: {selectedGoal.manual_count}
-                        </p>
-                      )}
                     </div>
                   )}
                 </div>

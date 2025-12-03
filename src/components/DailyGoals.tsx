@@ -655,7 +655,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
 
   const calculateProgress = (goal: DailyGoal): GoalProgress => {
     const automaticCount = getActivityForDate(goal.goal_type, goal.target_date);
-    const currentAmount = automaticCount + (goal.manual_count || 0);
+    const currentAmount = automaticCount;
     const percentComplete = Math.min(100, (currentAmount / goal.target_amount) * 100);
 
     const now = new Date();
@@ -1182,23 +1182,10 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-600">
-                        Auto: {getActivityForDate(goal.goal_type, goal.target_date)}
+                        {getActivityForDate(goal.goal_type, goal.target_date)} logged
                       </span>
-                      {goal.manual_count > 0 && (
-                        <span className="text-xs text-purple-600 font-medium">
-                          + Manual: {goal.manual_count}
-                        </span>
-                      )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => updateManualCount(goal.id, -1)}
-                        disabled={!goal.manual_count}
-                        className="p-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        title="Decrease manual count"
-                      >
-                        <Minus size={14} className="text-gray-700" />
-                      </button>
                       <button
                         onClick={() => setShowAddActivityForGoal(showAddActivityForGoal === goal.id ? null : goal.id)}
                         className="p-1 rounded bg-purple-100 hover:bg-purple-200 transition-colors"
@@ -1887,12 +1874,6 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                         {Math.round(calculateProgress(selectedGoal).percentComplete)}% Complete
                       </p>
                     </div>
-                    {selectedGoal.manual_count > 0 && (
-                      <div className="ml-auto text-right">
-                        <p className="text-sm text-gray-600">Manual Count</p>
-                        <p className="text-xl font-semibold text-purple-600">{selectedGoal.manual_count}</p>
-                      </div>
-                    )}
                   </div>
                   {selectedGoal.notes && (
                     <div className="mt-3 pt-3 border-t border-blue-200">
@@ -2173,11 +2154,6 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                         <Calendar className="w-16 h-16 mx-auto" />
                       </div>
                       <p className="text-gray-500 text-lg">No {goalTypeLabel.toLowerCase()} recorded for this day</p>
-                      {selectedGoal.manual_count > 0 && (
-                        <p className="text-sm text-gray-400 mt-2">
-                          Manual count: {selectedGoal.manual_count}
-                        </p>
-                      )}
                       {selectedGoal.goal_type === 'calls' && onAddTask && (
                         <button
                           onClick={onAddTask}
