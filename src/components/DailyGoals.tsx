@@ -144,6 +144,18 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     });
   }, [calls.length, emails.length, deals.length]);
 
+  useEffect(() => {
+    if (fillRestOfDay && autoGenerateSchedule && newGoalType === 'calls') {
+      const deadlineGMT = `${newGoalDate}T${newGoalTime}:00.000Z`;
+      const deadline = new Date(deadlineGMT);
+      const now = new Date();
+      const timeAvailable = deadline.getTime() - now.getTime();
+      const callIntervalMs = scheduleDuration * 60 * 1000;
+      const calculatedCalls = Math.max(1, Math.floor(timeAvailable / callIntervalMs));
+      setNewGoalAmount(calculatedCalls);
+    }
+  }, [fillRestOfDay, autoGenerateSchedule, newGoalDate, newGoalTime, scheduleDuration, newGoalType]);
+
   const loadGoals = async () => {
     try {
       const { data, error } = await supabase
@@ -855,13 +867,23 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Target Amount</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Target Amount
+                {fillRestOfDay && autoGenerateSchedule && newGoalType === 'calls' && (
+                  <span className="ml-2 text-xs text-blue-600 font-normal">(Auto-calculated)</span>
+                )}
+              </label>
               <input
                 type="number"
                 value={newGoalAmount}
                 onChange={(e) => setNewGoalAmount(Math.max(1, parseInt(e.target.value) || 1))}
                 min="1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                readOnly={fillRestOfDay && autoGenerateSchedule && newGoalType === 'calls'}
+                className={`w-full px-3 py-2 border rounded-lg ${
+                  fillRestOfDay && autoGenerateSchedule && newGoalType === 'calls'
+                    ? 'bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed'
+                    : 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                }`}
               />
             </div>
             <div>
