@@ -2633,6 +2633,10 @@ function App() {
               emails={contacts.flatMap(c => c.emails)}
               deals={contacts.flatMap(c => c.fuel_deals)}
               contacts={contacts}
+              onAddTask={() => {
+                setEditingTask(undefined);
+                setShowTaskModal(true);
+              }}
             />
             <TaskList
               tasks={filteredTasks}

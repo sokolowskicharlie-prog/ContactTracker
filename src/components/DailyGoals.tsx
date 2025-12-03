@@ -8,6 +8,7 @@ interface DailyGoalsProps {
   emails: Email[];
   deals: FuelDeal[];
   contacts?: Contact[];
+  onAddTask?: () => void;
 }
 
 type GoalType = 'calls' | 'emails' | 'deals';
@@ -23,7 +24,7 @@ interface GoalProgress {
   requiredRate: number;
 }
 
-export default function DailyGoals({ calls, emails, deals, contacts = [] }: DailyGoalsProps) {
+export default function DailyGoals({ calls, emails, deals, contacts = [], onAddTask }: DailyGoalsProps) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [settings, setSettings] = useState<GoalNotificationSettings | null>(null);
@@ -1615,10 +1616,21 @@ export default function DailyGoals({ calls, emails, deals, contacts = [] }: Dail
                 <div className="space-y-6">
                   {selectedGoal.goal_type === 'calls' && goalCalls.length > 0 && (
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Phone className="w-5 h-5 text-green-600" />
-                        Calls Made ({goalCalls.length})
-                      </h4>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                          <Phone className="w-5 h-5 text-green-600" />
+                          Calls Made ({goalCalls.length})
+                        </h4>
+                        {onAddTask && (
+                          <button
+                            onClick={onAddTask}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                          >
+                            <Plus className="w-4 h-4" />
+                            New Task
+                          </button>
+                        )}
+                      </div>
                       <div className="space-y-3">
                         {goalCalls.map(call => (
                           <div key={call.id} className="bg-green-50 rounded-lg p-4 border border-green-100">
@@ -1764,6 +1776,15 @@ export default function DailyGoals({ calls, emails, deals, contacts = [] }: Dail
                         <p className="text-sm text-gray-400 mt-2">
                           Manual count: {selectedGoal.manual_count}
                         </p>
+                      )}
+                      {selectedGoal.goal_type === 'calls' && onAddTask && (
+                        <button
+                          onClick={onAddTask}
+                          className="mt-4 flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors mx-auto"
+                        >
+                          <Plus className="w-5 h-5" />
+                          Add New Task
+                        </button>
                       )}
                     </div>
                   )}
