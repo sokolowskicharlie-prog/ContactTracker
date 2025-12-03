@@ -1966,7 +1966,7 @@ function App() {
     };
 
     return (
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setShowButtonOrderSettings(true)}
           className="px-4 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
