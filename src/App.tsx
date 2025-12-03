@@ -699,20 +699,32 @@ function App() {
       }
 
       if (task) {
-        const { error: taskError } = await supabase.from('tasks').insert([
-          {
-            user_id: user.id,
-            task_type: task.task_type,
-            contact_id: task.contact_id || null,
-            supplier_id: task.supplier_id || null,
-            title: task.title,
-            due_date: task.due_date || null,
-            notes: task.notes || null,
-            status: 'pending',
-          },
-        ]);
+        const taskInsert: any = {
+          user_id: user.id,
+          task_type: task.task_type,
+          title: task.title,
+          notes: task.notes || null,
+          completed: false,
+        };
 
-        if (taskError) throw taskError;
+        if (task.due_date) {
+          taskInsert.due_date = task.due_date;
+        }
+
+        if (task.contact_id) {
+          taskInsert.contact_id = task.contact_id;
+        } else if (task.supplier_id) {
+          taskInsert.supplier_id = task.supplier_id;
+        } else {
+          taskInsert.contact_id = selectedContact.id;
+        }
+
+        const { error: taskError } = await supabase.from('tasks').insert([taskInsert]);
+
+        if (taskError) {
+          console.error('Error creating task:', taskError);
+          throw taskError;
+        }
         await loadTasks();
       }
 
@@ -789,20 +801,32 @@ function App() {
       }
 
       if (task) {
-        const { error: taskError } = await supabase.from('tasks').insert([
-          {
-            user_id: user.id,
-            task_type: task.task_type,
-            contact_id: task.contact_id || null,
-            supplier_id: task.supplier_id || null,
-            title: task.title,
-            due_date: task.due_date || null,
-            notes: task.notes || null,
-            status: 'pending',
-          },
-        ]);
+        const taskInsert: any = {
+          user_id: user.id,
+          task_type: task.task_type,
+          title: task.title,
+          notes: task.notes || null,
+          completed: false,
+        };
 
-        if (taskError) throw taskError;
+        if (task.due_date) {
+          taskInsert.due_date = task.due_date;
+        }
+
+        if (task.contact_id) {
+          taskInsert.contact_id = task.contact_id;
+        } else if (task.supplier_id) {
+          taskInsert.supplier_id = task.supplier_id;
+        } else {
+          taskInsert.contact_id = selectedContact.id;
+        }
+
+        const { error: taskError } = await supabase.from('tasks').insert([taskInsert]);
+
+        if (taskError) {
+          console.error('Error creating task:', taskError);
+          throw taskError;
+        }
         await loadTasks();
       }
 
@@ -1322,20 +1346,32 @@ function App() {
       }
 
       if (task) {
-        const { error: taskError } = await supabase.from('tasks').insert([
-          {
-            user_id: user.id,
-            task_type: task.task_type,
-            contact_id: task.contact_id || null,
-            supplier_id: task.supplier_id || null,
-            title: task.title,
-            due_date: task.due_date || null,
-            notes: task.notes || null,
-            status: 'pending',
-          },
-        ]);
+        const taskInsert: any = {
+          user_id: user.id,
+          task_type: task.task_type,
+          title: task.title,
+          notes: task.notes || null,
+          completed: false,
+        };
 
-        if (taskError) throw taskError;
+        if (task.due_date) {
+          taskInsert.due_date = task.due_date;
+        }
+
+        if (task.contact_id) {
+          taskInsert.contact_id = task.contact_id;
+        } else if (task.supplier_id) {
+          taskInsert.supplier_id = task.supplier_id;
+        } else {
+          taskInsert.contact_id = selectedContact.id;
+        }
+
+        const { error: taskError } = await supabase.from('tasks').insert([taskInsert]);
+
+        if (taskError) {
+          console.error('Error creating task:', taskError);
+          throw taskError;
+        }
         await loadTasks();
       }
 
