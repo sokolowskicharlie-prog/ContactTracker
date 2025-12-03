@@ -25,6 +25,7 @@ export interface ScheduleParams {
   totalCalls: number;
   deadlineGMT: string;
   callDurationMins: number;
+  fillRestOfDay?: boolean;
   timezoneDistribution?: Record<string, number>;
   priorityDistribution?: Record<PriorityLabel, number>;
   statusFilters?: ('none' | 'jammed' | 'traction' | 'client')[];
@@ -166,10 +167,18 @@ export function generateCallSchedule(
   userId: string,
   goalId: string
 ): Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] {
-  const { totalCalls, deadlineGMT, callDurationMins, statusFilters } = params;
+  const { totalCalls, deadlineGMT, callDurationMins, fillRestOfDay, statusFilters } = params;
 
   const deadline = new Date(deadlineGMT);
   const now = new Date();
+
+  // Calculate actual number of calls based on fillRestOfDay option
+  let targetCalls = totalCalls;
+  if (fillRestOfDay) {
+    const timeAvailable = deadline.getTime() - now.getTime();
+    const callIntervalMs = callDurationMins * 60 * 1000;
+    targetCalls = Math.floor(timeAvailable / callIntervalMs);
+  }
 
   // Start from current time
   let currentTime = new Date(now);
@@ -209,7 +218,7 @@ export function generateCallSchedule(
   const schedule: Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] = [];
 
   // Distribute calls across timezones and priorities
-  const callsPerTimezone = Math.ceil(totalCalls / timezonePriority.length);
+  const callsPerTimezone = Math.ceil(targetCalls / timezonePriority.length);
 
   for (const timezone of timezonePriority) {
     const tzContacts = contactsByTimezone[timezone];
@@ -224,7 +233,7 @@ export function generateCallSchedule(
       const suggested = suggestContacts(tzContacts, count, priority);
 
       suggested.forEach(s => {
-        if (schedule.length >= totalCalls) return;
+        if (schedule.length >= targetCalls) return;
         if (currentTime >= deadline) return;
 
         // Determine contact status
@@ -254,14 +263,16 @@ export function generateCallSchedule(
           user_id: userId
         });
 
-        // Move to next slot (call duration + 5 min buffer)
-        currentTime = new Date(currentTime.getTime() + (callDurationMins + 5) * 60 * 1000);
+        // Move to next slot
+        // When fillRestOfDay is enabled, use exact interval; otherwise add 5 min buffer
+        const interval = fillRestOfDay ? callDurationMins : (callDurationMins + 5);
+        currentTime = new Date(currentTime.getTime() + interval * 60 * 1000);
       });
     }
   }
 
   // If we still need more calls, add generic suggestions
-  while (schedule.length < totalCalls && currentTime < deadline) {
+  while (schedule.length < targetCalls && currentTime < deadline) {
     schedule.push({
       goal_id: goalId,
       scheduled_time: currentTime.toISOString(),
@@ -276,8 +287,9 @@ export function generateCallSchedule(
       user_id: userId
     });
 
-    currentTime = new Date(currentTime.getTime() + (callDurationMins + 5) * 60 * 1000);
+    const interval = fillRestOfDay ? callDurationMins : (callDurationMins + 5);
+    currentTime = new Date(currentTime.getTime() + interval * 60 * 1000);
   }
 
-  return schedule.slice(0, totalCalls);
+  return schedule.slice(0, targetCalls);
 }
