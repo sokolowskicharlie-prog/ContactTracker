@@ -2011,45 +2011,9 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                           Add New Call
                         </button>
                       </div>
-                      <div className="space-y-3">
-                        {goalCalls.map(call => (
-                          <div key={call.id} className="bg-green-50 rounded-lg p-4 border border-green-100">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="text-lg font-bold text-gray-900">
-                                {contacts.find(c => c.id === call.contact_id)?.name || 'Unknown Contact'}
-                              </div>
-                              <div className="flex items-center gap-1 text-sm text-gray-600">
-                                <Clock className="w-4 h-4" />
-                                {new Date(call.call_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                              </div>
-                            </div>
-                            {call.spoke_with && (
-                              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2 ml-1">
-                                <User className="w-4 h-4" />
-                                <span className="font-medium">Contact Person: {call.spoke_with}</span>
-                              </div>
-                            )}
-                            {call.phone_number && (
-                              <div className="text-sm text-gray-600 mb-1">
-                                Phone: {call.phone_number}
-                              </div>
-                            )}
-                            {call.duration && (
-                              <div className="text-sm text-gray-600 mb-1">
-                                Duration: {call.duration} minutes
-                              </div>
-                            )}
-                            {call.notes && (
-                              <div className="mt-2 text-sm text-gray-700 bg-white p-2 rounded">
-                                {call.notes}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
 
                       {showAddActivityForGoal === selectedGoal.id && selectedGoal.goal_type === 'calls' && (
-                        <div className="mt-4 p-4 bg-white rounded-lg border-2 border-green-300 shadow-sm">
+                        <div className="mb-4 p-4 bg-white rounded-lg border-2 border-green-300 shadow-sm">
                           <h5 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                             <Phone className="w-5 h-5 text-green-600" />
                             Add New Call
@@ -2279,6 +2243,43 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                           </div>
                         </div>
                       )}
+
+                      <div className="space-y-3">
+                        {goalCalls.map(call => (
+                          <div key={call.id} className="bg-green-50 rounded-lg p-4 border border-green-100">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="text-lg font-bold text-gray-900">
+                                {contacts.find(c => c.id === call.contact_id)?.name || 'Unknown Contact'}
+                              </div>
+                              <div className="flex items-center gap-1 text-sm text-gray-600">
+                                <Clock className="w-4 h-4" />
+                                {new Date(call.call_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                            {call.spoke_with && (
+                              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2 ml-1">
+                                <User className="w-4 h-4" />
+                                <span className="font-medium">Contact Person: {call.spoke_with}</span>
+                              </div>
+                            )}
+                            {call.phone_number && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Phone: {call.phone_number}
+                              </div>
+                            )}
+                            {call.duration && (
+                              <div className="text-sm text-gray-600 mb-1">
+                                Duration: {call.duration} minutes
+                              </div>
+                            )}
+                            {call.notes && (
+                              <div className="mt-2 text-sm text-gray-700 bg-white p-2 rounded">
+                                {call.notes}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
