@@ -218,3 +218,21 @@ export type GoalNotificationSettings = {
   created_at: string;
   updated_at: string;
 };
+
+export type CallSchedule = {
+  id: string;
+  goal_id: string;
+  scheduled_time: string;
+  contact_id?: string;
+  contact_name: string;
+  priority_label: 'Warm' | 'Follow-Up' | 'High Value' | 'Cold';
+  is_suggested: boolean;
+  completed: boolean;
+  completed_at?: string;
+  call_duration_mins: number;
+  timezone_label?: string;
+  notes?: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+};

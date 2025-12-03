@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Target, Plus, Trash2, Bell, BellOff, Clock, TrendingUp, TrendingDown, Minus, CheckCircle, Edit2, X, Phone, Mail, Fuel, User, Calendar, CheckSquare } from 'lucide-react';
-import { supabase, DailyGoal, GoalNotificationSettings, Call, Email, FuelDeal, Contact, ContactPerson } from '../lib/supabase';
+import { Target, Plus, Trash2, Bell, BellOff, Clock, TrendingUp, TrendingDown, Minus, CheckCircle, Edit2, X, Phone, Mail, Fuel, User, Calendar, CheckSquare, Check } from 'lucide-react';
+import { supabase, DailyGoal, GoalNotificationSettings, Call, Email, FuelDeal, Contact, ContactPerson, CallSchedule } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
+import { generateCallSchedule, ScheduleParams } from '../lib/scheduleGenerator';
 
 interface DailyGoalsProps {
   calls: Call[];
@@ -94,6 +95,10 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     notes: ''
   });
 
+  const [callSchedules, setCallSchedules] = useState<CallSchedule[]>([]);
+  const [autoGenerateSchedule, setAutoGenerateSchedule] = useState(false);
+  const [scheduleDuration, setScheduleDuration] = useState(20);
+
   useEffect(() => {
     if (user) {
       loadGoals();
@@ -101,6 +106,12 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
       loadContactPersons();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (selectedGoal && selectedGoal.goal_type === 'calls') {
+      loadSchedulesForGoal(selectedGoal.id);
+    }
+  }, [selectedGoal]);
 
   useEffect(() => {
     if (!user || !settings?.enable_notifications) return;
@@ -193,6 +204,41 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
 
     if (!error) {
       setContactPersons(data || []);
+    }
+  };
+
+  const loadSchedulesForGoal = async (goalId: string) => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('call_schedules')
+      .select('*')
+      .eq('goal_id', goalId)
+      .order('scheduled_time', { ascending: true});
+
+    if (!error) {
+      setCallSchedules(data || []);
+    }
+  };
+
+  const toggleScheduleComplete = async (scheduleId: string) => {
+    const schedule = callSchedules.find(s => s.id === scheduleId);
+    if (!schedule) return;
+
+    const { error } = await supabase
+      .from('call_schedules')
+      .update({
+        completed: !schedule.completed,
+        completed_at: !schedule.completed ? new Date().toISOString() : null
+      })
+      .eq('id', scheduleId);
+
+    if (!error) {
+      setCallSchedules(callSchedules.map(s =>
+        s.id === scheduleId
+          ? { ...s, completed: !s.completed, completed_at: !s.completed ? new Date().toISOString() : null }
+          : s
+      ));
     }
   };
 
@@ -363,6 +409,26 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
         .single();
 
       if (error) throw error;
+
+      if (autoGenerateSchedule && newGoalType === 'calls' && data) {
+        const deadlineGMT = `${newGoalDate}T${newGoalTime}:00.000Z`;
+        const scheduleParams: ScheduleParams = {
+          totalCalls: newGoalAmount,
+          deadlineGMT,
+          callDurationMins: scheduleDuration
+        };
+
+        const schedule = generateCallSchedule(scheduleParams, contacts, user!.id, data.id);
+
+        const { error: scheduleError } = await supabase
+          .from('call_schedules')
+          .insert(schedule);
+
+        if (scheduleError) {
+          console.error('Error creating schedule:', scheduleError);
+        }
+      }
+
       setGoals([...goals, data]);
       setShowAddGoal(false);
       resetForm();
@@ -533,6 +599,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     setNewGoalTime('17:00');
     setNewGoalDate(new Date().toISOString().split('T')[0]);
     setNewGoalNotes('');
+    setAutoGenerateSchedule(false);
+    setScheduleDuration(20);
   };
 
   const getActivityForDate = (type: GoalType, targetDate: string): number => {
@@ -820,6 +888,36 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
             />
           </div>
+          {newGoalType === 'calls' && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <label className="flex items-center gap-2 cursor-pointer mb-3">
+                <input
+                  type="checkbox"
+                  checked={autoGenerateSchedule}
+                  onChange={(e) => setAutoGenerateSchedule(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <Calendar className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-gray-900">Auto-generate call schedule</span>
+              </label>
+              {autoGenerateSchedule && (
+                <div className="pl-6">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Call Duration (minutes)</label>
+                  <input
+                    type="number"
+                    value={scheduleDuration}
+                    onChange={(e) => setScheduleDuration(Math.max(5, parseInt(e.target.value) || 20))}
+                    min="5"
+                    max="60"
+                    className="w-32 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Schedule will prioritize by timezone and suggest contacts based on activity
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex gap-2 mt-4">
             <button
               onClick={addGoal}
@@ -1733,6 +1831,95 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                     </div>
                   )}
                 </div>
+
+                {selectedGoal.goal_type === 'calls' && callSchedules.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-blue-600" />
+                      Call Schedule ({callSchedules.filter(s => !s.completed).length} remaining)
+                    </h4>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="max-h-96 overflow-y-auto">
+                        {callSchedules.map((schedule, idx) => {
+                          const schedTime = new Date(schedule.scheduled_time);
+                          const isPast = schedTime < new Date();
+                          const priorityColors = {
+                            'Warm': 'bg-green-100 text-green-800 border-green-300',
+                            'Follow-Up': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+                            'High Value': 'bg-purple-100 text-purple-800 border-purple-300',
+                            'Cold': 'bg-blue-100 text-blue-800 border-blue-300'
+                          };
+
+                          return (
+                            <div
+                              key={schedule.id}
+                              className={`flex items-start gap-3 p-3 border-b border-gray-200 last:border-b-0 ${
+                                schedule.completed ? 'bg-gray-100 opacity-60' : 'bg-white hover:bg-gray-50'
+                              } ${isPast && !schedule.completed ? 'bg-red-50' : ''}`}
+                            >
+                              <div className="flex items-center pt-1">
+                                <button
+                                  onClick={() => toggleScheduleComplete(schedule.id)}
+                                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                                    schedule.completed
+                                      ? 'bg-green-600 border-green-600'
+                                      : 'border-gray-300 hover:border-green-500'
+                                  }`}
+                                >
+                                  {schedule.completed && <Check className="w-3.5 h-3.5 text-white" />}
+                                </button>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                  <div className={schedule.completed ? 'line-through text-gray-500' : ''}>
+                                    <span className="font-medium text-gray-900">
+                                      {schedTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} GMT
+                                    </span>
+                                    <span className="mx-2 text-gray-400">–</span>
+                                    <span className="font-semibold text-gray-900">{schedule.contact_name}</span>
+                                  </div>
+                                  <span className={`px-2 py-0.5 text-xs font-medium rounded border ${priorityColors[schedule.priority_label]}`}>
+                                    {schedule.priority_label}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-gray-600">
+                                  {schedule.timezone_label && (
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {schedule.timezone_label}
+                                    </span>
+                                  )}
+                                  <span>{schedule.call_duration_mins} min</span>
+                                  {schedule.is_suggested && (
+                                    <span className="text-blue-600 font-medium">• Suggested</span>
+                                  )}
+                                </div>
+                                {schedule.notes && (
+                                  <p className="text-xs text-gray-600 mt-1 italic">{schedule.notes}</p>
+                                )}
+                                {schedule.completed_at && (
+                                  <p className="text-xs text-green-600 mt-1">
+                                    ✓ Completed at {new Date(schedule.completed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="p-3 bg-gray-100 border-t border-gray-300">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-gray-700">
+                            Progress: {callSchedules.filter(s => s.completed).length} / {callSchedules.length} completed
+                          </span>
+                          <span className="text-gray-600">
+                            {Math.round((callSchedules.filter(s => s.completed).length / callSchedules.length) * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-6">
                   {selectedGoal.goal_type === 'calls' && goalCalls.length > 0 && (
