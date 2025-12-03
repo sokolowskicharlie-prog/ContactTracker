@@ -27,6 +27,7 @@ export interface ScheduleParams {
   callDurationMins: number;
   timezoneDistribution?: Record<string, number>;
   priorityDistribution?: Record<PriorityLabel, number>;
+  statusFilters?: ('none' | 'jammed' | 'traction' | 'client')[];
 }
 
 export interface SuggestedContact {
@@ -165,7 +166,7 @@ export function generateCallSchedule(
   userId: string,
   goalId: string
 ): Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] {
-  const { totalCalls, deadlineGMT, callDurationMins } = params;
+  const { totalCalls, deadlineGMT, callDurationMins, statusFilters } = params;
 
   const deadline = new Date(deadlineGMT);
   const now = new Date();
@@ -173,8 +174,20 @@ export function generateCallSchedule(
   // Start from current time
   let currentTime = new Date(now);
 
-  // Filter out jammed contacts
-  const activeContacts = contacts.filter(c => !c.is_jammed);
+  // Filter contacts by status if filters are provided
+  let activeContacts = contacts;
+  if (statusFilters && statusFilters.length > 0) {
+    activeContacts = contacts.filter(c => {
+      if (c.is_jammed && statusFilters.includes('jammed')) return true;
+      if (c.is_client && !c.is_jammed && statusFilters.includes('client')) return true;
+      if (c.has_traction && !c.is_jammed && !c.is_client && statusFilters.includes('traction')) return true;
+      if (!c.is_jammed && !c.is_client && !c.has_traction && statusFilters.includes('none')) return true;
+      return false;
+    });
+  } else {
+    // Default: filter out jammed contacts
+    activeContacts = contacts.filter(c => !c.is_jammed);
+  }
 
   // Group contacts by timezone
   const contactsByTimezone: Record<string, (Contact | ContactWithActivity)[]> = {};

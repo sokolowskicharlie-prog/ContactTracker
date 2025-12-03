@@ -98,6 +98,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   const [callSchedules, setCallSchedules] = useState<CallSchedule[]>([]);
   const [autoGenerateSchedule, setAutoGenerateSchedule] = useState(false);
   const [scheduleDuration, setScheduleDuration] = useState(20);
+  const [statusFilters, setStatusFilters] = useState<('none' | 'jammed' | 'traction' | 'client')[]>(['none', 'traction', 'client']);
 
   useEffect(() => {
     if (user) {
@@ -415,7 +416,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
         const scheduleParams: ScheduleParams = {
           totalCalls: newGoalAmount,
           deadlineGMT,
-          callDurationMins: scheduleDuration
+          callDurationMins: scheduleDuration,
+          statusFilters: statusFilters.length > 0 ? statusFilters : undefined
         };
 
         const schedule = generateCallSchedule(scheduleParams, contacts, user!.id, data.id);
@@ -901,17 +903,53 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                 <span className="text-sm font-medium text-gray-900">Auto-generate call schedule</span>
               </label>
               {autoGenerateSchedule && (
-                <div className="pl-6">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Call Duration (minutes)</label>
-                  <input
-                    type="number"
-                    value={scheduleDuration}
-                    onChange={(e) => setScheduleDuration(Math.max(5, parseInt(e.target.value) || 20))}
-                    min="5"
-                    max="60"
-                    className="w-32 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <p className="text-xs text-gray-600 mt-1">
+                <div className="pl-6 space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Call Duration (minutes)</label>
+                    <input
+                      type="number"
+                      value={scheduleDuration}
+                      onChange={(e) => setScheduleDuration(Math.max(5, parseInt(e.target.value) || 20))}
+                      min="5"
+                      max="60"
+                      className="w-32 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">Include Contact Status</label>
+                    <div className="flex flex-wrap gap-3">
+                      {[
+                        { value: 'none' as const, label: 'None', color: 'gray' },
+                        { value: 'traction' as const, label: 'Traction', color: 'yellow' },
+                        { value: 'client' as const, label: 'Client', color: 'green' },
+                        { value: 'jammed' as const, label: 'Jammed', color: 'red' }
+                      ].map(status => (
+                        <label key={status.value} className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={statusFilters.includes(status.value)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setStatusFilters([...statusFilters, status.value]);
+                              } else {
+                                setStatusFilters(statusFilters.filter(s => s !== status.value));
+                              }
+                            }}
+                            className="w-3.5 h-3.5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded border ${
+                            status.color === 'gray' ? 'bg-gray-100 text-gray-800 border-gray-300' :
+                            status.color === 'yellow' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                            status.color === 'green' ? 'bg-green-100 text-green-800 border-green-300' :
+                            'bg-red-100 text-red-800 border-red-300'
+                          }`}>
+                            {status.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600">
                     Schedule will prioritize by timezone and suggest contacts based on activity
                   </p>
                 </div>
