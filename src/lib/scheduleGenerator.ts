@@ -255,10 +255,16 @@ export function generateCallSchedule(
     activeContacts = contacts.filter(c => !c.is_jammed);
   }
 
-  // Group contacts by timezone
+  // Group contacts by timezone and filter by current business hours
   const contactsByTimezone: Record<string, (Contact | ContactWithActivity)[]> = {};
   activeContacts.forEach(c => {
     const tz = c.timezone || 'Europe/London';
+
+    // Only include contacts if their current local time is between 9 AM - 5 PM
+    if (!isWithinBusinessHours(now, tz)) {
+      return;
+    }
+
     if (!contactsByTimezone[tz]) {
       contactsByTimezone[tz] = [];
     }
@@ -342,8 +348,13 @@ export function generateCallSchedule(
   }
 
   // If we still need more calls, cycle through remaining contacts from all timezones
+  // Only include contacts whose current local time is between 9 AM - 5 PM
   const scheduledContactIds = new Set(schedule.map(s => s.contact_id).filter(Boolean));
-  const remainingContacts = activeContacts.filter(c => !scheduledContactIds.has(c.id));
+  const remainingContacts = activeContacts.filter(c => {
+    if (scheduledContactIds.has(c.id)) return false;
+    const tz = c.timezone || 'Europe/London';
+    return isWithinBusinessHours(now, tz);
+  });
 
   let contactIndex = 0;
   while (schedule.length < targetCalls && currentTime < deadline) {
