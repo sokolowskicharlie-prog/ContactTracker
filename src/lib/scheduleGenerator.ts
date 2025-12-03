@@ -106,6 +106,63 @@ export function getTimezoneEndOfBusinessGMT(timezone: string, date: Date = new D
   return endOfBusiness;
 }
 
+function convertGMTToLocalTime(gmtTime: Date, timezone: string): Date {
+  const tzData = TIMEZONE_DATA[timezone as keyof typeof TIMEZONE_DATA];
+  if (!tzData) return new Date(gmtTime);
+
+  const localTime = new Date(gmtTime);
+  const offsetHours = parseInt(tzData.offset.split(':')[0]);
+  const offsetMins = parseInt(tzData.offset.split(':')[1]);
+
+  localTime.setHours(localTime.getHours() + offsetHours);
+  localTime.setMinutes(localTime.getMinutes() + offsetMins);
+
+  return localTime;
+}
+
+function isWithinBusinessHours(gmtTime: Date, timezone: string): boolean {
+  const localTime = convertGMTToLocalTime(gmtTime, timezone);
+  const hours = localTime.getHours();
+  const minutes = localTime.getMinutes();
+
+  const timeInMinutes = hours * 60 + minutes;
+  const startOfDay = 9 * 60;
+  const endOfDay = 17 * 60;
+
+  return timeInMinutes >= startOfDay && timeInMinutes < endOfDay;
+}
+
+function getNextAvailableSlot(currentGMT: Date, timezone: string, callDurationMins: number): Date | null {
+  const localTime = convertGMTToLocalTime(currentGMT, timezone);
+  const hours = localTime.getHours();
+  const minutes = localTime.getMinutes();
+
+  const timeInMinutes = hours * 60 + minutes;
+  const startOfDay = 9 * 60;
+  const endOfDay = 17 * 60;
+
+  if (timeInMinutes < startOfDay) {
+    const tzData = TIMEZONE_DATA[timezone as keyof typeof TIMEZONE_DATA];
+    if (!tzData) return null;
+
+    const nextSlot = new Date(localTime);
+    nextSlot.setHours(9, 0, 0, 0);
+
+    const offsetHours = parseInt(tzData.offset.split(':')[0]);
+    const offsetMins = parseInt(tzData.offset.split(':')[1]);
+    nextSlot.setHours(nextSlot.getHours() - offsetHours);
+    nextSlot.setMinutes(nextSlot.getMinutes() - offsetMins);
+
+    return nextSlot;
+  }
+
+  if (timeInMinutes + callDurationMins > endOfDay) {
+    return null;
+  }
+
+  return currentGMT;
+}
+
 export function suggestContacts(
   contacts: (Contact | ContactWithActivity)[],
   count: number,
@@ -208,8 +265,13 @@ export function generateCallSchedule(
     contactsByTimezone[tz].push(c);
   });
 
-  // Sort timezones by end of business time (earliest first)
   const timezonePriority = Object.keys(contactsByTimezone).sort((a, b) => {
+    const aWithinHours = isWithinBusinessHours(now, a);
+    const bWithinHours = isWithinBusinessHours(now, b);
+
+    if (aWithinHours && !bWithinHours) return -1;
+    if (!aWithinHours && bWithinHours) return 1;
+
     const aEnd = getTimezoneEndOfBusinessGMT(a);
     const bEnd = getTimezoneEndOfBusinessGMT(b);
     return aEnd.getTime() - bEnd.getTime();
@@ -236,7 +298,12 @@ export function generateCallSchedule(
         if (schedule.length >= targetCalls) return;
         if (currentTime >= deadline) return;
 
-        // Determine contact status
+        const availableSlot = getNextAvailableSlot(currentTime, timezone, callDurationMins);
+        if (!availableSlot) return;
+
+        const scheduledTime = availableSlot;
+        if (scheduledTime >= deadline) return;
+
         let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
         if (s.contact) {
           if (s.contact.is_jammed) {
@@ -250,7 +317,7 @@ export function generateCallSchedule(
 
         schedule.push({
           goal_id: goalId,
-          scheduled_time: currentTime.toISOString(),
+          scheduled_time: scheduledTime.toISOString(),
           contact_id: s.contact?.id,
           contact_name: s.contactName,
           priority_label: s.priorityLabel,
@@ -263,10 +330,8 @@ export function generateCallSchedule(
           user_id: userId
         });
 
-        // Move to next slot
-        // When fillRestOfDay is enabled, use exact interval; otherwise add 5 min buffer
         const interval = fillRestOfDay ? callDurationMins : (callDurationMins + 5);
-        currentTime = new Date(currentTime.getTime() + interval * 60 * 1000);
+        currentTime = new Date(scheduledTime.getTime() + interval * 60 * 1000);
       });
     }
   }
