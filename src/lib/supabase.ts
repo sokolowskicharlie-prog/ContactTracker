@@ -226,6 +226,7 @@ export type CallSchedule = {
   contact_id?: string;
   contact_name: string;
   priority_label: 'Warm' | 'Follow-Up' | 'High Value' | 'Cold';
+  contact_status?: 'jammed' | 'traction' | 'client' | 'none';
   is_suggested: boolean;
   completed: boolean;
   completed_at?: string;

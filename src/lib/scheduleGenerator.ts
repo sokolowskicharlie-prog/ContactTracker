@@ -174,7 +174,7 @@ export function generateCallSchedule(
   let currentTime = new Date(now);
 
   // Filter out jammed contacts
-  const activeContacts = contacts.filter(c => !c.jammed);
+  const activeContacts = contacts.filter(c => !c.is_jammed);
 
   // Group contacts by timezone
   const contactsByTimezone: Record<string, (Contact | ContactWithActivity)[]> = {};
@@ -214,12 +214,25 @@ export function generateCallSchedule(
         if (schedule.length >= totalCalls) return;
         if (currentTime >= deadline) return;
 
+        // Determine contact status
+        let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+        if (s.contact) {
+          if (s.contact.is_jammed) {
+            contactStatus = 'jammed';
+          } else if (s.contact.is_client) {
+            contactStatus = 'client';
+          } else if (s.contact.has_traction) {
+            contactStatus = 'traction';
+          }
+        }
+
         schedule.push({
           goal_id: goalId,
           scheduled_time: currentTime.toISOString(),
           contact_id: s.contact?.id,
           contact_name: s.contactName,
           priority_label: s.priorityLabel,
+          contact_status: contactStatus,
           is_suggested: !s.contact,
           completed: false,
           call_duration_mins: callDurationMins,
@@ -241,6 +254,7 @@ export function generateCallSchedule(
       scheduled_time: currentTime.toISOString(),
       contact_name: `Prospect #${schedule.length + 1}`,
       priority_label: 'Cold',
+      contact_status: 'none',
       is_suggested: true,
       completed: false,
       call_duration_mins: callDurationMins,
