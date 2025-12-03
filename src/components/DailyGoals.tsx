@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, Plus, Trash2, Bell, BellOff, Clock, TrendingUp, TrendingDown, Minus, CheckCircle, Edit2, X, Phone, Mail, Fuel, User, Calendar } from 'lucide-react';
+import { Target, Plus, Trash2, Bell, BellOff, Clock, TrendingUp, TrendingDown, Minus, CheckCircle, Edit2, X, Phone, Mail, Fuel, User, Calendar, CheckSquare } from 'lucide-react';
 import { supabase, DailyGoal, GoalNotificationSettings, Call, Email, FuelDeal, Contact, ContactPerson } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
@@ -64,6 +64,16 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     use_manual_entry: false,
     selected_person_id: ''
   });
+
+  const [createCallTask, setCreateCallTask] = useState(false);
+  const [callTaskType, setCallTaskType] = useState('call_back');
+  const [callTaskTitle, setCallTaskTitle] = useState('');
+  const [callTaskDueDate, setCallTaskDueDate] = useState(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().slice(0, 16);
+  });
+  const [callTaskNotes, setCallTaskNotes] = useState('');
 
   const [newEmail, setNewEmail] = useState({
     contact_id: '',
@@ -225,6 +235,23 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
         })
         .eq('id', newCall.contact_id);
 
+      if (createCallTask && callTaskTitle.trim()) {
+        const taskInsert: any = {
+          user_id: user.id,
+          task_type: callTaskType,
+          title: callTaskTitle,
+          notes: callTaskNotes || null,
+          completed: false,
+          contact_id: newCall.contact_id,
+        };
+
+        if (callTaskDueDate) {
+          taskInsert.due_date = callTaskDueDate;
+        }
+
+        await supabase.from('tasks').insert([taskInsert]);
+      }
+
       setNewCall({
         contact_id: '',
         call_date: new Date().toISOString(),
@@ -235,6 +262,15 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
         use_manual_entry: false,
         selected_person_id: ''
       });
+      setCreateCallTask(false);
+      setCallTaskType('call_back');
+      setCallTaskTitle('');
+      setCallTaskDueDate(() => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return tomorrow.toISOString().slice(0, 16);
+      });
+      setCallTaskNotes('');
       setShowAddActivityForGoal(null);
     }
   };
@@ -1189,6 +1225,80 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                 placeholder="Call notes"
                               />
                             </div>
+
+                            <div className="border-t pt-3 mt-3">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={createCallTask}
+                                  onChange={(e) => setCreateCallTask(e.target.checked)}
+                                  className="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                                />
+                                <CheckSquare className="w-4 h-4 text-green-600" />
+                                <span className="text-xs font-medium text-gray-700">Create follow-up task</span>
+                              </label>
+
+                              {createCallTask && (
+                                <div className="mt-3 space-y-2 pl-6 border-l-2 border-green-200">
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                      Task Type *
+                                    </label>
+                                    <select
+                                      value={callTaskType}
+                                      onChange={(e) => setCallTaskType(e.target.value)}
+                                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                      required={createCallTask}
+                                    >
+                                      <option value="call_back">Call Back</option>
+                                      <option value="email_back">Email Back</option>
+                                      <option value="text_back">Text Back</option>
+                                      <option value="other">Other</option>
+                                    </select>
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                      Task Title *
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={callTaskTitle}
+                                      onChange={(e) => setCallTaskTitle(e.target.value)}
+                                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                      placeholder="Follow up on..."
+                                      required={createCallTask}
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                      Due Date & Time
+                                    </label>
+                                    <input
+                                      type="datetime-local"
+                                      value={callTaskDueDate}
+                                      onChange={(e) => setCallTaskDueDate(e.target.value)}
+                                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                      Task Notes
+                                    </label>
+                                    <textarea
+                                      value={callTaskNotes}
+                                      onChange={(e) => setCallTaskNotes(e.target.value)}
+                                      rows={2}
+                                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                      placeholder="Task details..."
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
                             <div className="flex gap-2 mt-3">
                               <button
                                 onClick={() => handleAddCall(goal.id)}
