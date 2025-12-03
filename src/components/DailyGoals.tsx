@@ -1915,11 +1915,17 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                         {callSchedules.map((schedule, idx) => {
                           const schedTime = new Date(schedule.scheduled_time);
                           const isPast = schedTime < new Date();
-                          const priorityColors = {
-                            'Warm': 'bg-green-100 text-green-800 border-green-300',
-                            'Follow-Up': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-                            'High Value': 'bg-purple-100 text-purple-800 border-purple-300',
-                            'Cold': 'bg-blue-100 text-blue-800 border-blue-300'
+                          const statusColors = {
+                            'client': 'bg-green-100 text-green-800 border-green-300',
+                            'traction': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+                            'jammed': 'bg-red-100 text-red-800 border-red-300',
+                            'none': 'bg-gray-100 text-gray-800 border-gray-300'
+                          };
+                          const statusLabels = {
+                            'client': 'Client',
+                            'traction': 'Traction',
+                            'jammed': 'Jammed',
+                            'none': 'None'
                           };
 
                           return (
@@ -1950,9 +1956,11 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                     <span className="mx-2 text-gray-400">–</span>
                                     <span className="font-semibold text-gray-900">{schedule.contact_name}</span>
                                   </div>
-                                  <span className={`px-2 py-0.5 text-xs font-medium rounded border ${priorityColors[schedule.priority_label]}`}>
-                                    {schedule.priority_label}
-                                  </span>
+                                  {schedule.contact_status && (
+                                    <span className={`px-2 py-0.5 text-xs font-medium rounded border ${statusColors[schedule.contact_status]}`}>
+                                      {statusLabels[schedule.contact_status]}
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-3 text-xs text-gray-600">
                                   {schedule.timezone_label && (
