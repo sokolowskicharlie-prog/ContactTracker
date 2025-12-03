@@ -690,6 +690,19 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                             'none': 'None'
                           };
 
+                          // Get current contact status from contacts array
+                          const contact = schedule.contact_id ? contacts.find(c => c.id === schedule.contact_id) : null;
+                          let currentStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+                          if (contact) {
+                            if (contact.is_jammed) {
+                              currentStatus = 'jammed';
+                            } else if (contact.is_client) {
+                              currentStatus = 'client';
+                            } else if (contact.has_traction) {
+                              currentStatus = 'traction';
+                            }
+                          }
+
                           return (
                             <div
                               key={schedule.id}
@@ -722,11 +735,9 @@ export default function GoalProgressBox({ onSelectContact }: GoalProgressBoxProp
                                     >
                                       {schedule.contact_name}
                                     </button>
-                                    {schedule.contact_status && (
-                                      <span className={`ml-2 px-2 py-0.5 text-xs font-medium rounded border ${statusColors[schedule.contact_status]}`}>
-                                        {statusLabels[schedule.contact_status]}
-                                      </span>
-                                    )}
+                                    <span className={`ml-2 px-2 py-0.5 text-xs font-medium rounded border ${statusColors[currentStatus]}`}>
+                                      {statusLabels[currentStatus]}
+                                    </span>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-3 text-xs text-gray-600">
