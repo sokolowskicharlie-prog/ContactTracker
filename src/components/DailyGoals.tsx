@@ -10,6 +10,7 @@ interface DailyGoalsProps {
   deals: FuelDeal[];
   contacts?: Contact[];
   onAddTask?: () => void;
+  onSelectContact?: (contactId: string) => void;
 }
 
 type GoalType = 'calls' | 'emails' | 'deals';
@@ -25,7 +26,7 @@ interface GoalProgress {
   requiredRate: number;
 }
 
-export default function DailyGoals({ calls, emails, deals, contacts = [], onAddTask }: DailyGoalsProps) {
+export default function DailyGoals({ calls, emails, deals, contacts = [], onAddTask, onSelectContact }: DailyGoalsProps) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [settings, setSettings] = useState<GoalNotificationSettings | null>(null);
@@ -1954,7 +1955,12 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                       {schedTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} GMT
                                     </span>
                                     <span className="mx-2 text-gray-400">–</span>
-                                    <span className="font-semibold text-gray-900">{schedule.contact_name}</span>
+                                    <button
+                                      onClick={() => schedule.contact_id && onSelectContact?.(schedule.contact_id)}
+                                      className="font-semibold text-gray-900 hover:text-blue-600 underline decoration-transparent hover:decoration-blue-600 transition-colors"
+                                    >
+                                      {schedule.contact_name}
+                                    </button>
                                   </div>
                                   {schedule.contact_status && (
                                     <span className={`px-2 py-0.5 text-xs font-medium rounded border ${statusColors[schedule.contact_status]}`}>

@@ -2646,6 +2646,7 @@ function App() {
                 setEditingTask(undefined);
                 setShowTaskModal(true);
               }}
+              onSelectContact={handleSelectContactFromGoals}
             />
             <TaskList
               tasks={filteredTasks}
