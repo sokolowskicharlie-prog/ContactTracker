@@ -1,4 +1,4 @@
-import { Contact, ContactWithActivity, CallSchedule } from './supabase';
+import { Contact, ContactWithActivity, CallSchedule, Task } from './supabase';
 
 // Timezone data with business hours (using GMT offset format from database)
 const TIMEZONE_DATA = {
@@ -223,7 +223,8 @@ export function generateCallSchedule(
   params: ScheduleParams,
   contacts: (Contact | ContactWithActivity)[],
   userId: string,
-  goalId: string
+  goalId: string,
+  tasks: Task[] = []
 ): Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] {
   const { totalCalls, deadlineGMT, callDurationMins, fillRestOfDay, statusFilters } = params;
 
@@ -462,6 +463,72 @@ export function generateCallSchedule(
       break;
     }
   }
+
+  // Filter and add call_back tasks that are due today
+  const callBackTasks = tasks.filter(task => {
+    if (task.task_type !== 'call_back' || task.completed || !task.due_date) {
+      return false;
+    }
+    const taskDueDate = new Date(task.due_date);
+    return taskDueDate >= now && taskDueDate <= deadline;
+  });
+
+  // Create a map of contact IDs to contacts for quick lookup
+  const contactMap = new Map<string, Contact | ContactWithActivity>();
+  contacts.forEach(c => contactMap.set(c.id, c));
+
+  // Add tasks to the schedule
+  callBackTasks.forEach(task => {
+    const contact = task.contact_id ? contactMap.get(task.contact_id) : undefined;
+    const taskDueDate = new Date(task.due_date!);
+
+    let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+    let contactName = task.title; // Use task title as fallback
+    let timezoneLabel = 'GMT+0';
+    let priorityLabel: 'Warm' | 'Follow-Up' | 'High Value' | 'Cold' = 'Follow-Up';
+
+    if (contact) {
+      contactName = contact.name || contact.company || task.title;
+      timezoneLabel = getTimezoneLabel(contact.timezone);
+      priorityLabel = analyzeContactPriority(contact);
+
+      if (contact.is_jammed) {
+        contactStatus = 'jammed';
+      } else if (contact.is_client) {
+        contactStatus = 'client';
+      } else if (contact.has_traction) {
+        contactStatus = 'traction';
+      }
+    }
+
+    schedule.push({
+      goal_id: goalId,
+      scheduled_time: taskDueDate.toISOString(),
+      contact_id: task.contact_id,
+      contact_name: contactName,
+      priority_label: priorityLabel,
+      contact_status: contactStatus,
+      is_suggested: false,
+      completed: false,
+      call_duration_mins: callDurationMins,
+      timezone_label: timezoneLabel,
+      notes: task.notes || 'Scheduled task',
+      display_order: 0, // Will be updated after sorting
+      user_id: userId
+    });
+  });
+
+  // Sort schedule by scheduled_time
+  schedule.sort((a, b) => {
+    const timeA = new Date(a.scheduled_time).getTime();
+    const timeB = new Date(b.scheduled_time).getTime();
+    return timeA - timeB;
+  });
+
+  // Update display_order after sorting
+  schedule.forEach((entry, index) => {
+    entry.display_order = index;
+  });
 
   return fillRestOfDay ? schedule : schedule.slice(0, targetCalls);
 }

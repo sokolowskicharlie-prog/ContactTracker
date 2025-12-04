@@ -483,7 +483,17 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
           statusFilters: statusFilters.length > 0 ? statusFilters : undefined
         };
 
-        const schedule = generateCallSchedule(scheduleParams, contacts, user!.id, data.id);
+        // Fetch call_back tasks that are not completed and due today
+        const { data: tasksData } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user!.id)
+          .eq('task_type', 'call_back')
+          .eq('completed', false)
+          .gte('due_date', new Date().toISOString())
+          .lte('due_date', deadlineGMT);
+
+        const schedule = generateCallSchedule(scheduleParams, contacts, user!.id, data.id, tasksData || []);
 
         const { error: scheduleError } = await supabase
           .from('call_schedules')
