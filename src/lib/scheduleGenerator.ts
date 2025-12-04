@@ -316,6 +316,9 @@ export function generateCallSchedule(
         const scheduledTime = availableSlot;
         if (scheduledTime >= deadline) return;
 
+        // Verify the scheduled time is within 9 AM - 5 PM for this contact's timezone
+        if (!isWithinBusinessHours(scheduledTime, timezone)) return;
+
         let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
         if (s.contact) {
           if (s.contact.is_jammed) {
@@ -368,38 +371,50 @@ export function generateCallSchedule(
       const timezone = contact.timezone || 'GMT+0';
       const tzLabel = getTimezoneLabel(timezone);
 
-      let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
-      if (contact.is_jammed) {
-        contactStatus = 'jammed';
-      } else if (contact.is_client) {
-        contactStatus = 'client';
-      } else if (contact.has_traction) {
-        contactStatus = 'traction';
+      // Check if the current time is within business hours for this contact's timezone
+      const availableSlot = getNextAvailableSlot(currentTime, timezone, callDurationMins);
+
+      if (availableSlot && isWithinBusinessHours(availableSlot, timezone)) {
+        let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+        if (contact.is_jammed) {
+          contactStatus = 'jammed';
+        } else if (contact.is_client) {
+          contactStatus = 'client';
+        } else if (contact.has_traction) {
+          contactStatus = 'traction';
+        }
+
+        contactToSchedule = {
+          contact: contact,
+          contactName: contact.name || contact.company || 'Unknown',
+          priorityLabel: priority,
+          timezoneLabel: tzLabel,
+          reason: getReasonText(contact, priority)
+        };
+
+        schedule.push({
+          goal_id: goalId,
+          scheduled_time: availableSlot.toISOString(),
+          contact_id: contact.id,
+          contact_name: contactToSchedule.contactName,
+          priority_label: contactToSchedule.priorityLabel,
+          contact_status: contactStatus,
+          is_suggested: false,
+          completed: false,
+          call_duration_mins: callDurationMins,
+          timezone_label: contactToSchedule.timezoneLabel,
+          notes: contactToSchedule.reason,
+          display_order: schedule.length,
+          user_id: userId
+        });
+
+        const interval = fillRestOfDay ? callDurationMins : (callDurationMins + 5);
+        currentTime = new Date(availableSlot.getTime() + interval * 60 * 1000);
+      } else {
+        // Skip this contact if not within business hours
+        const interval = fillRestOfDay ? callDurationMins : (callDurationMins + 5);
+        currentTime = new Date(currentTime.getTime() + interval * 60 * 1000);
       }
-
-      contactToSchedule = {
-        contact: contact,
-        contactName: contact.name || contact.company || 'Unknown',
-        priorityLabel: priority,
-        timezoneLabel: tzLabel,
-        reason: getReasonText(contact, priority)
-      };
-
-      schedule.push({
-        goal_id: goalId,
-        scheduled_time: currentTime.toISOString(),
-        contact_id: contact.id,
-        contact_name: contactToSchedule.contactName,
-        priority_label: contactToSchedule.priorityLabel,
-        contact_status: contactStatus,
-        is_suggested: false,
-        completed: false,
-        call_duration_mins: callDurationMins,
-        timezone_label: contactToSchedule.timezoneLabel,
-        notes: contactToSchedule.reason,
-        display_order: schedule.length,
-        user_id: userId
-      });
 
       contactIndex++;
     } else {
@@ -418,10 +433,10 @@ export function generateCallSchedule(
         display_order: schedule.length,
         user_id: userId
       });
-    }
 
-    const interval = fillRestOfDay ? callDurationMins : (callDurationMins + 5);
-    currentTime = new Date(currentTime.getTime() + interval * 60 * 1000);
+      const interval = fillRestOfDay ? callDurationMins : (callDurationMins + 5);
+      currentTime = new Date(currentTime.getTime() + interval * 60 * 1000);
+    }
   }
 
   return schedule.slice(0, targetCalls);
