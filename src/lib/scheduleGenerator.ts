@@ -339,6 +339,7 @@ export function generateCallSchedule(
           call_duration_mins: callDurationMins,
           timezone_label: tzLabel,
           notes: s.reason,
+          display_order: schedule.length,
           user_id: userId
         });
 
@@ -396,6 +397,7 @@ export function generateCallSchedule(
         call_duration_mins: callDurationMins,
         timezone_label: contactToSchedule.timezoneLabel,
         notes: contactToSchedule.reason,
+        display_order: schedule.length,
         user_id: userId
       });
 
@@ -413,6 +415,7 @@ export function generateCallSchedule(
         call_duration_mins: callDurationMins,
         timezone_label: 'To be assigned',
         notes: 'Manual assignment needed',
+        display_order: schedule.length,
         user_id: userId
       });
     }

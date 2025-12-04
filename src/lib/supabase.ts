@@ -233,6 +233,7 @@ export type CallSchedule = {
   call_duration_mins: number;
   timezone_label?: string;
   notes?: string;
+  display_order: number;
   user_id: string;
   created_at: string;
   updated_at: string;

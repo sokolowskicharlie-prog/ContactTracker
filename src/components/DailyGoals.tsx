@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, Plus, Trash2, Bell, BellOff, Clock, TrendingUp, TrendingDown, Minus, CheckCircle, Edit2, X, Phone, Mail, Fuel, User, Calendar, CheckSquare, Check } from 'lucide-react';
+import { Target, Plus, Trash2, Bell, BellOff, Clock, TrendingUp, TrendingDown, Minus, CheckCircle, Edit2, X, Phone, Mail, Fuel, User, Calendar, CheckSquare, Check, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 import { supabase, DailyGoal, GoalNotificationSettings, Call, Email, FuelDeal, Contact, ContactPerson, CallSchedule } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { generateCallSchedule, ScheduleParams } from '../lib/scheduleGenerator';
@@ -230,7 +230,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
       .from('call_schedules')
       .select('*')
       .eq('goal_id', goalId)
-      .order('scheduled_time', { ascending: true});
+      .order('display_order', { ascending: true});
 
     if (!error) {
       setCallSchedules(data || []);
@@ -262,6 +262,47 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
         onLogCall(schedule.contact_id);
       }
     }
+  };
+
+  const replaceScheduleContact = async (scheduleId: string, newContactId: string) => {
+    const newContact = contacts.find(c => c.id === newContactId);
+    if (!newContact) return;
+
+    const { error } = await supabase
+      .from('call_schedules')
+      .update({
+        contact_id: newContactId,
+        contact_name: newContact.company_name
+      })
+      .eq('id', scheduleId);
+
+    if (!error) {
+      setCallSchedules(callSchedules.map(s =>
+        s.id === scheduleId
+          ? { ...s, contact_id: newContactId, contact_name: newContact.company_name, contact_status: newContact.status }
+          : s
+      ));
+    }
+  };
+
+  const moveSchedule = async (scheduleId: string, direction: 'up' | 'down') => {
+    const currentIndex = callSchedules.findIndex(s => s.id === scheduleId);
+    if (currentIndex === -1) return;
+    if (direction === 'up' && currentIndex === 0) return;
+    if (direction === 'down' && currentIndex === callSchedules.length - 1) return;
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    const newSchedules = [...callSchedules];
+    [newSchedules[currentIndex], newSchedules[newIndex]] = [newSchedules[newIndex], newSchedules[currentIndex]];
+
+    // Update display_order for both schedules
+    const updates = [
+      supabase.from('call_schedules').update({ display_order: newIndex }).eq('id', newSchedules[newIndex].id),
+      supabase.from('call_schedules').update({ display_order: currentIndex }).eq('id', newSchedules[currentIndex].id)
+    ];
+
+    await Promise.all(updates);
+    setCallSchedules(newSchedules);
   };
 
   const handleAddCall = async (goalId: string) => {
@@ -1986,6 +2027,47 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                   <p className="text-xs text-green-600 mt-1">
                                     ✓ Completed at {new Date(schedule.completed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                   </p>
+                                )}
+                                {!schedule.completed && (
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        onClick={() => moveSchedule(schedule.id, 'up')}
+                                        disabled={idx === 0}
+                                        className={`p-1 rounded hover:bg-gray-200 transition-colors ${
+                                          idx === 0 ? 'opacity-30 cursor-not-allowed' : ''
+                                        }`}
+                                        title="Move up"
+                                      >
+                                        <ArrowUp className="w-3.5 h-3.5 text-gray-600" />
+                                      </button>
+                                      <button
+                                        onClick={() => moveSchedule(schedule.id, 'down')}
+                                        disabled={idx === callSchedules.length - 1}
+                                        className={`p-1 rounded hover:bg-gray-200 transition-colors ${
+                                          idx === callSchedules.length - 1 ? 'opacity-30 cursor-not-allowed' : ''
+                                        }`}
+                                        title="Move down"
+                                      >
+                                        <ArrowDown className="w-3.5 h-3.5 text-gray-600" />
+                                      </button>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <RefreshCw className="w-3 h-3 text-gray-500" />
+                                      <select
+                                        value={schedule.contact_id || ''}
+                                        onChange={(e) => replaceScheduleContact(schedule.id, e.target.value)}
+                                        className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      >
+                                        <option value="">Select contact...</option>
+                                        {contacts.map(contact => (
+                                          <option key={contact.id} value={contact.id}>
+                                            {contact.company_name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
                                 )}
                               </div>
                             </div>
