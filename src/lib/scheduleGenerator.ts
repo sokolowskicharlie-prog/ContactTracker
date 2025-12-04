@@ -267,13 +267,14 @@ export function generateCallSchedule(
     activeContacts = contacts.filter(c => !c.is_jammed);
   }
 
-  // Group contacts by timezone and filter by current business hours
+  // Group contacts by timezone
   const contactsByTimezone: Record<string, (Contact | ContactWithActivity)[]> = {};
   activeContacts.forEach(c => {
     const tz = c.timezone || 'GMT+0';
 
-    // Only include contacts if their current local time is between 9 AM - 5 PM
-    if (!isWithinBusinessHours(now, tz)) {
+    // When fillRestOfDay is enabled, include all contacts regardless of current time
+    // Otherwise, only include contacts if their current local time is between 9 AM - 5 PM
+    if (!fillRestOfDay && !isWithinBusinessHours(now, tz)) {
       return;
     }
 
@@ -364,91 +365,103 @@ export function generateCallSchedule(
   }
 
   // If we still need more calls, cycle through remaining contacts from all timezones
-  // Only include contacts whose current local time is between 9 AM - 5 PM
   const scheduledContactIds = new Set(schedule.map(s => s.contact_id).filter(Boolean));
   const remainingContacts = activeContacts.filter(c => {
     if (scheduledContactIds.has(c.id)) return false;
     const tz = c.timezone || 'GMT+0';
-    return isWithinBusinessHours(now, tz);
+    // When fillRestOfDay is enabled, include all contacts
+    // Otherwise, only include contacts whose current local time is between 9 AM - 5 PM
+    return fillRestOfDay || isWithinBusinessHours(now, tz);
   });
 
   let contactIndex = 0;
-  while (schedule.length < targetCalls && currentTime < deadline) {
-    let contactToSchedule: SuggestedContact;
+  let failedAttempts = 0;
+  const maxFailedAttempts = remainingContacts.length || 10;
 
-    if (contactIndex < remainingContacts.length) {
-      const contact = remainingContacts[contactIndex];
+  while (currentTime < deadline) {
+    // Find a contact that can be called at this time
+    let scheduled = false;
+
+    // Try to find an available contact
+    for (let i = 0; i < remainingContacts.length && !scheduled; i++) {
+      const contact = remainingContacts[contactIndex % remainingContacts.length];
       const priority = analyzeContactPriority(contact);
       const timezone = contact.timezone || 'GMT+0';
       const tzLabel = getTimezoneLabel(timezone);
 
       // Check if the current time is within business hours for this contact's timezone
-      const availableSlot = getNextAvailableSlot(currentTime, timezone, callDurationMins);
+      if (isWithinBusinessHours(currentTime, timezone)) {
+        const availableSlot = getNextAvailableSlot(currentTime, timezone, callDurationMins);
 
-      if (availableSlot && isWithinBusinessHours(availableSlot, timezone)) {
-        let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
-        if (contact.is_jammed) {
-          contactStatus = 'jammed';
-        } else if (contact.is_client) {
-          contactStatus = 'client';
-        } else if (contact.has_traction) {
-          contactStatus = 'traction';
+        if (availableSlot && availableSlot < deadline) {
+          let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+          if (contact.is_jammed) {
+            contactStatus = 'jammed';
+          } else if (contact.is_client) {
+            contactStatus = 'client';
+          } else if (contact.has_traction) {
+            contactStatus = 'traction';
+          }
+
+          schedule.push({
+            goal_id: goalId,
+            scheduled_time: availableSlot.toISOString(),
+            contact_id: contact.id,
+            contact_name: contact.name || contact.company || 'Unknown',
+            priority_label: priority,
+            contact_status: contactStatus,
+            is_suggested: false,
+            completed: false,
+            call_duration_mins: callDurationMins,
+            timezone_label: tzLabel,
+            notes: getReasonText(contact, priority),
+            display_order: schedule.length,
+            user_id: userId
+          });
+
+          const interval = fillRestOfDay ? callDurationMins : (callDurationMins + 5);
+          currentTime = new Date(availableSlot.getTime() + interval * 60 * 1000);
+          scheduled = true;
+          failedAttempts = 0;
         }
-
-        contactToSchedule = {
-          contact: contact,
-          contactName: contact.name || contact.company || 'Unknown',
-          priorityLabel: priority,
-          timezoneLabel: tzLabel,
-          reason: getReasonText(contact, priority)
-        };
-
-        schedule.push({
-          goal_id: goalId,
-          scheduled_time: availableSlot.toISOString(),
-          contact_id: contact.id,
-          contact_name: contactToSchedule.contactName,
-          priority_label: contactToSchedule.priorityLabel,
-          contact_status: contactStatus,
-          is_suggested: false,
-          completed: false,
-          call_duration_mins: callDurationMins,
-          timezone_label: contactToSchedule.timezoneLabel,
-          notes: contactToSchedule.reason,
-          display_order: schedule.length,
-          user_id: userId
-        });
-
-        const interval = fillRestOfDay ? callDurationMins : (callDurationMins + 5);
-        currentTime = new Date(availableSlot.getTime() + interval * 60 * 1000);
-      } else {
-        // Skip this contact if not within business hours
-        const interval = fillRestOfDay ? callDurationMins : (callDurationMins + 5);
-        currentTime = new Date(currentTime.getTime() + interval * 60 * 1000);
       }
 
       contactIndex++;
-    } else {
-      // Only use generic labels if we've exhausted all contacts
-      schedule.push({
-        goal_id: goalId,
-        scheduled_time: currentTime.toISOString(),
-        contact_name: 'Unassigned slot',
-        priority_label: 'Cold',
-        contact_status: 'none',
-        is_suggested: true,
-        completed: false,
-        call_duration_mins: callDurationMins,
-        timezone_label: 'To be assigned',
-        notes: 'Manual assignment needed',
-        display_order: schedule.length,
-        user_id: userId
-      });
+    }
+
+    // If no contact was available for this slot, create an unassigned slot
+    if (!scheduled) {
+      if (fillRestOfDay && currentTime < deadline) {
+        schedule.push({
+          goal_id: goalId,
+          scheduled_time: currentTime.toISOString(),
+          contact_name: 'Unassigned slot',
+          priority_label: 'Cold',
+          contact_status: 'none',
+          is_suggested: true,
+          completed: false,
+          call_duration_mins: callDurationMins,
+          timezone_label: 'To be assigned',
+          notes: 'Manual assignment needed',
+          display_order: schedule.length,
+          user_id: userId
+        });
+      }
 
       const interval = fillRestOfDay ? callDurationMins : (callDurationMins + 5);
       currentTime = new Date(currentTime.getTime() + interval * 60 * 1000);
+
+      failedAttempts++;
+      if (failedAttempts > maxFailedAttempts && !fillRestOfDay) {
+        break;
+      }
+    }
+
+    // Safety check to prevent infinite loops
+    if (!fillRestOfDay && schedule.length >= targetCalls) {
+      break;
     }
   }
 
-  return schedule.slice(0, targetCalls);
+  return fillRestOfDay ? schedule : schedule.slice(0, targetCalls);
 }
