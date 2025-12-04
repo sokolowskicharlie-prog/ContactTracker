@@ -1917,6 +1917,17 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                             'none': 'None'
                           };
 
+                          // Calculate local time based on timezone offset
+                          let localTime = '';
+                          if (schedule.timezone_label) {
+                            const match = schedule.timezone_label.match(/GMT([+-]\d+)/);
+                            if (match) {
+                              const offset = parseInt(match[1]);
+                              const localDate = new Date(schedTime.getTime() + offset * 60 * 60 * 1000);
+                              localTime = localDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                            }
+                          }
+
                           return (
                             <div
                               key={schedule.id}
@@ -1957,10 +1968,10 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                   )}
                                 </div>
                                 <div className="flex items-center gap-3 text-xs text-gray-600">
-                                  {schedule.timezone_label && (
+                                  {schedule.timezone_label && localTime && (
                                     <span className="flex items-center gap-1">
                                       <Clock className="w-3 h-3" />
-                                      {schedule.timezone_label}
+                                      {localTime} {schedule.timezone_label}
                                     </span>
                                   )}
                                   <span>{schedule.call_duration_mins} min</span>
