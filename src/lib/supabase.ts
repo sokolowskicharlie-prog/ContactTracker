@@ -184,6 +184,7 @@ export type Task = {
   due_date?: string;
   completed: boolean;
   completed_at?: string;
+  user_id: string;
   created_at: string;
   updated_at: string;
 };

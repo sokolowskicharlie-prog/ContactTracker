@@ -299,6 +299,97 @@ export function generateCallSchedule(
 
   const schedule: Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] = [];
 
+  // First, add call_back tasks that are due today
+  const callBackTasks = tasks.filter(task => {
+    if (task.task_type !== 'call_back' || task.completed || !task.due_date) {
+      return false;
+    }
+    const taskDueDate = new Date(task.due_date);
+    return taskDueDate >= now && taskDueDate <= deadline;
+  });
+
+  // Create a map of contact IDs to contacts for quick lookup
+  const contactMap = new Map<string, Contact | ContactWithActivity>();
+  contacts.forEach(c => contactMap.set(c.id, c));
+
+  // Add tasks to the schedule first
+  callBackTasks.forEach(task => {
+    const contact = task.contact_id ? contactMap.get(task.contact_id) : undefined;
+    const taskDueDate = new Date(task.due_date!);
+
+    let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+    let contactName = task.title;
+    let timezoneLabel = 'GMT+0';
+    let priorityLabel: 'Warm' | 'Follow-Up' | 'High Value' | 'Cold' = 'Follow-Up';
+
+    if (contact) {
+      contactName = contact.name || contact.company || task.title;
+      timezoneLabel = getTimezoneLabel(contact.timezone);
+      priorityLabel = analyzeContactPriority(contact);
+
+      if (contact.is_jammed) {
+        contactStatus = 'jammed';
+      } else if (contact.is_client) {
+        contactStatus = 'client';
+      } else if (contact.has_traction) {
+        contactStatus = 'traction';
+      }
+    }
+
+    schedule.push({
+      goal_id: goalId,
+      scheduled_time: taskDueDate.toISOString(),
+      contact_id: task.contact_id,
+      contact_name: contactName,
+      priority_label: priorityLabel,
+      contact_status: contactStatus,
+      is_suggested: false,
+      completed: false,
+      call_duration_mins: callDurationMins,
+      timezone_label: timezoneLabel,
+      notes: task.notes || 'Scheduled task',
+      display_order: 0,
+      user_id: userId
+    });
+  });
+
+  // Helper function to check if a time slot conflicts with existing schedule
+  const hasConflict = (slotTime: Date): boolean => {
+    return schedule.some(item => {
+      const itemStart = new Date(item.scheduled_time);
+      const itemEnd = new Date(itemStart.getTime() + item.call_duration_mins * 60 * 1000);
+      const slotEnd = new Date(slotTime.getTime() + callDurationMins * 60 * 1000);
+
+      // Check if slots overlap
+      return (slotTime >= itemStart && slotTime < itemEnd) ||
+             (slotEnd > itemStart && slotEnd <= itemEnd) ||
+             (slotTime <= itemStart && slotEnd >= itemEnd);
+    });
+  };
+
+  // Helper function to find next available slot that doesn't conflict
+  const findNextAvailableSlot = (startTime: Date, timezone: string): Date | null => {
+    let candidateTime = new Date(startTime);
+    const maxAttempts = 100; // Prevent infinite loops
+    let attempts = 0;
+
+    while (attempts < maxAttempts && candidateTime < deadline) {
+      const availableSlot = getNextAvailableSlot(candidateTime, timezone, callDurationMins);
+      if (!availableSlot || availableSlot >= deadline) return null;
+
+      if (!hasConflict(availableSlot)) {
+        return availableSlot;
+      }
+
+      // Move to after the conflicting slot
+      const interval = fillRestOfDay ? callDurationMins : (callDurationMins + 5);
+      candidateTime = new Date(availableSlot.getTime() + interval * 60 * 1000);
+      attempts++;
+    }
+
+    return null;
+  };
+
   // Distribute calls across timezones and priorities
   const callsPerTimezone = Math.ceil(targetCalls / timezonePriority.length);
 
@@ -323,7 +414,7 @@ export function generateCallSchedule(
         if (schedule.length >= targetCalls) return;
         if (currentTime >= deadline) return;
 
-        const availableSlot = getNextAvailableSlot(currentTime, timezone, callDurationMins);
+        const availableSlot = findNextAvailableSlot(currentTime, timezone);
         if (!availableSlot) return;
 
         const scheduledTime = availableSlot;
@@ -392,7 +483,7 @@ export function generateCallSchedule(
 
       // Check if the current time is within business hours for this contact's timezone
       if (isWithinBusinessHours(currentTime, timezone)) {
-        const availableSlot = getNextAvailableSlot(currentTime, timezone, callDurationMins);
+        const availableSlot = findNextAvailableSlot(currentTime, timezone);
 
         if (availableSlot && availableSlot < deadline) {
           let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
@@ -463,60 +554,6 @@ export function generateCallSchedule(
       break;
     }
   }
-
-  // Filter and add call_back tasks that are due today
-  const callBackTasks = tasks.filter(task => {
-    if (task.task_type !== 'call_back' || task.completed || !task.due_date) {
-      return false;
-    }
-    const taskDueDate = new Date(task.due_date);
-    return taskDueDate >= now && taskDueDate <= deadline;
-  });
-
-  // Create a map of contact IDs to contacts for quick lookup
-  const contactMap = new Map<string, Contact | ContactWithActivity>();
-  contacts.forEach(c => contactMap.set(c.id, c));
-
-  // Add tasks to the schedule
-  callBackTasks.forEach(task => {
-    const contact = task.contact_id ? contactMap.get(task.contact_id) : undefined;
-    const taskDueDate = new Date(task.due_date!);
-
-    let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
-    let contactName = task.title; // Use task title as fallback
-    let timezoneLabel = 'GMT+0';
-    let priorityLabel: 'Warm' | 'Follow-Up' | 'High Value' | 'Cold' = 'Follow-Up';
-
-    if (contact) {
-      contactName = contact.name || contact.company || task.title;
-      timezoneLabel = getTimezoneLabel(contact.timezone);
-      priorityLabel = analyzeContactPriority(contact);
-
-      if (contact.is_jammed) {
-        contactStatus = 'jammed';
-      } else if (contact.is_client) {
-        contactStatus = 'client';
-      } else if (contact.has_traction) {
-        contactStatus = 'traction';
-      }
-    }
-
-    schedule.push({
-      goal_id: goalId,
-      scheduled_time: taskDueDate.toISOString(),
-      contact_id: task.contact_id,
-      contact_name: contactName,
-      priority_label: priorityLabel,
-      contact_status: contactStatus,
-      is_suggested: false,
-      completed: false,
-      call_duration_mins: callDurationMins,
-      timezone_label: timezoneLabel,
-      notes: task.notes || 'Scheduled task',
-      display_order: 0, // Will be updated after sorting
-      user_id: userId
-    });
-  });
 
   // Sort schedule by scheduled_time
   schedule.sort((a, b) => {
