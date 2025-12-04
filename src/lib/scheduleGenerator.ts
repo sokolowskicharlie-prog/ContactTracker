@@ -227,8 +227,19 @@ export function generateCallSchedule(
 ): Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] {
   const { totalCalls, deadlineGMT, callDurationMins, fillRestOfDay, statusFilters } = params;
 
-  const deadline = new Date(deadlineGMT);
   const now = new Date();
+  let deadline = new Date(deadlineGMT);
+
+  // If fillRestOfDay is enabled, set deadline to 5:00 PM GMT (17:00) today
+  if (fillRestOfDay) {
+    deadline = new Date(now);
+    deadline.setUTCHours(17, 0, 0, 0);
+
+    // If 5 PM GMT has already passed today, this won't work, so keep original deadline
+    if (deadline <= now) {
+      deadline = new Date(deadlineGMT);
+    }
+  }
 
   // Calculate actual number of calls based on fillRestOfDay option
   let targetCalls = totalCalls;
