@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, ChevronDown, ChevronUp, Phone, Mail, Fuel, Clock, X, User, Calendar, Plus, Trash2, Edit2, Check } from 'lucide-react';
+import { Target, ChevronDown, ChevronUp, Phone, Mail, Fuel, Clock, X, User, Calendar, Plus, Trash2, Edit2, Check, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 import { supabase, DailyGoal, Call, Email, FuelDeal, Contact, ContactPerson, CallSchedule } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
@@ -55,6 +55,8 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
   });
 
   const [callSchedules, setCallSchedules] = useState<CallSchedule[]>([]);
+  const [replacingScheduleId, setReplacingScheduleId] = useState<string | null>(null);
+  const [replaceContactId, setReplaceContactId] = useState<string>('');
 
   useEffect(() => {
     if (user) {
@@ -198,7 +200,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
       .from('call_schedules')
       .select('*')
       .eq('goal_id', goalId)
-      .order('scheduled_time', { ascending: true });
+      .order('order_position', { ascending: true });
 
     if (!error) {
       setCallSchedules(data || []);
@@ -229,6 +231,62 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
       if (isMarkingComplete && schedule.contact_id && onLogCall) {
         onLogCall(schedule.contact_id);
       }
+    }
+  };
+
+  const handleReplaceContact = async (scheduleId: string) => {
+    if (!replaceContactId) return;
+
+    const contact = contacts.find(c => c.id === replaceContactId);
+    if (!contact) return;
+
+    const schedule = callSchedules.find(s => s.id === scheduleId);
+    if (!schedule) return;
+
+    const currentStatus = contact.is_jammed ? 'jammed' : contact.is_client ? 'client' : contact.has_traction ? 'traction' : 'none';
+
+    const { error } = await supabase
+      .from('call_schedules')
+      .update({
+        contact_id: replaceContactId,
+        contact_name: contact.name,
+        timezone_label: contact.timezone || null,
+        contact_status: currentStatus
+      })
+      .eq('id', scheduleId);
+
+    if (!error && selectedGoal) {
+      setReplacingScheduleId(null);
+      setReplaceContactId('');
+      loadSchedulesForGoal(selectedGoal.id);
+    }
+  };
+
+  const handleReorderSchedule = async (scheduleId: string, direction: 'up' | 'down') => {
+    const currentIndex = callSchedules.findIndex(s => s.id === scheduleId);
+    if (currentIndex === -1) return;
+    if (direction === 'up' && currentIndex === 0) return;
+    if (direction === 'down' && currentIndex === callSchedules.length - 1) return;
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    const currentSchedule = callSchedules[currentIndex];
+    const swapSchedule = callSchedules[newIndex];
+
+    const updates = [
+      supabase
+        .from('call_schedules')
+        .update({ order_position: newIndex })
+        .eq('id', currentSchedule.id),
+      supabase
+        .from('call_schedules')
+        .update({ order_position: currentIndex })
+        .eq('id', swapSchedule.id)
+    ];
+
+    await Promise.all(updates);
+
+    if (selectedGoal) {
+      loadSchedulesForGoal(selectedGoal.id);
     }
   };
 
@@ -912,7 +970,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
                     </h4>
                     <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
                       <div className="max-h-96 overflow-y-auto">
-                        {callSchedules.map((schedule) => {
+                        {callSchedules.map((schedule, idx) => {
                           const schedTime = new Date(schedule.scheduled_time);
                           const isPast = schedTime < new Date();
                           const statusColors = {
@@ -928,7 +986,6 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
                             'none': 'None'
                           };
 
-                          // Calculate local time based on timezone offset
                           let localTime = '';
                           if (schedule.timezone_label) {
                             const match = schedule.timezone_label.match(/GMT([+-]\d+)/);
@@ -939,7 +996,6 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
                             }
                           }
 
-                          // Get current contact status from contacts array
                           const contact = schedule.contact_id ? contacts.find(c => c.id === schedule.contact_id) : null;
                           let currentStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
                           if (contact) {
@@ -1009,6 +1065,66 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
                                     ✓ Completed at {new Date(schedule.completed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                 )}
+                                {replacingScheduleId === schedule.id ? (
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <select
+                                      value={replaceContactId}
+                                      onChange={(e) => setReplaceContactId(e.target.value)}
+                                      className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                      <option value="">Select replacement contact</option>
+                                      {contacts.map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                      ))}
+                                    </select>
+                                    <button
+                                      onClick={() => handleReplaceContact(schedule.id)}
+                                      disabled={!replaceContactId}
+                                      className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                    >
+                                      ✓
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setReplacingScheduleId(null);
+                                        setReplaceContactId('');
+                                      }}
+                                      className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ) : null}
+                              </div>
+                              <div className="flex gap-1">
+                                <div className="flex flex-col gap-1">
+                                  <button
+                                    onClick={() => handleReorderSchedule(schedule.id, 'up')}
+                                    disabled={idx === 0}
+                                    className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                    title="Move up"
+                                  >
+                                    <ArrowUp className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleReorderSchedule(schedule.id, 'down')}
+                                    disabled={idx === callSchedules.length - 1}
+                                    className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                    title="Move down"
+                                  >
+                                    <ArrowDown className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setReplacingScheduleId(schedule.id);
+                                    setReplaceContactId('');
+                                  }}
+                                  className="p-1 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors self-start"
+                                  title="Replace contact"
+                                >
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             </div>
                           );
