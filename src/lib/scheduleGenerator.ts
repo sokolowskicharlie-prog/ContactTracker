@@ -265,8 +265,8 @@ export function generateCallSchedule(
     );
   }
 
-  // Start from current time
-  let currentTime = new Date(now);
+  // Start first call at EXACT current time
+  let currentTime = new Date();
 
   // Filter contacts by status if filters are provided
   let activeContacts = contacts;
@@ -630,7 +630,8 @@ function generateSimpleSchedule(
     return priorityOrder[aPriority] - priorityOrder[bPriority];
   });
 
-  let currentTime = new Date(startTime);
+  // First call starts at EXACT current time (not rounded, not offset)
+  let currentTime = new Date();
   let contactIndex = 0;
 
   // Create calls every callDurationMins minutes until we reach the deadline or target
