@@ -386,27 +386,6 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
         console.error('Error adding call:', error);
         alert('Failed to add call. Please try again.');
       } else {
-        const newCallEnd = new Date(lastCallEnd);
-        newCallEnd.setMinutes(newCallEnd.getMinutes() + 20);
-
-        const [currentHours, currentMinutes] = selectedGoal.target_time.split(':').map(Number);
-        const currentTargetTime = new Date(selectedGoal.target_date);
-        currentTargetTime.setUTCHours(currentHours, currentMinutes, 0, 0);
-
-        if (newCallEnd > currentTargetTime) {
-          const newTargetHours = newCallEnd.getUTCHours();
-          const newTargetMinutes = newCallEnd.getUTCMinutes();
-          const newTargetTime = `${String(newTargetHours).padStart(2, '0')}:${String(newTargetMinutes).padStart(2, '0')}`;
-
-          await supabase
-            .from('daily_goals')
-            .update({ target_time: newTargetTime })
-            .eq('id', selectedGoal.id);
-
-          setGoals(goals.map(g => g.id === selectedGoal.id ? { ...g, target_time: newTargetTime } : g));
-          setSelectedGoal({ ...selectedGoal, target_time: newTargetTime });
-        }
-
         await loadSchedulesForGoal(selectedGoal.id);
       }
     } finally {
