@@ -481,6 +481,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
           deadlineGMT,
           callDurationMins: scheduleDuration,
           fillRestOfDay: true,
+          simpleMode: true,
           statusFilters: statusFilters.length > 0 ? statusFilters : undefined
         };
 

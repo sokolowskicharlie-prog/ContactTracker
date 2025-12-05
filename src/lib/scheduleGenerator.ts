@@ -27,6 +27,7 @@ export interface ScheduleParams {
   deadlineGMT: string;
   callDurationMins: number;
   fillRestOfDay?: boolean;
+  simpleMode?: boolean;
   timezoneDistribution?: Record<string, number>;
   priorityDistribution?: Record<PriorityLabel, number>;
   statusFilters?: ('none' | 'jammed' | 'traction' | 'client')[];
@@ -226,7 +227,7 @@ export function generateCallSchedule(
   goalId: string,
   tasks: Task[] = []
 ): Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] {
-  const { totalCalls, deadlineGMT, callDurationMins, fillRestOfDay, statusFilters } = params;
+  const { totalCalls, deadlineGMT, callDurationMins, fillRestOfDay, simpleMode, statusFilters } = params;
 
   const now = new Date();
   let deadline = new Date(deadlineGMT);
@@ -248,6 +249,20 @@ export function generateCallSchedule(
     const timeAvailable = deadline.getTime() - now.getTime();
     const callIntervalMs = callDurationMins * 60 * 1000;
     targetCalls = Math.floor(timeAvailable / callIntervalMs);
+  }
+
+  // Simple mode: Just create evenly-spaced calls every X minutes
+  if (simpleMode) {
+    return generateSimpleSchedule(
+      targetCalls,
+      now,
+      deadline,
+      callDurationMins,
+      contacts,
+      userId,
+      goalId,
+      statusFilters
+    );
   }
 
   // Start from current time
@@ -578,4 +593,98 @@ export function generateCallSchedule(
   });
 
   return fillRestOfDay ? schedule : schedule.slice(0, targetCalls);
+}
+
+function generateSimpleSchedule(
+  targetCalls: number,
+  startTime: Date,
+  deadline: Date,
+  callDurationMins: number,
+  contacts: (Contact | ContactWithActivity)[],
+  userId: string,
+  goalId: string,
+  statusFilters?: ('none' | 'jammed' | 'traction' | 'client')[]
+): Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] {
+  const schedule: Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] = [];
+
+  // Filter contacts by status if filters are provided
+  let activeContacts = contacts;
+  if (statusFilters && statusFilters.length > 0) {
+    activeContacts = contacts.filter(c => {
+      if (c.is_jammed && statusFilters.includes('jammed')) return true;
+      if (c.is_client && !c.is_jammed && statusFilters.includes('client')) return true;
+      if (c.has_traction && !c.is_jammed && !c.is_client && statusFilters.includes('traction')) return true;
+      if (!c.is_jammed && !c.is_client && !c.has_traction && statusFilters.includes('none')) return true;
+      return false;
+    });
+  } else {
+    // Default: filter out jammed contacts
+    activeContacts = contacts.filter(c => !c.is_jammed);
+  }
+
+  // Sort contacts by priority
+  const sortedContacts = [...activeContacts].sort((a, b) => {
+    const aPriority = analyzeContactPriority(a);
+    const bPriority = analyzeContactPriority(b);
+    const priorityOrder = { 'Warm': 0, 'Follow-Up': 1, 'High Value': 2, 'Cold': 3 };
+    return priorityOrder[aPriority] - priorityOrder[bPriority];
+  });
+
+  let currentTime = new Date(startTime);
+  let contactIndex = 0;
+
+  // Create calls every callDurationMins minutes until we reach the deadline or target
+  while (schedule.length < targetCalls && currentTime < deadline) {
+    const callEndTime = new Date(currentTime.getTime() + callDurationMins * 60 * 1000);
+
+    // Stop if this call would go past the deadline
+    if (callEndTime > deadline) break;
+
+    let contact: Contact | ContactWithActivity | undefined;
+    let contactName = 'Unassigned slot';
+    let priorityLabel: PriorityLabel = 'Cold';
+    let timezoneLabel = 'GMT+0';
+    let notes = 'Manual assignment needed';
+    let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+
+    // Assign a contact if available
+    if (sortedContacts.length > 0) {
+      contact = sortedContacts[contactIndex % sortedContacts.length];
+      contactName = contact.name || contact.company || 'Unknown';
+      priorityLabel = analyzeContactPriority(contact);
+      timezoneLabel = getTimezoneLabel(contact.timezone);
+      notes = getReasonText(contact, priorityLabel);
+
+      if (contact.is_jammed) {
+        contactStatus = 'jammed';
+      } else if (contact.is_client) {
+        contactStatus = 'client';
+      } else if (contact.has_traction) {
+        contactStatus = 'traction';
+      }
+
+      contactIndex++;
+    }
+
+    schedule.push({
+      goal_id: goalId,
+      scheduled_time: currentTime.toISOString(),
+      contact_id: contact?.id,
+      contact_name: contactName,
+      priority_label: priorityLabel,
+      contact_status: contactStatus,
+      is_suggested: !contact,
+      completed: false,
+      call_duration_mins: callDurationMins,
+      timezone_label: timezoneLabel,
+      notes: notes,
+      display_order: schedule.length,
+      user_id: userId
+    });
+
+    // Move to next time slot
+    currentTime = new Date(currentTime.getTime() + callDurationMins * 60 * 1000);
+  }
+
+  return schedule;
 }
