@@ -59,6 +59,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
   const [scheduledTasks, setScheduledTasks] = useState<Task[]>([]);
   const [replacingScheduleId, setReplacingScheduleId] = useState<string | null>(null);
   const [replaceContactId, setReplaceContactId] = useState<string>('');
+  const [isAddingCall, setIsAddingCall] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -318,87 +319,98 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
   };
 
   const handleAddAnotherCall = async () => {
-    if (!selectedGoal) return;
+    if (!selectedGoal || isAddingCall) return;
 
-    const sortedSchedules = [...callSchedules].sort((a, b) =>
-      new Date(b.scheduled_time).getTime() - new Date(a.scheduled_time).getTime()
-    );
+    setIsAddingCall(true);
 
-    const lastSchedule = sortedSchedules[0];
-    if (!lastSchedule) {
-      alert('No calls scheduled yet. Please create a schedule first.');
-      return;
-    }
+    try {
+      const sortedSchedules = [...callSchedules].sort((a, b) =>
+        new Date(b.scheduled_time).getTime() - new Date(a.scheduled_time).getTime()
+      );
 
-    const lastCallEnd = new Date(lastSchedule.scheduled_time);
-    lastCallEnd.setMinutes(lastCallEnd.getMinutes() + 20);
-
-    // Get all contact IDs already scheduled
-    const scheduledContactIds = new Set(
-      callSchedules.map(s => s.contact_id).filter(Boolean)
-    );
-
-    // Filter contacts: exclude jammed and those already scheduled
-    let eligibleContacts = contacts.filter(c => {
-      if (scheduledContactIds.has(c.id)) return false;
-      if (c.is_jammed) return false;
-      return true;
-    });
-
-    if (eligibleContacts.length === 0) {
-      alert('No eligible contacts available that are not jammed or already scheduled.');
-      return;
-    }
-
-    // Select a random contact from eligible contacts
-    const randomIndex = Math.floor(Math.random() * eligibleContacts.length);
-    const contact = eligibleContacts[randomIndex];
-
-    const currentStatus = contact.is_jammed ? 'jammed' : contact.is_client ? 'client' : contact.has_traction ? 'traction' : 'none';
-    const priorityLabel = contact.is_client ? 'High Value' : contact.has_traction ? 'Warm' : contact.last_activity_date ? 'Follow-Up' : 'Cold';
-
-    const maxDisplayOrder = Math.max(...callSchedules.map(s => s.display_order), 0);
-
-    const { error } = await supabase
-      .from('call_schedules')
-      .insert({
-        goal_id: selectedGoal.id,
-        scheduled_time: lastCallEnd.toISOString(),
-        contact_id: contact.id,
-        contact_name: contact.name,
-        priority_label: priorityLabel,
-        contact_status: currentStatus,
-        is_suggested: false,
-        completed: false,
-        call_duration_mins: 20,
-        timezone_label: contact.timezone || null,
-        display_order: maxDisplayOrder + 1,
-        user_id: user!.id
-      });
-
-    if (!error) {
-      const newCallEnd = new Date(lastCallEnd);
-      newCallEnd.setMinutes(newCallEnd.getMinutes() + 20);
-
-      const [currentHours, currentMinutes] = selectedGoal.target_time.split(':').map(Number);
-      const currentTargetTime = new Date(selectedGoal.target_date);
-      currentTargetTime.setUTCHours(currentHours, currentMinutes, 0, 0);
-
-      if (newCallEnd > currentTargetTime) {
-        const newTargetHours = newCallEnd.getUTCHours();
-        const newTargetMinutes = newCallEnd.getUTCMinutes();
-        const newTargetTime = `${String(newTargetHours).padStart(2, '0')}:${String(newTargetMinutes).padStart(2, '0')}`;
-
-        await supabase
-          .from('daily_goals')
-          .update({ target_time: newTargetTime })
-          .eq('id', selectedGoal.id);
-
-        setGoals(goals.map(g => g.id === selectedGoal.id ? { ...g, target_time: newTargetTime } : g));
-        setSelectedGoal({ ...selectedGoal, target_time: newTargetTime });
+      const lastSchedule = sortedSchedules[0];
+      if (!lastSchedule) {
+        alert('No calls scheduled yet. Please create a schedule first.');
+        setIsAddingCall(false);
+        return;
       }
 
-      loadSchedulesForGoal(selectedGoal.id);
+      const lastCallEnd = new Date(lastSchedule.scheduled_time);
+      lastCallEnd.setMinutes(lastCallEnd.getMinutes() + 20);
+
+      // Get all contact IDs already scheduled
+      const scheduledContactIds = new Set(
+        callSchedules.map(s => s.contact_id).filter(Boolean)
+      );
+
+      // Filter contacts: exclude jammed and those already scheduled
+      let eligibleContacts = contacts.filter(c => {
+        if (scheduledContactIds.has(c.id)) return false;
+        if (c.is_jammed) return false;
+        return true;
+      });
+
+      if (eligibleContacts.length === 0) {
+        alert('No eligible contacts available that are not jammed or already scheduled.');
+        setIsAddingCall(false);
+        return;
+      }
+
+      // Select a random contact from eligible contacts
+      const randomIndex = Math.floor(Math.random() * eligibleContacts.length);
+      const contact = eligibleContacts[randomIndex];
+
+      const currentStatus = contact.is_jammed ? 'jammed' : contact.is_client ? 'client' : contact.has_traction ? 'traction' : 'none';
+      const priorityLabel = contact.is_client ? 'High Value' : contact.has_traction ? 'Warm' : contact.last_activity_date ? 'Follow-Up' : 'Cold';
+
+      const maxDisplayOrder = Math.max(...callSchedules.map(s => s.display_order), 0);
+
+      const { error } = await supabase
+        .from('call_schedules')
+        .insert({
+          goal_id: selectedGoal.id,
+          scheduled_time: lastCallEnd.toISOString(),
+          contact_id: contact.id,
+          contact_name: contact.name,
+          priority_label: priorityLabel,
+          contact_status: currentStatus,
+          is_suggested: false,
+          completed: false,
+          call_duration_mins: 20,
+          timezone_label: contact.timezone || null,
+          display_order: maxDisplayOrder + 1,
+          user_id: user!.id
+        });
+
+      if (error) {
+        console.error('Error adding call:', error);
+        alert('Failed to add call. Please try again.');
+      } else {
+        const newCallEnd = new Date(lastCallEnd);
+        newCallEnd.setMinutes(newCallEnd.getMinutes() + 20);
+
+        const [currentHours, currentMinutes] = selectedGoal.target_time.split(':').map(Number);
+        const currentTargetTime = new Date(selectedGoal.target_date);
+        currentTargetTime.setUTCHours(currentHours, currentMinutes, 0, 0);
+
+        if (newCallEnd > currentTargetTime) {
+          const newTargetHours = newCallEnd.getUTCHours();
+          const newTargetMinutes = newCallEnd.getUTCMinutes();
+          const newTargetTime = `${String(newTargetHours).padStart(2, '0')}:${String(newTargetMinutes).padStart(2, '0')}`;
+
+          await supabase
+            .from('daily_goals')
+            .update({ target_time: newTargetTime })
+            .eq('id', selectedGoal.id);
+
+          setGoals(goals.map(g => g.id === selectedGoal.id ? { ...g, target_time: newTargetTime } : g));
+          setSelectedGoal({ ...selectedGoal, target_time: newTargetTime });
+        }
+
+        await loadSchedulesForGoal(selectedGoal.id);
+      }
+    } finally {
+      setIsAddingCall(false);
     }
   };
 
@@ -1396,10 +1408,11 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                 {selectedGoal.goal_type === 'calls' && callSchedules.length > 0 && (
                   <button
                     onClick={handleAddAnotherCall}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                    disabled={isAddingCall}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4" />
-                    Add Another Call
+                    {isAddingCall ? 'Adding Call...' : 'Add Another Call'}
                   </button>
                 )}
 
