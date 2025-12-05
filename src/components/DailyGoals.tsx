@@ -331,13 +331,13 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     const schedule = callSchedules.find(s => s.id === scheduleId);
     if (!schedule) return;
 
-    const currentStatus = contact.status || 'none';
+    const currentStatus = contact.is_jammed ? 'jammed' : contact.is_client ? 'client' : contact.has_traction ? 'traction' : 'none';
 
     const { error } = await supabase
       .from('call_schedules')
       .update({
         contact_id: replaceContactId,
-        contact_name: contact.company_name,
+        contact_name: contact.name,
         timezone_label: contact.timezone || null,
         contact_status: currentStatus
       })
@@ -2223,7 +2223,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                         >
                                           <option value="">Select replacement contact</option>
                                           {contacts.map(c => (
-                                            <option key={c.id} value={c.id}>{c.company_name}</option>
+                                            <option key={c.id} value={c.id}>{c.name}</option>
                                           ))}
                                         </select>
                                         <button
