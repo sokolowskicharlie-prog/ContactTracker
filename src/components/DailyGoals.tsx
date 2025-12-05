@@ -1940,15 +1940,32 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                   )}
                 </div>
 
-                {selectedGoal.goal_type === 'calls' && callSchedules.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-blue-600" />
-                      Call Schedule ({callSchedules.filter(s => !s.completed).length} remaining)
-                    </h4>
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="max-h-96 overflow-y-auto">
-                        {callSchedules.map((schedule, idx) => {
+                {selectedGoal.goal_type === 'calls' && callSchedules.length > 0 && (() => {
+                  const now = new Date();
+                  const [targetHours, targetMinutes] = selectedGoal.target_time.split(':').map(Number);
+                  const targetDateTime = new Date(selectedGoal.target_date);
+                  targetDateTime.setHours(targetHours, targetMinutes, 0, 0);
+
+                  const filteredSchedules = callSchedules.filter(schedule => {
+                    const schedTime = new Date(schedule.scheduled_time);
+                    return schedTime >= now && schedTime <= targetDateTime;
+                  });
+
+                  return (
+                    <div className="mb-6">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-blue-600" />
+                        Call Schedule ({filteredSchedules.filter(s => !s.completed).length} remaining until {selectedGoal.target_time})
+                      </h4>
+                      {filteredSchedules.length === 0 ? (
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+                          <Clock className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                          <p className="text-gray-600">No scheduled calls between now and {selectedGoal.target_time}</p>
+                        </div>
+                      ) : (
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
+                          <div className="max-h-96 overflow-y-auto">
+                            {filteredSchedules.map((schedule, idx) => {
                           const schedTime = new Date(schedule.scheduled_time);
                           const isPast = schedTime < new Date();
                           const statusColors = {
@@ -2049,9 +2066,9 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                       </button>
                                       <button
                                         onClick={() => moveSchedule(schedule.id, 'down')}
-                                        disabled={idx === callSchedules.length - 1}
+                                        disabled={idx === filteredSchedules.length - 1}
                                         className={`p-1 rounded hover:bg-gray-200 transition-colors ${
-                                          idx === callSchedules.length - 1 ? 'opacity-30 cursor-not-allowed' : ''
+                                          idx === filteredSchedules.length - 1 ? 'opacity-30 cursor-not-allowed' : ''
                                         }`}
                                         title="Move down"
                                       >
@@ -2083,16 +2100,18 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                       <div className="p-3 bg-gray-100 border-t border-gray-300">
                         <div className="flex items-center justify-between text-sm">
                           <span className="font-medium text-gray-700">
-                            Progress: {callSchedules.filter(s => s.completed).length} / {callSchedules.length} completed
+                            Progress: {filteredSchedules.filter(s => s.completed).length} / {filteredSchedules.length} completed
                           </span>
                           <span className="text-gray-600">
-                            {Math.round((callSchedules.filter(s => s.completed).length / callSchedules.length) * 100)}%
+                            {filteredSchedules.length > 0 ? Math.round((filteredSchedules.filter(s => s.completed).length / filteredSchedules.length) * 100) : 0}%
                           </span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <div className="space-y-6">
                   {selectedGoal.goal_type === 'calls' && goalCalls.length > 0 && (
