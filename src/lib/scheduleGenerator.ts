@@ -267,8 +267,8 @@ export function generateCallSchedule(
     );
   }
 
-  // Start first call at EXACT current time
-  let currentTime = new Date();
+  // Start first call at the selected start time
+  let currentTime = new Date(startTime);
 
   // Filter contacts by status if filters are provided
   let activeContacts = contacts;
