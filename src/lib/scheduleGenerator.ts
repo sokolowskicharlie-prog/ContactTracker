@@ -674,8 +674,8 @@ function generateSimpleSchedule(
     return priorityOrder[aPriority] - priorityOrder[bPriority];
   });
 
-  // First call starts at EXACT current time (not rounded, not offset)
-  let currentTime = new Date();
+  // First call starts at the selected start time
+  let currentTime = new Date(startTime);
   let contactIndex = 0;
   let isFirstCall = true;
 
