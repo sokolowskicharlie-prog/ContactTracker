@@ -2051,6 +2051,16 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                 const isPast = taskTime < new Date();
                                 const taskContact = contacts.find(c => c.id === task.contact_id);
 
+                                let taskLocalTime = '';
+                                if (taskContact?.timezone) {
+                                  const match = taskContact.timezone.match(/GMT([+-]\d+)/);
+                                  if (match) {
+                                    const offset = parseInt(match[1]);
+                                    const localDate = new Date(taskTime.getTime() + offset * 60 * 60 * 1000);
+                                    taskLocalTime = localDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                                  }
+                                }
+
                                 return (
                                   <div
                                     key={`task-${task.id}`}
@@ -2098,6 +2108,12 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                         <span className="px-2 py-0.5 bg-purple-200 rounded font-medium">
                                           {task.task_type.replace('_', ' ').toUpperCase()}
                                         </span>
+                                        {taskContact?.timezone && taskLocalTime && (
+                                          <span className="flex items-center gap-1 text-gray-600">
+                                            <Clock className="w-3 h-3" />
+                                            {taskLocalTime} {taskContact.timezone}
+                                          </span>
+                                        )}
                                       </div>
                                     </div>
                                   </div>
