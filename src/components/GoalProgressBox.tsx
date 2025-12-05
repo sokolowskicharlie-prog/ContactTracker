@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Target, ChevronDown, ChevronUp, Phone, Mail, Fuel, Clock, X, User, Calendar, Plus, Trash2, Edit2, Check, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
-import { supabase, DailyGoal, Call, Email, FuelDeal, Contact, ContactPerson, CallSchedule } from '../lib/supabase';
+import { Target, ChevronDown, ChevronUp, Phone, Mail, Fuel, Clock, X, User, Calendar, Plus, Trash2, Edit2, Check, ArrowUp, ArrowDown, RefreshCw, CheckSquare } from 'lucide-react';
+import { supabase, DailyGoal, Call, Email, FuelDeal, Contact, ContactPerson, CallSchedule, Task } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
 interface GoalProgressBoxProps {
@@ -55,6 +55,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
   });
 
   const [callSchedules, setCallSchedules] = useState<CallSchedule[]>([]);
+  const [scheduledTasks, setScheduledTasks] = useState<Task[]>([]);
   const [replacingScheduleId, setReplacingScheduleId] = useState<string | null>(null);
   const [replaceContactId, setReplaceContactId] = useState<string>('');
 
@@ -115,6 +116,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
   useEffect(() => {
     if (selectedGoal && selectedGoal.goal_type === 'calls') {
       loadSchedulesForGoal(selectedGoal.id);
+      loadScheduledTasksForGoal(selectedGoal);
     }
   }, [selectedGoal]);
 
@@ -204,6 +206,29 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
 
     if (!error) {
       setCallSchedules(data || []);
+    }
+  };
+
+  const loadScheduledTasksForGoal = async (goal: DailyGoal) => {
+    if (!user) return;
+
+    const now = new Date();
+    const [targetHours, targetMinutes] = goal.target_time.split(':').map(Number);
+    const targetDateTime = new Date(goal.target_date);
+    targetDateTime.setHours(targetHours, targetMinutes, 0, 0);
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('completed', false)
+      .not('due_date', 'is', null)
+      .gte('due_date', now.toISOString())
+      .lte('due_date', targetDateTime.toISOString())
+      .order('due_date', { ascending: true });
+
+    if (!error) {
+      setScheduledTasks(data || []);
     }
   };
 
@@ -962,7 +987,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
                   </div>
                 )}
 
-                {selectedGoal.goal_type === 'calls' && callSchedules.length > 0 && (() => {
+                {selectedGoal.goal_type === 'calls' && (callSchedules.length > 0 || scheduledTasks.length > 0) && (() => {
                   const now = new Date();
                   const [targetHours, targetMinutes] = selectedGoal.target_time.split(':').map(Number);
                   const targetDateTime = new Date(selectedGoal.target_date);
@@ -973,21 +998,85 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
                     return schedTime >= now && schedTime <= targetDateTime;
                   });
 
+                  type ScheduleItem = {
+                    type: 'call' | 'task';
+                    time: Date;
+                    data: CallSchedule | Task;
+                  };
+
+                  const mergedSchedule: ScheduleItem[] = [
+                    ...filteredSchedules.map(s => ({ type: 'call' as const, time: new Date(s.scheduled_time), data: s })),
+                    ...scheduledTasks.map(t => ({ type: 'task' as const, time: new Date(t.due_date!), data: t }))
+                  ].sort((a, b) => a.time.getTime() - b.time.getTime());
+
+                  const remainingCalls = filteredSchedules.filter(s => !s.completed).length;
+                  const remainingTasks = scheduledTasks.length;
+
                   return (
                     <div className="mb-6">
                       <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <Calendar className="w-5 h-5 text-blue-600" />
-                        Call Schedule ({filteredSchedules.filter(s => !s.completed).length} remaining until {selectedGoal.target_time})
+                        Schedule ({remainingCalls} calls, {remainingTasks} tasks until {selectedGoal.target_time})
                       </h4>
-                      {filteredSchedules.length === 0 ? (
+                      {mergedSchedule.length === 0 ? (
                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
                           <Clock className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                          <p className="text-gray-600">No scheduled calls between now and {selectedGoal.target_time}</p>
+                          <p className="text-gray-600">No scheduled activities between now and {selectedGoal.target_time}</p>
                         </div>
                       ) : (
                         <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
                           <div className="max-h-96 overflow-y-auto">
-                            {filteredSchedules.map((schedule, idx) => {
+                            {mergedSchedule.map((item, idx) => {
+                              if (item.type === 'task') {
+                                const task = item.data as Task;
+                                const taskTime = new Date(task.due_date!);
+                                const taskContact = contacts.find(c => c.id === task.contact_id);
+
+                                return (
+                                  <div
+                                    key={`task-${task.id}`}
+                                    className="flex items-start gap-3 p-3 border-b border-gray-200 last:border-b-0 bg-purple-50 hover:bg-purple-100"
+                                  >
+                                    <div className="flex items-center pt-1">
+                                      <div className="w-5 h-5 rounded border-2 border-purple-500 flex items-center justify-center bg-white">
+                                        <CheckSquare className="w-3.5 h-3.5 text-purple-600" />
+                                      </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-start justify-between gap-2 mb-1">
+                                        <div>
+                                          <span className="font-medium text-gray-900">
+                                            {taskTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} GMT
+                                          </span>
+                                          <span className="mx-2 text-gray-400">–</span>
+                                          <span className="font-semibold text-purple-700">TASK: {task.title}</span>
+                                          {taskContact && (
+                                            <>
+                                              <span className="mx-2 text-gray-400">•</span>
+                                              <button
+                                                onClick={() => onSelectContact?.(task.contact_id!)}
+                                                className="text-gray-900 hover:text-blue-600 underline decoration-transparent hover:decoration-blue-600 transition-colors"
+                                              >
+                                                {taskContact.name}
+                                              </button>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {task.notes && (
+                                        <p className="text-xs text-gray-600 mt-1 italic">{task.notes}</p>
+                                      )}
+                                      <div className="flex items-center gap-2 text-xs text-purple-700 mt-1">
+                                        <span className="px-2 py-0.5 bg-purple-200 rounded font-medium">
+                                          {task.task_type.replace('_', ' ').toUpperCase()}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              const schedule = item.data as CallSchedule;
                           const schedTime = new Date(schedule.scheduled_time);
                           const isPast = schedTime < new Date();
                           const statusColors = {
@@ -1150,7 +1239,8 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
                       <div className="p-3 bg-gray-100 border-t border-gray-300">
                         <div className="flex items-center justify-between text-sm">
                           <span className="font-medium text-gray-700">
-                            Progress: {filteredSchedules.filter(s => s.completed).length} / {filteredSchedules.length} completed
+                            Calls: {filteredSchedules.filter(s => s.completed).length} / {filteredSchedules.length} completed
+                            {scheduledTasks.length > 0 && ` • Tasks: ${scheduledTasks.length} pending`}
                           </span>
                           <span className="text-gray-600">
                             {filteredSchedules.length > 0 ? Math.round((filteredSchedules.filter(s => s.completed).length / filteredSchedules.length) * 100) : 0}%
