@@ -376,6 +376,10 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     const lastCallEnd = new Date(lastSchedule.scheduled_time);
     lastCallEnd.setMinutes(lastCallEnd.getMinutes() + lastSchedule.call_duration_mins);
 
+    // Add 20 minute gap after last call
+    const nextCallTime = new Date(lastCallEnd);
+    nextCallTime.setMinutes(nextCallTime.getMinutes() + 20);
+
     const currentStatus = randomContact.is_jammed ? 'jammed' : randomContact.is_client ? 'client' : randomContact.has_traction ? 'traction' : 'none';
     const priorityLabel = randomContact.is_client ? 'High Value' : randomContact.has_traction ? 'Warm' : randomContact.last_activity_date ? 'Follow-Up' : 'Cold';
 
@@ -385,7 +389,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
       .from('call_schedules')
       .insert({
         goal_id: selectedGoal.id,
-        scheduled_time: lastCallEnd.toISOString(),
+        scheduled_time: nextCallTime.toISOString(),
         contact_id: randomContact.id,
         contact_name: randomContact.name,
         priority_label: priorityLabel,
@@ -399,7 +403,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
       });
 
     if (!error) {
-      const newCallEnd = new Date(lastCallEnd);
+      const newCallEnd = new Date(nextCallTime);
       newCallEnd.setMinutes(newCallEnd.getMinutes() + scheduleDuration);
 
       const [currentHours, currentMinutes] = selectedGoal.target_time.split(':').map(Number);
