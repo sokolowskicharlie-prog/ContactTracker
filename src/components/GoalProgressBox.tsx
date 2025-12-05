@@ -1212,16 +1212,6 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                                 )}
                                 {replacingScheduleId === schedule.id ? (
                                   <div className="mt-2 flex items-center gap-2">
-                                    <select
-                                      value={replaceContactId}
-                                      onChange={(e) => setReplaceContactId(e.target.value)}
-                                      className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    >
-                                      <option value="">Select replacement contact</option>
-                                      {contacts.map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                      ))}
-                                    </select>
                                     <button
                                       onClick={() => handleReplaceContact(schedule.id)}
                                       disabled={!replaceContactId}
@@ -1238,6 +1228,16 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                                     >
                                       ✕
                                     </button>
+                                    <select
+                                      value={replaceContactId}
+                                      onChange={(e) => setReplaceContactId(e.target.value)}
+                                      className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                      <option value="">Select replacement contact</option>
+                                      {contacts.map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                      ))}
+                                    </select>
                                   </div>
                                 ) : null}
                               </div>

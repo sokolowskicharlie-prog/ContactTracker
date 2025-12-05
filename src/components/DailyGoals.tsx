@@ -2216,16 +2216,6 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                     </div>
                                     {replacingScheduleId === schedule.id ? (
                                       <div className="flex items-center gap-2">
-                                        <select
-                                          value={replaceContactId}
-                                          onChange={(e) => setReplaceContactId(e.target.value)}
-                                          className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        >
-                                          <option value="">Select replacement contact</option>
-                                          {contacts.map(c => (
-                                            <option key={c.id} value={c.id}>{c.name}</option>
-                                          ))}
-                                        </select>
                                         <button
                                           onClick={() => handleReplaceContact(schedule.id)}
                                           disabled={!replaceContactId}
@@ -2242,6 +2232,16 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                         >
                                           ✗
                                         </button>
+                                        <select
+                                          value={replaceContactId}
+                                          onChange={(e) => setReplaceContactId(e.target.value)}
+                                          className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                          <option value="">Select replacement contact</option>
+                                          {contacts.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                          ))}
+                                        </select>
                                       </div>
                                     ) : (
                                       <button
