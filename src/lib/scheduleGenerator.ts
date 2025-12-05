@@ -418,7 +418,10 @@ export function generateCallSchedule(
         if (!availableSlot) return;
 
         const scheduledTime = availableSlot;
-        if (scheduledTime >= deadline) return;
+        const callEndTime = new Date(scheduledTime.getTime() + callDurationMins * 60 * 1000);
+
+        // Ensure call completes before deadline
+        if (callEndTime > deadline) return;
 
         // Verify the scheduled time is within 9 AM - 5 PM for this contact's timezone
         if (!isWithinBusinessHours(scheduledTime, timezone)) return;
@@ -485,7 +488,11 @@ export function generateCallSchedule(
       if (isWithinBusinessHours(currentTime, timezone)) {
         const availableSlot = findNextAvailableSlot(currentTime, timezone);
 
-        if (availableSlot && availableSlot < deadline) {
+        if (availableSlot) {
+          const callEndTime = new Date(availableSlot.getTime() + callDurationMins * 60 * 1000);
+
+          // Ensure call completes before deadline
+          if (callEndTime <= deadline) {
           let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
           if (contact.is_jammed) {
             contactStatus = 'jammed';
@@ -515,6 +522,7 @@ export function generateCallSchedule(
           currentTime = new Date(availableSlot.getTime() + interval * 60 * 1000);
           scheduled = true;
           failedAttempts = 0;
+          }
         }
       }
 
@@ -523,7 +531,9 @@ export function generateCallSchedule(
 
     // If no contact was available for this slot, create an unassigned slot
     if (!scheduled) {
-      if (fillRestOfDay && currentTime < deadline) {
+      const callEndTime = new Date(currentTime.getTime() + callDurationMins * 60 * 1000);
+
+      if (fillRestOfDay && callEndTime <= deadline) {
         schedule.push({
           goal_id: goalId,
           scheduled_time: currentTime.toISOString(),
