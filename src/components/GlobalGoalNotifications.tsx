@@ -301,7 +301,7 @@ export default function GlobalGoalNotifications() {
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-md">
+    <div className="fixed top-4 left-4 z-50 space-y-2 max-w-md">
       {inAppNotifications.map((notification, index) => {
         const isCompletion = 'isCompletion' in notification;
         const remaining = notification.targetAmount - notification.currentAmount;
@@ -328,7 +328,7 @@ export default function GlobalGoalNotifications() {
           return (
             <div
               key={index}
-              className={`border-2 rounded-lg p-4 shadow-lg animate-slide-in-right ${
+              className={`border-2 rounded-lg p-4 shadow-lg animate-slide-in-left ${
                 achieved
                   ? 'bg-green-50 border-green-300'
                   : 'bg-red-50 border-red-300'
@@ -386,7 +386,7 @@ export default function GlobalGoalNotifications() {
         return (
           <div
             key={index}
-            className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 shadow-lg animate-slide-in-right"
+            className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 shadow-lg animate-slide-in-left"
           >
             <div className="flex items-start gap-3">
               <div className="text-3xl">{icon}</div>
