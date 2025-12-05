@@ -647,23 +647,43 @@ function generateSimpleSchedule(
     let notes = 'Manual assignment needed';
     let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
 
-    // Assign a contact if available
+    // Try to find a contact whose local time is within business hours (9 AM - 5 PM)
     if (sortedContacts.length > 0) {
-      contact = sortedContacts[contactIndex % sortedContacts.length];
-      contactName = contact.name || contact.company || 'Unknown';
-      priorityLabel = analyzeContactPriority(contact);
-      timezoneLabel = getTimezoneLabel(contact.timezone);
-      notes = getReasonText(contact, priorityLabel);
+      let foundContact = false;
+      const maxAttempts = sortedContacts.length;
 
-      if (contact.is_jammed) {
-        contactStatus = 'jammed';
-      } else if (contact.is_client) {
-        contactStatus = 'client';
-      } else if (contact.has_traction) {
-        contactStatus = 'traction';
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const candidateContact = sortedContacts[contactIndex % sortedContacts.length];
+        const candidateTimezone = candidateContact.timezone || 'GMT+0';
+
+        // Check if this time slot is within business hours for the contact's timezone
+        if (isWithinBusinessHours(currentTime, candidateTimezone)) {
+          contact = candidateContact;
+          contactName = contact.name || contact.company || 'Unknown';
+          priorityLabel = analyzeContactPriority(contact);
+          timezoneLabel = getTimezoneLabel(contact.timezone);
+          notes = getReasonText(contact, priorityLabel);
+
+          if (contact.is_jammed) {
+            contactStatus = 'jammed';
+          } else if (contact.is_client) {
+            contactStatus = 'client';
+          } else if (contact.has_traction) {
+            contactStatus = 'traction';
+          }
+
+          foundContact = true;
+          contactIndex++;
+          break;
+        }
+
+        contactIndex++;
       }
 
-      contactIndex++;
+      // If no contact found within business hours, leave as unassigned
+      if (!foundContact) {
+        notes = 'No contacts available during their business hours';
+      }
     }
 
     schedule.push({
