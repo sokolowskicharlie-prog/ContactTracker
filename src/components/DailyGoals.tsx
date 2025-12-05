@@ -107,8 +107,6 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   const [statusFilters, setStatusFilters] = useState<('none' | 'jammed' | 'traction' | 'client')[]>(['none', 'traction', 'client']);
   const [replacingScheduleId, setReplacingScheduleId] = useState<string | null>(null);
   const [replaceContactId, setReplaceContactId] = useState<string>('');
-  const [showAddCallAfterLast, setShowAddCallAfterLast] = useState(false);
-  const [addCallAfterLastContactId, setAddCallAfterLastContactId] = useState<string>('');
 
   useEffect(() => {
     if (user) {
@@ -353,10 +351,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   };
 
   const handleAddCallAfterLast = async () => {
-    if (!addCallAfterLastContactId || !selectedGoal) return;
-
-    const contact = contacts.find(c => c.id === addCallAfterLastContactId);
-    if (!contact) return;
+    if (!selectedGoal) return;
 
     const sortedSchedules = [...callSchedules].sort((a, b) =>
       new Date(b.scheduled_time).getTime() - new Date(a.scheduled_time).getTime()
@@ -365,11 +360,24 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     const lastSchedule = sortedSchedules[0];
     if (!lastSchedule) return;
 
+    const scheduledContactIds = new Set(callSchedules.map(s => s.contact_id).filter(Boolean));
+
+    const eligibleContacts = contacts.filter(c => {
+      if (scheduledContactIds.has(c.id)) return false;
+
+      const contactStatus = c.is_jammed ? 'jammed' : c.is_client ? 'client' : c.has_traction ? 'traction' : 'none';
+      return statusFilters.includes(contactStatus);
+    });
+
+    if (eligibleContacts.length === 0) return;
+
+    const randomContact = eligibleContacts[Math.floor(Math.random() * eligibleContacts.length)];
+
     const lastCallEnd = new Date(lastSchedule.scheduled_time);
     lastCallEnd.setMinutes(lastCallEnd.getMinutes() + lastSchedule.call_duration_mins);
 
-    const currentStatus = contact.is_jammed ? 'jammed' : contact.is_client ? 'client' : contact.has_traction ? 'traction' : 'none';
-    const priorityLabel = contact.is_client ? 'High Value' : contact.has_traction ? 'Warm' : contact.last_activity_date ? 'Follow-Up' : 'Cold';
+    const currentStatus = randomContact.is_jammed ? 'jammed' : randomContact.is_client ? 'client' : randomContact.has_traction ? 'traction' : 'none';
+    const priorityLabel = randomContact.is_client ? 'High Value' : randomContact.has_traction ? 'Warm' : randomContact.last_activity_date ? 'Follow-Up' : 'Cold';
 
     const maxDisplayOrder = Math.max(...callSchedules.map(s => s.display_order), 0);
 
@@ -378,14 +386,14 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
       .insert({
         goal_id: selectedGoal.id,
         scheduled_time: lastCallEnd.toISOString(),
-        contact_id: addCallAfterLastContactId,
-        contact_name: contact.name,
+        contact_id: randomContact.id,
+        contact_name: randomContact.name,
         priority_label: priorityLabel,
         contact_status: currentStatus,
         is_suggested: false,
         completed: false,
         call_duration_mins: scheduleDuration,
-        timezone_label: contact.timezone || null,
+        timezone_label: randomContact.timezone || null,
         display_order: maxDisplayOrder + 1,
         user_id: user!.id
       });
@@ -412,8 +420,6 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
         setSelectedGoal({ ...selectedGoal, target_time: newTargetTime });
       }
 
-      setShowAddCallAfterLast(false);
-      setAddCallAfterLastContactId('');
       loadSchedulesForGoal(selectedGoal.id);
     }
   };
@@ -2357,44 +2363,13 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                           </span>
                         </div>
                         {filteredSchedules.length > 0 && (
-                          showAddCallAfterLast ? (
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={handleAddCallAfterLast}
-                                disabled={!addCallAfterLastContactId}
-                                className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                              >
-                                ✓ Add
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setShowAddCallAfterLast(false);
-                                  setAddCallAfterLastContactId('');
-                                }}
-                                className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                              >
-                                Cancel
-                              </button>
-                              <select
-                                value={addCallAfterLastContactId}
-                                onChange={(e) => setAddCallAfterLastContactId(e.target.value)}
-                                className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              >
-                                <option value="">Select contact</option>
-                                {contacts.map(c => (
-                                  <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                              </select>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setShowAddCallAfterLast(true)}
-                              className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Add Call After Last
-                            </button>
-                          )
+                          <button
+                            onClick={handleAddCallAfterLast}
+                            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add Call After Last
+                          </button>
                         )}
                       </div>
                     </div>
