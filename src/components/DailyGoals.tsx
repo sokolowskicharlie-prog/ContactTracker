@@ -100,8 +100,11 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   const [callSchedules, setCallSchedules] = useState<CallSchedule[]>([]);
   const [autoGenerateSchedule, setAutoGenerateSchedule] = useState(false);
   const [scheduleDuration, setScheduleDuration] = useState(20);
+  const [emailDuration, setEmailDuration] = useState(15);
+  const [dealDuration, setDealDuration] = useState(30);
   const [fillRestOfDay, setFillRestOfDay] = useState(false);
   const [statusFilters, setStatusFilters] = useState<('none' | 'jammed' | 'traction' | 'client')[]>(['none', 'traction', 'client']);
+  const [autoCalculateAmount, setAutoCalculateAmount] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -134,7 +137,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
       const today = new Date().toISOString().split('T')[0];
       if (goal.target_date === today) {
         const progress = calculateProgress(goal);
-        const automaticCount = getActivityForDate(goal.goal_type, goal.target_date);
+        const automaticCount = getActivityForDate(goal.goal_type, goal.target_date, goal.target_time);
 
         if (automaticCount > 0) {
           const previousAutoCount = goal.manual_count ? progress.currentAmount - goal.manual_count : progress.currentAmount;
@@ -147,16 +150,25 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   }, [calls.length, emails.length, deals.length]);
 
   useEffect(() => {
-    if (fillRestOfDay && autoGenerateSchedule && newGoalType === 'calls') {
+    if (autoCalculateAmount) {
       const deadlineGMT = `${newGoalDate}T${newGoalTime}:00.000Z`;
       const deadline = new Date(deadlineGMT);
       const now = new Date();
       const timeAvailable = deadline.getTime() - now.getTime();
-      const callIntervalMs = scheduleDuration * 60 * 1000;
-      const calculatedCalls = Math.max(1, Math.floor(timeAvailable / callIntervalMs));
-      setNewGoalAmount(calculatedCalls);
+
+      let durationMs: number;
+      if (newGoalType === 'calls') {
+        durationMs = scheduleDuration * 60 * 1000;
+      } else if (newGoalType === 'emails') {
+        durationMs = emailDuration * 60 * 1000;
+      } else {
+        durationMs = dealDuration * 60 * 1000;
+      }
+
+      const calculatedAmount = Math.max(1, Math.floor(timeAvailable / durationMs));
+      setNewGoalAmount(calculatedAmount);
     }
-  }, [fillRestOfDay, autoGenerateSchedule, newGoalDate, newGoalTime, scheduleDuration, newGoalType]);
+  }, [autoCalculateAmount, newGoalDate, newGoalTime, scheduleDuration, emailDuration, dealDuration, newGoalType]);
 
   const loadGoals = async () => {
     try {
@@ -676,36 +688,35 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     setNewGoalNotes('');
     setAutoGenerateSchedule(false);
     setScheduleDuration(20);
+    setEmailDuration(15);
+    setDealDuration(30);
     setFillRestOfDay(false);
+    setAutoCalculateAmount(true);
   };
 
-  const getActivityForDate = (type: GoalType, targetDate: string): number => {
-    const goalDate = new Date(targetDate);
-    goalDate.setHours(0, 0, 0, 0);
+  const getActivityForDate = (type: GoalType, targetDate: string, targetTime: string): number => {
+    const deadline = new Date(`${targetDate}T${targetTime}:00.000Z`);
 
     if (type === 'calls') {
       return calls.filter(c => {
         const callDate = new Date(c.call_date);
-        callDate.setHours(0, 0, 0, 0);
-        return callDate.getTime() === goalDate.getTime();
+        return callDate <= deadline;
       }).length;
     } else if (type === 'emails') {
       return emails.filter(e => {
         const emailDate = new Date(e.email_date);
-        emailDate.setHours(0, 0, 0, 0);
-        return emailDate.getTime() === goalDate.getTime();
+        return emailDate <= deadline;
       }).length;
     } else {
       return deals.filter(d => {
         const dealDate = new Date(d.deal_date);
-        dealDate.setHours(0, 0, 0, 0);
-        return dealDate.getTime() === goalDate.getTime();
+        return dealDate <= deadline;
       }).length;
     }
   };
 
   const calculateProgress = (goal: DailyGoal): GoalProgress => {
-    const automaticCount = getActivityForDate(goal.goal_type, goal.target_date);
+    const automaticCount = getActivityForDate(goal.goal_type, goal.target_date, goal.target_time);
     const currentAmount = automaticCount;
     const percentComplete = Math.min(100, (currentAmount / goal.target_amount) * 100);
 
@@ -928,18 +939,21 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Target Amount
-                {fillRestOfDay && autoGenerateSchedule && newGoalType === 'calls' && (
+                {autoCalculateAmount && (
                   <span className="ml-2 text-xs text-blue-600 font-normal">(Auto-calculated)</span>
                 )}
               </label>
               <input
                 type="number"
                 value={newGoalAmount}
-                onChange={(e) => setNewGoalAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) => {
+                  setAutoCalculateAmount(false);
+                  setNewGoalAmount(Math.max(1, parseInt(e.target.value) || 1));
+                }}
                 min="1"
-                readOnly={fillRestOfDay && autoGenerateSchedule && newGoalType === 'calls'}
+                readOnly={autoCalculateAmount}
                 className={`w-full px-3 py-2 border rounded-lg ${
-                  fillRestOfDay && autoGenerateSchedule && newGoalType === 'calls'
+                  autoCalculateAmount
                     ? 'bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed'
                     : 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
                 }`}
@@ -973,6 +987,45 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
             />
+          </div>
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <label className="flex items-center gap-2 cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={autoCalculateAmount}
+                onChange={(e) => setAutoCalculateAmount(e.target.checked)}
+                className="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+              />
+              <Clock className="w-4 h-4 text-green-600" />
+              <span className="text-sm font-medium text-gray-900">Auto-calculate target amount based on time available</span>
+            </label>
+            {autoCalculateAmount && (
+              <div className="pl-6">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  {newGoalType === 'calls' ? 'Call' : newGoalType === 'emails' ? 'Email' : 'Deal'} Duration (minutes)
+                </label>
+                <input
+                  type="number"
+                  value={newGoalType === 'calls' ? scheduleDuration : newGoalType === 'emails' ? emailDuration : dealDuration}
+                  onChange={(e) => {
+                    const value = Math.max(5, parseInt(e.target.value) || 20);
+                    if (newGoalType === 'calls') {
+                      setScheduleDuration(value);
+                    } else if (newGoalType === 'emails') {
+                      setEmailDuration(value);
+                    } else {
+                      setDealDuration(value);
+                    }
+                  }}
+                  min="5"
+                  max="120"
+                  className="w-32 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                <p className="mt-2 text-xs text-gray-600">
+                  Time available divided by duration = target amount
+                </p>
+              </div>
+            )}
           </div>
           {newGoalType === 'calls' && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -1233,7 +1286,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-600">
-                        {getActivityForDate(goal.goal_type, goal.target_date)} logged
+                        {getActivityForDate(goal.goal_type, goal.target_date, goal.target_time)} logged
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1867,20 +1920,21 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
 
       {selectedGoal && (() => {
         const goalDate = selectedGoal.target_date;
+        const deadline = new Date(`${selectedGoal.target_date}T${selectedGoal.target_time}:00.000Z`);
 
         const goalCalls = calls.filter(call => {
-          const callDate = new Date(call.call_date).toISOString().split('T')[0];
-          return callDate === goalDate;
+          const callDate = new Date(call.call_date);
+          return callDate <= deadline;
         });
 
         const goalEmails = emails.filter(email => {
-          const emailDate = new Date(email.email_date).toISOString().split('T')[0];
-          return emailDate === goalDate;
+          const emailDate = new Date(email.email_date);
+          return emailDate <= deadline;
         });
 
         const goalDeals = deals.filter(deal => {
-          const dealDate = new Date(deal.deal_date).toISOString().split('T')[0];
-          return dealDate === goalDate;
+          const dealDate = new Date(deal.deal_date);
+          return dealDate <= deadline;
         });
 
         const goalTypeLabel = selectedGoal.goal_type === 'calls' ? 'Calls' :
