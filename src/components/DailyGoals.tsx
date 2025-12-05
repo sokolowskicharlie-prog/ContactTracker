@@ -102,7 +102,6 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   const [scheduleDuration, setScheduleDuration] = useState(20);
   const [emailDuration, setEmailDuration] = useState(15);
   const [dealDuration, setDealDuration] = useState(30);
-  const [fillRestOfDay, setFillRestOfDay] = useState(false);
   const [statusFilters, setStatusFilters] = useState<('none' | 'jammed' | 'traction' | 'client')[]>(['none', 'traction', 'client']);
 
   useEffect(() => {
@@ -481,7 +480,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
           totalCalls: newGoalAmount,
           deadlineGMT,
           callDurationMins: scheduleDuration,
-          fillRestOfDay,
+          fillRestOfDay: true,
           statusFilters: statusFilters.length > 0 ? statusFilters : undefined
         };
 
@@ -680,7 +679,6 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     setScheduleDuration(20);
     setEmailDuration(15);
     setDealDuration(30);
-    setFillRestOfDay(false);
   };
 
   const getActivityForDate = (type: GoalType, targetDate: string, targetTime: string): number => {
@@ -1002,18 +1000,9 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                       className="w-32 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     <p className="mt-2 text-xs text-gray-600">
-                      Target amount will be auto-calculated: Time available ÷ Duration
+                      Calls will be scheduled every {scheduleDuration} minutes until target time
                     </p>
                   </div>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={fillRestOfDay}
-                      onChange={(e) => setFillRestOfDay(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-xs font-medium text-gray-900">Fill rest of day with calls at this interval</span>
-                  </label>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">Include Contact Status</label>
                     <div className="flex flex-wrap gap-3">
