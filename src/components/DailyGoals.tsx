@@ -105,6 +105,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   const [emailDuration, setEmailDuration] = useState(15);
   const [dealDuration, setDealDuration] = useState(30);
   const [statusFilters, setStatusFilters] = useState<('none' | 'jammed' | 'traction' | 'client')[]>(['none', 'traction', 'client']);
+  const [replacingScheduleId, setReplacingScheduleId] = useState<string | null>(null);
+  const [replaceContactId, setReplaceContactId] = useState<string>('');
 
   useEffect(() => {
     if (user) {
@@ -320,24 +322,31 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     }
   };
 
-  const replaceScheduleContact = async (scheduleId: string, newContactId: string) => {
-    const newContact = contacts.find(c => c.id === newContactId);
-    if (!newContact) return;
+  const handleReplaceContact = async (scheduleId: string) => {
+    if (!replaceContactId) return;
+
+    const contact = contacts.find(c => c.id === replaceContactId);
+    if (!contact) return;
+
+    const schedule = callSchedules.find(s => s.id === scheduleId);
+    if (!schedule) return;
+
+    const currentStatus = contact.status || 'none';
 
     const { error } = await supabase
       .from('call_schedules')
       .update({
-        contact_id: newContactId,
-        contact_name: newContact.company_name
+        contact_id: replaceContactId,
+        contact_name: contact.company_name,
+        timezone_label: contact.timezone || null,
+        contact_status: currentStatus
       })
       .eq('id', scheduleId);
 
-    if (!error) {
-      setCallSchedules(callSchedules.map(s =>
-        s.id === scheduleId
-          ? { ...s, contact_id: newContactId, contact_name: newContact.company_name, contact_status: newContact.status }
-          : s
-      ));
+    if (!error && selectedGoal) {
+      setReplacingScheduleId(null);
+      setReplaceContactId('');
+      loadSchedulesForGoal(selectedGoal.id);
     }
   };
 
@@ -2205,21 +2214,47 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                         <ArrowDown className="w-3.5 h-3.5 text-gray-600" />
                                       </button>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <RefreshCw className="w-3 h-3 text-gray-500" />
-                                      <select
-                                        value={schedule.contact_id || ''}
-                                        onChange={(e) => replaceScheduleContact(schedule.id, e.target.value)}
-                                        className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    {replacingScheduleId === schedule.id ? (
+                                      <div className="flex items-center gap-2">
+                                        <select
+                                          value={replaceContactId}
+                                          onChange={(e) => setReplaceContactId(e.target.value)}
+                                          className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                          <option value="">Select replacement contact</option>
+                                          {contacts.map(c => (
+                                            <option key={c.id} value={c.id}>{c.company_name}</option>
+                                          ))}
+                                        </select>
+                                        <button
+                                          onClick={() => handleReplaceContact(schedule.id)}
+                                          disabled={!replaceContactId}
+                                          className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                        >
+                                          ✓
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setReplacingScheduleId(null);
+                                            setReplaceContactId('');
+                                          }}
+                                          className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                                        >
+                                          ✗
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => {
+                                          setReplacingScheduleId(schedule.id);
+                                          setReplaceContactId('');
+                                        }}
+                                        className="p-1 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                                        title="Replace contact"
                                       >
-                                        <option value="">Select contact...</option>
-                                        {contacts.map(contact => (
-                                          <option key={contact.id} value={contact.id}>
-                                            {contact.company_name}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    </div>
+                                        <RefreshCw className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
                                   </div>
                                 )}
                               </div>
