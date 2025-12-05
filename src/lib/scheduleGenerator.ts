@@ -675,6 +675,7 @@ function generateSimpleSchedule(
   // First call starts at EXACT current time (not rounded, not offset)
   let currentTime = new Date();
   let contactIndex = 0;
+  let isFirstCall = true;
 
   // Create calls every callDurationMins minutes until we reach the deadline or target
   while (schedule.length < targetCalls && currentTime < deadline) {
@@ -699,8 +700,9 @@ function generateSimpleSchedule(
         const candidateContact = sortedContacts[contactIndex % sortedContacts.length];
         const candidateTimezone = candidateContact.timezone || 'GMT+0';
 
-        // Check if this time slot is within business hours for the contact's timezone
-        if (isWithinBusinessHours(currentTime, candidateTimezone)) {
+        // For the FIRST call, ALWAYS assign the highest priority contact regardless of business hours
+        // For subsequent calls, check business hours
+        if (isFirstCall || isWithinBusinessHours(currentTime, candidateTimezone)) {
           contact = candidateContact;
           contactName = contact.name || contact.company || 'Unknown';
           priorityLabel = analyzeContactPriority(contact);
@@ -744,6 +746,9 @@ function generateSimpleSchedule(
       display_order: schedule.length,
       user_id: userId
     });
+
+    // After first call is added, subsequent calls respect business hours
+    isFirstCall = false;
 
     // Move to next time slot
     currentTime = new Date(currentTime.getTime() + callDurationMins * 60 * 1000);

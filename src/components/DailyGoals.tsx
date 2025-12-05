@@ -368,8 +368,10 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
         return;
       }
 
+      // Use the actual call duration from the last schedule
+      const callDuration = lastSchedule.call_duration_mins || 20;
       const lastCallEnd = new Date(lastSchedule.scheduled_time);
-      lastCallEnd.setMinutes(lastCallEnd.getMinutes() + 20);
+      lastCallEnd.setMinutes(lastCallEnd.getMinutes() + callDuration);
 
       // Get all contact IDs already scheduled
       const scheduledContactIds = new Set(
@@ -418,7 +420,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
           contact_status: currentStatus,
           is_suggested: false,
           completed: false,
-          call_duration_mins: 20,
+          call_duration_mins: callDuration,
           timezone_label: contact.timezone || null,
           display_order: maxDisplayOrder + 1,
           user_id: user!.id
