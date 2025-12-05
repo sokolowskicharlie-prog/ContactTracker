@@ -213,19 +213,19 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
   const loadScheduledTasksForGoal = async (goal: DailyGoal) => {
     if (!user) return;
 
-    const now = new Date();
-    const [targetHours, targetMinutes] = goal.target_time.split(':').map(Number);
-    const targetDateTime = new Date(goal.target_date);
-    targetDateTime.setHours(targetHours, targetMinutes, 0, 0);
+    const startOfDay = new Date(goal.target_date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(goal.target_date);
+    endOfDay.setHours(23, 59, 59, 999);
 
     const { data, error } = await supabase
       .from('tasks')
       .select('*')
       .eq('user_id', user.id)
-      .eq('completed', false)
       .not('due_date', 'is', null)
-      .gte('due_date', now.toISOString())
-      .lte('due_date', targetDateTime.toISOString())
+      .gte('due_date', startOfDay.toISOString())
+      .lte('due_date', endOfDay.toISOString())
       .order('due_date', { ascending: true });
 
     if (!error) {
