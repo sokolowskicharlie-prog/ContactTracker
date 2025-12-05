@@ -104,7 +104,6 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   const [dealDuration, setDealDuration] = useState(30);
   const [fillRestOfDay, setFillRestOfDay] = useState(false);
   const [statusFilters, setStatusFilters] = useState<('none' | 'jammed' | 'traction' | 'client')[]>(['none', 'traction', 'client']);
-  const [autoCalculateAmount, setAutoCalculateAmount] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -150,25 +149,16 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   }, [calls.length, emails.length, deals.length]);
 
   useEffect(() => {
-    if (autoCalculateAmount) {
+    if (autoGenerateSchedule && newGoalType === 'calls') {
       const deadlineGMT = `${newGoalDate}T${newGoalTime}:00.000Z`;
       const deadline = new Date(deadlineGMT);
       const now = new Date();
       const timeAvailable = deadline.getTime() - now.getTime();
-
-      let durationMs: number;
-      if (newGoalType === 'calls') {
-        durationMs = scheduleDuration * 60 * 1000;
-      } else if (newGoalType === 'emails') {
-        durationMs = emailDuration * 60 * 1000;
-      } else {
-        durationMs = dealDuration * 60 * 1000;
-      }
-
+      const durationMs = scheduleDuration * 60 * 1000;
       const calculatedAmount = Math.max(1, Math.floor(timeAvailable / durationMs));
       setNewGoalAmount(calculatedAmount);
     }
-  }, [autoCalculateAmount, newGoalDate, newGoalTime, scheduleDuration, emailDuration, dealDuration, newGoalType]);
+  }, [autoGenerateSchedule, newGoalDate, newGoalTime, scheduleDuration, newGoalType]);
 
   const loadGoals = async () => {
     try {
@@ -691,7 +681,6 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     setEmailDuration(15);
     setDealDuration(30);
     setFillRestOfDay(false);
-    setAutoCalculateAmount(true);
   };
 
   const getActivityForDate = (type: GoalType, targetDate: string, targetTime: string): number => {
@@ -939,7 +928,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Target Amount
-                {autoCalculateAmount && (
+                {autoGenerateSchedule && newGoalType === 'calls' && (
                   <span className="ml-2 text-xs text-blue-600 font-normal">(Auto-calculated)</span>
                 )}
               </label>
@@ -947,13 +936,13 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                 type="number"
                 value={newGoalAmount}
                 onChange={(e) => {
-                  setAutoCalculateAmount(false);
+                  setAutoGenerateSchedule(false);
                   setNewGoalAmount(Math.max(1, parseInt(e.target.value) || 1));
                 }}
                 min="1"
-                readOnly={autoCalculateAmount}
+                readOnly={autoGenerateSchedule && newGoalType === 'calls'}
                 className={`w-full px-3 py-2 border rounded-lg ${
-                  autoCalculateAmount
+                  autoGenerateSchedule && newGoalType === 'calls'
                     ? 'bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed'
                     : 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
                 }`}
@@ -988,45 +977,6 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
             />
           </div>
-          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <label className="flex items-center gap-2 cursor-pointer mb-3">
-              <input
-                type="checkbox"
-                checked={autoCalculateAmount}
-                onChange={(e) => setAutoCalculateAmount(e.target.checked)}
-                className="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-500"
-              />
-              <Clock className="w-4 h-4 text-green-600" />
-              <span className="text-sm font-medium text-gray-900">Auto-calculate target amount based on time available</span>
-            </label>
-            {autoCalculateAmount && (
-              <div className="pl-6">
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  {newGoalType === 'calls' ? 'Call' : newGoalType === 'emails' ? 'Email' : 'Deal'} Duration (minutes)
-                </label>
-                <input
-                  type="number"
-                  value={newGoalType === 'calls' ? scheduleDuration : newGoalType === 'emails' ? emailDuration : dealDuration}
-                  onChange={(e) => {
-                    const value = Math.max(5, parseInt(e.target.value) || 20);
-                    if (newGoalType === 'calls') {
-                      setScheduleDuration(value);
-                    } else if (newGoalType === 'emails') {
-                      setEmailDuration(value);
-                    } else {
-                      setDealDuration(value);
-                    }
-                  }}
-                  min="5"
-                  max="120"
-                  className="w-32 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-                <p className="mt-2 text-xs text-gray-600">
-                  Time available divided by duration = target amount
-                </p>
-              </div>
-            )}
-          </div>
           {newGoalType === 'calls' && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <label className="flex items-center gap-2 cursor-pointer mb-3">
@@ -1051,6 +1001,9 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                       max="60"
                       className="w-32 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
+                    <p className="mt-2 text-xs text-gray-600">
+                      Target amount will be auto-calculated: Time available ÷ Duration
+                    </p>
                   </div>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
