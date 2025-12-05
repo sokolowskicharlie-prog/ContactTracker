@@ -110,6 +110,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   const [replacingScheduleId, setReplacingScheduleId] = useState<string | null>(null);
   const [replaceContactId, setReplaceContactId] = useState<string>('');
   const [isAddingCall, setIsAddingCall] = useState(false);
+  const [showAddAnotherCallModal, setShowAddAnotherCallModal] = useState(false);
+  const [newCallTime, setNewCallTime] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -355,7 +357,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   };
 
   const handleAddAnotherCall = async () => {
-    if (!selectedGoal || isAddingCall) return;
+    if (!selectedGoal || isAddingCall || !newCallTime) return;
 
     setIsAddingCall(true);
 
@@ -373,8 +375,11 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
 
       // Use the actual call duration from the last schedule
       const callDuration = lastSchedule.call_duration_mins || 20;
-      const lastCallEnd = new Date(lastSchedule.scheduled_time);
-      lastCallEnd.setMinutes(lastCallEnd.getMinutes() + callDuration);
+
+      // Parse the user-specified time
+      const [hours, minutes] = newCallTime.split(':').map(Number);
+      const scheduledTime = new Date(selectedGoal.target_date);
+      scheduledTime.setHours(hours, minutes, 0, 0);
 
       // Get all contact IDs already scheduled
       const scheduledContactIds = new Set(
@@ -416,7 +421,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
         .from('call_schedules')
         .insert({
           goal_id: selectedGoal.id,
-          scheduled_time: lastCallEnd.toISOString(),
+          scheduled_time: scheduledTime.toISOString(),
           contact_id: contact.id,
           contact_name: contact.name,
           priority_label: priorityLabel,
@@ -434,6 +439,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
         alert('Failed to add call. Please try again.');
       } else {
         await loadSchedulesForGoal(selectedGoal.id);
+        setShowAddAnotherCallModal(false);
+        setNewCallTime('');
       }
     } finally {
       setIsAddingCall(false);
@@ -2415,12 +2422,18 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
 
                 {selectedGoal.goal_type === 'calls' && callSchedules.length > 0 && (
                   <button
-                    onClick={handleAddAnotherCall}
+                    onClick={() => {
+                      const now = new Date();
+                      const hours = String(now.getHours()).padStart(2, '0');
+                      const minutes = String(now.getMinutes()).padStart(2, '0');
+                      setNewCallTime(`${hours}:${minutes}`);
+                      setShowAddAnotherCallModal(true);
+                    }}
                     disabled={isAddingCall}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4" />
-                    {isAddingCall ? 'Adding Call...' : 'Add Another Call'}
+                    Add Another Call
                   </button>
                 )}
 
@@ -2831,6 +2844,65 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
           </div>
         );
       })()}
+
+      {showAddAnotherCallModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Add Another Call</h3>
+              <button
+                onClick={() => {
+                  setShowAddAnotherCallModal(false);
+                  setNewCallTime('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Call Time
+                </label>
+                <input
+                  type="time"
+                  value={newCallTime}
+                  onChange={(e) => setNewCallTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  A random contact will be selected from your available contacts that match your current filters.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowAddAnotherCallModal(false);
+                    setNewCallTime('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddAnotherCall}
+                  disabled={isAddingCall || !newCallTime}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {isAddingCall ? 'Adding...' : 'Add Call'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
