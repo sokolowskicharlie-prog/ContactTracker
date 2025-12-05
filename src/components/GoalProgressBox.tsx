@@ -232,6 +232,25 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
     }
   };
 
+  const toggleTaskComplete = async (taskId: string) => {
+    const task = scheduledTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const { error } = await supabase
+      .from('tasks')
+      .update({
+        completed: !task.completed,
+        completed_at: !task.completed ? new Date().toISOString() : null
+      })
+      .eq('id', taskId);
+
+    if (!error) {
+      setScheduledTasks(prev => prev.map(t =>
+        t.id === taskId ? { ...t, completed: !t.completed, completed_at: !t.completed ? new Date().toISOString() : null } : t
+      ));
+    }
+  };
+
   const toggleScheduleComplete = async (scheduleId: string) => {
     const schedule = callSchedules.find(s => s.id === scheduleId);
     if (!schedule) return;
@@ -1010,7 +1029,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
                   ].sort((a, b) => a.time.getTime() - b.time.getTime());
 
                   const remainingCalls = filteredSchedules.filter(s => !s.completed).length;
-                  const remainingTasks = scheduledTasks.length;
+                  const remainingTasks = scheduledTasks.filter(t => !t.completed).length;
 
                   return (
                     <div className="mb-6">
@@ -1035,16 +1054,25 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
                                 return (
                                   <div
                                     key={`task-${task.id}`}
-                                    className="flex items-start gap-3 p-3 border-b border-gray-200 last:border-b-0 bg-purple-50 hover:bg-purple-100"
+                                    className={`flex items-start gap-3 p-3 border-b border-gray-200 last:border-b-0 ${
+                                      task.completed ? 'bg-gray-100 opacity-60' : 'bg-purple-50 hover:bg-purple-100'
+                                    }`}
                                   >
                                     <div className="flex items-center pt-1">
-                                      <div className="w-5 h-5 rounded border-2 border-purple-500 flex items-center justify-center bg-white">
-                                        <CheckSquare className="w-3.5 h-3.5 text-purple-600" />
-                                      </div>
+                                      <button
+                                        onClick={() => toggleTaskComplete(task.id)}
+                                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                                          task.completed
+                                            ? 'bg-purple-600 border-purple-600'
+                                            : 'border-purple-500 hover:border-purple-700 bg-white'
+                                        }`}
+                                      >
+                                        {task.completed && <Check className="w-3.5 h-3.5 text-white" />}
+                                      </button>
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-start justify-between gap-2 mb-1">
-                                        <div>
+                                        <div className={task.completed ? 'line-through text-gray-500' : ''}>
                                           <span className="font-medium text-gray-900">
                                             {taskTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} GMT
                                           </span>
@@ -1240,7 +1268,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall }: GoalProg
                         <div className="flex items-center justify-between text-sm">
                           <span className="font-medium text-gray-700">
                             Calls: {filteredSchedules.filter(s => s.completed).length} / {filteredSchedules.length} completed
-                            {scheduledTasks.length > 0 && ` • Tasks: ${scheduledTasks.length} pending`}
+                            {scheduledTasks.length > 0 && ` • Tasks: ${scheduledTasks.filter(t => t.completed).length} / ${scheduledTasks.length} completed`}
                           </span>
                           <span className="text-gray-600">
                             {filteredSchedules.length > 0 ? Math.round((filteredSchedules.filter(s => s.completed).length / filteredSchedules.length) * 100) : 0}%
