@@ -24,6 +24,7 @@ export type PriorityLabel = 'Warm' | 'Follow-Up' | 'High Value' | 'Cold';
 
 export interface ScheduleParams {
   totalCalls: number;
+  startTimeGMT?: string;
   deadlineGMT: string;
   callDurationMins: number;
   fillRestOfDay?: boolean;
@@ -227,18 +228,19 @@ export function generateCallSchedule(
   goalId: string,
   tasks: Task[] = []
 ): Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] {
-  const { totalCalls, deadlineGMT, callDurationMins, fillRestOfDay, simpleMode, statusFilters } = params;
+  const { totalCalls, startTimeGMT, deadlineGMT, callDurationMins, fillRestOfDay, simpleMode, statusFilters } = params;
 
-  const now = new Date();
+  // Use startTimeGMT if provided, otherwise use current time
+  const startTime = startTimeGMT ? new Date(startTimeGMT) : new Date();
   let deadline = new Date(deadlineGMT);
 
   // If fillRestOfDay is enabled, set deadline to 5:00 PM GMT (17:00) today
   if (fillRestOfDay) {
-    deadline = new Date(now);
+    deadline = new Date(startTime);
     deadline.setUTCHours(17, 0, 0, 0);
 
     // If 5 PM GMT has already passed today, this won't work, so keep original deadline
-    if (deadline <= now) {
+    if (deadline <= startTime) {
       deadline = new Date(deadlineGMT);
     }
   }
@@ -246,7 +248,7 @@ export function generateCallSchedule(
   // Calculate actual number of calls based on fillRestOfDay option
   let targetCalls = totalCalls;
   if (fillRestOfDay) {
-    const timeAvailable = deadline.getTime() - now.getTime();
+    const timeAvailable = deadline.getTime() - startTime.getTime();
     const callIntervalMs = callDurationMins * 60 * 1000;
     targetCalls = Math.floor(timeAvailable / callIntervalMs);
   }
@@ -255,7 +257,7 @@ export function generateCallSchedule(
   if (simpleMode) {
     return generateSimpleSchedule(
       targetCalls,
-      now,
+      startTime,
       deadline,
       callDurationMins,
       contacts,

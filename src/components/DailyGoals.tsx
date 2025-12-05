@@ -39,12 +39,14 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
 
   const [newGoalType, setNewGoalType] = useState<GoalType>('calls');
   const [newGoalAmount, setNewGoalAmount] = useState(10);
+  const [newGoalStartTime, setNewGoalStartTime] = useState('09:00');
   const [newGoalTime, setNewGoalTime] = useState('17:00');
   const [newGoalDate, setNewGoalDate] = useState(new Date().toISOString().split('T')[0]);
   const [newGoalNotes, setNewGoalNotes] = useState('');
 
   const [editGoalType, setEditGoalType] = useState<GoalType>('calls');
   const [editGoalAmount, setEditGoalAmount] = useState(10);
+  const [editGoalStartTime, setEditGoalStartTime] = useState('09:00');
   const [editGoalTime, setEditGoalTime] = useState('17:00');
   const [editGoalDate, setEditGoalDate] = useState(new Date().toISOString().split('T')[0]);
   const [editGoalNotes, setEditGoalNotes] = useState('');
@@ -155,15 +157,16 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
 
   useEffect(() => {
     if (autoGenerateSchedule && newGoalType === 'calls') {
-      const deadlineGMT = `${newGoalDate}T${newGoalTime}:00.000Z`;
-      const deadline = new Date(deadlineGMT);
-      const now = new Date();
-      const timeAvailable = deadline.getTime() - now.getTime();
+      const startTimeGMT = `${newGoalDate}T${newGoalStartTime}:00.000Z`;
+      const endTimeGMT = `${newGoalDate}T${newGoalTime}:00.000Z`;
+      const startTime = new Date(startTimeGMT);
+      const endTime = new Date(endTimeGMT);
+      const timeAvailable = endTime.getTime() - startTime.getTime();
       const durationMs = scheduleDuration * 60 * 1000;
       const calculatedAmount = Math.max(1, Math.floor(timeAvailable / durationMs));
       setNewGoalAmount(calculatedAmount);
     }
-  }, [autoGenerateSchedule, newGoalDate, newGoalTime, scheduleDuration, newGoalType]);
+  }, [autoGenerateSchedule, newGoalDate, newGoalStartTime, newGoalTime, scheduleDuration, newGoalType]);
 
   const loadGoals = async () => {
     try {
@@ -614,6 +617,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
           user_id: user!.id,
           goal_type: newGoalType,
           target_amount: newGoalAmount,
+          start_time: newGoalStartTime,
           target_time: newGoalTime,
           target_date: newGoalDate,
           manual_count: 0,
@@ -626,9 +630,11 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
       if (error) throw error;
 
       if (autoGenerateSchedule && newGoalType === 'calls' && data) {
+        const startTimeGMT = `${newGoalDate}T${newGoalStartTime}:00.000Z`;
         const deadlineGMT = `${newGoalDate}T${newGoalTime}:00.000Z`;
         const scheduleParams: ScheduleParams = {
           totalCalls: newGoalAmount,
+          startTimeGMT,
           deadlineGMT,
           callDurationMins: scheduleDuration,
           fillRestOfDay: true,
@@ -706,6 +712,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     setEditingGoal(goal);
     setEditGoalType(goal.goal_type);
     setEditGoalAmount(goal.target_amount);
+    setEditGoalStartTime(goal.start_time);
     setEditGoalTime(goal.target_time);
     setEditGoalDate(goal.target_date);
     setEditGoalNotes(goal.notes || '');
@@ -721,6 +728,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
         .update({
           goal_type: editGoalType,
           target_amount: editGoalAmount,
+          start_time: editGoalStartTime,
           target_time: editGoalTime,
           target_date: editGoalDate,
           notes: editGoalNotes.trim() || null,
@@ -824,6 +832,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   const resetForm = () => {
     setNewGoalType('calls');
     setNewGoalAmount(10);
+    setNewGoalStartTime('09:00');
     setNewGoalTime('17:00');
     setNewGoalDate(new Date().toISOString().split('T')[0]);
     setNewGoalNotes('');
@@ -1108,7 +1117,16 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Target Time</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+              <input
+                type="time"
+                value={newGoalStartTime}
+                onChange={(e) => setNewGoalStartTime(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
               <input
                 type="time"
                 value={newGoalTime}
@@ -1152,7 +1170,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                       className="w-32 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     <p className="mt-2 text-xs text-gray-600">
-                      Calls will be scheduled every {scheduleDuration} minutes until target time
+                      Calls will be scheduled every {scheduleDuration} minutes from start time to end time
                     </p>
                   </div>
                   <div>
@@ -1219,46 +1237,59 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
       {editingGoal && (
         <div className="mb-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-300">
           <h3 className="text-sm font-semibold text-blue-900 mb-4">Edit Goal</h3>
-          <div className="grid grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
-              <select
-                value={editGoalType}
-                onChange={(e) => setEditGoalType(e.target.value as GoalType)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="calls">Calls</option>
-                <option value="emails">Emails</option>
-                <option value="deals">Deals</option>
-              </select>
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                <select
+                  value={editGoalType}
+                  onChange={(e) => setEditGoalType(e.target.value as GoalType)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="calls">Calls</option>
+                  <option value="emails">Emails</option>
+                  <option value="deals">Deals</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Target Amount</label>
+                <input
+                  type="number"
+                  value={editGoalAmount}
+                  onChange={(e) => setEditGoalAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                  min="1"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
+                <input
+                  type="date"
+                  value={editGoalDate}
+                  onChange={(e) => setEditGoalDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Target Amount</label>
-              <input
-                type="number"
-                value={editGoalAmount}
-                onChange={(e) => setEditGoalAmount(Math.max(1, parseInt(e.target.value) || 1))}
-                min="1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
-              <input
-                type="date"
-                value={editGoalDate}
-                onChange={(e) => setEditGoalDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Target Time</label>
-              <input
-                type="time"
-                value={editGoalTime}
-                onChange={(e) => setEditGoalTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                <input
+                  type="time"
+                  value={editGoalStartTime}
+                  onChange={(e) => setEditGoalStartTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                <input
+                  type="time"
+                  value={editGoalTime}
+                  onChange={(e) => setEditGoalTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
             </div>
           </div>
           <div className="mt-4">
@@ -2062,7 +2093,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                 <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold text-gray-900">Goal Summary</h4>
-                    <span className="text-sm text-gray-600">Target: {selectedGoal.target_time}</span>
+                    <span className="text-sm text-gray-600">Time: {selectedGoal.start_time} - {selectedGoal.target_time}</span>
                   </div>
                   <div className="flex items-center gap-4">
                     <div>
@@ -2121,12 +2152,12 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                     <div className="mb-6">
                       <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <Calendar className="w-5 h-5 text-blue-600" />
-                        Schedule ({remainingCalls} calls, {remainingTasks} tasks until {selectedGoal.target_time})
+                        Schedule ({remainingCalls} calls, {remainingTasks} tasks)
                       </h4>
                       {mergedSchedule.length === 0 ? (
                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
                           <Clock className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                          <p className="text-gray-600">No scheduled activities between now and {selectedGoal.target_time}</p>
+                          <p className="text-gray-600">No scheduled activities between {selectedGoal.start_time} and {selectedGoal.target_time}</p>
                         </div>
                       ) : (
                         <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
