@@ -12,6 +12,7 @@ interface DailyGoalsProps {
   onAddTask?: () => void;
   onSelectContact?: (contactId: string) => void;
   onLogCall?: (contactId: string) => void;
+  onLogEmail?: (contactId: string) => void;
 }
 
 type GoalType = 'calls' | 'emails' | 'deals';
@@ -27,7 +28,7 @@ interface GoalProgress {
   requiredRate: number;
 }
 
-export default function DailyGoals({ calls, emails, deals, contacts = [], onAddTask, onSelectContact, onLogCall }: DailyGoalsProps) {
+export default function DailyGoals({ calls, emails, deals, contacts = [], onAddTask, onSelectContact, onLogCall, onLogEmail }: DailyGoalsProps) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [settings, setSettings] = useState<GoalNotificationSettings | null>(null);
@@ -267,18 +268,28 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     const task = scheduledTasks.find(t => t.id === taskId);
     if (!task) return;
 
+    const isMarkingComplete = !task.completed;
+
     const { error } = await supabase
       .from('tasks')
       .update({
-        completed: !task.completed,
-        completed_at: !task.completed ? new Date().toISOString() : null
+        completed: isMarkingComplete,
+        completed_at: isMarkingComplete ? new Date().toISOString() : null
       })
       .eq('id', taskId);
 
     if (!error) {
       setScheduledTasks(prev => prev.map(t =>
-        t.id === taskId ? { ...t, completed: !t.completed, completed_at: !t.completed ? new Date().toISOString() : null } : t
+        t.id === taskId ? { ...t, completed: isMarkingComplete, completed_at: isMarkingComplete ? new Date().toISOString() : null } : t
       ));
+
+      if (isMarkingComplete && task.contact_id) {
+        if (task.task_type === 'call_back' && onLogCall) {
+          onLogCall(task.contact_id);
+        } else if (task.task_type === 'email_back' && onLogEmail) {
+          onLogEmail(task.contact_id);
+        }
+      }
     }
   };
 
