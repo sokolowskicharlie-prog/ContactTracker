@@ -314,7 +314,49 @@ export function generateCallSchedule(
 
   const schedule: Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] = [];
 
-  // First, add call_back tasks that are due today
+  // ALWAYS add first call at EXACT current time
+  if (activeContacts.length > 0) {
+    const sortedByPriority = [...activeContacts].sort((a, b) => {
+      const aPriority = analyzeContactPriority(a);
+      const bPriority = analyzeContactPriority(b);
+      const priorityOrder = { 'Warm': 0, 'Follow-Up': 1, 'High Value': 2, 'Cold': 3 };
+      return priorityOrder[aPriority] - priorityOrder[bPriority];
+    });
+
+    const firstContact = sortedByPriority[0];
+    const priorityLabel = analyzeContactPriority(firstContact);
+    const timezoneLabel = getTimezoneLabel(firstContact.timezone);
+
+    let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+    if (firstContact.is_jammed) {
+      contactStatus = 'jammed';
+    } else if (firstContact.is_client) {
+      contactStatus = 'client';
+    } else if (firstContact.has_traction) {
+      contactStatus = 'traction';
+    }
+
+    schedule.push({
+      goal_id: goalId,
+      scheduled_time: currentTime.toISOString(),
+      contact_id: firstContact.id,
+      contact_name: firstContact.name || firstContact.company || 'Unknown',
+      priority_label: priorityLabel,
+      contact_status: contactStatus,
+      is_suggested: false,
+      completed: false,
+      call_duration_mins: callDurationMins,
+      timezone_label: timezoneLabel,
+      notes: getReasonText(firstContact, priorityLabel),
+      display_order: 0,
+      user_id: userId
+    });
+
+    // Move currentTime forward for next call
+    currentTime = new Date(currentTime.getTime() + callDurationMins * 60 * 1000);
+  }
+
+  // Then, add call_back tasks that are due today
   const callBackTasks = tasks.filter(task => {
     if (task.task_type !== 'call_back' || task.completed || !task.due_date) {
       return false;
