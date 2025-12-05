@@ -59,6 +59,9 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
   const [scheduledTasks, setScheduledTasks] = useState<Task[]>([]);
   const [replacingScheduleId, setReplacingScheduleId] = useState<string | null>(null);
   const [replaceContactId, setReplaceContactId] = useState<string>('');
+  const [showAddCallAfterLast, setShowAddCallAfterLast] = useState(false);
+  const [addCallAfterLastContactId, setAddCallAfterLastContactId] = useState<string>('');
+  const [scheduleDuration] = useState(20);
 
   useEffect(() => {
     if (user) {
@@ -313,6 +316,72 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
     if (!error && selectedGoal) {
       setReplacingScheduleId(null);
       setReplaceContactId('');
+      loadSchedulesForGoal(selectedGoal.id);
+    }
+  };
+
+  const handleAddCallAfterLast = async () => {
+    if (!addCallAfterLastContactId || !selectedGoal) return;
+
+    const contact = contacts.find(c => c.id === addCallAfterLastContactId);
+    if (!contact) return;
+
+    const sortedSchedules = [...callSchedules].sort((a, b) =>
+      new Date(b.scheduled_time).getTime() - new Date(a.scheduled_time).getTime()
+    );
+
+    const lastSchedule = sortedSchedules[0];
+    if (!lastSchedule) return;
+
+    const lastCallEnd = new Date(lastSchedule.scheduled_time);
+    lastCallEnd.setMinutes(lastCallEnd.getMinutes() + lastSchedule.call_duration_mins);
+
+    const currentStatus = contact.is_jammed ? 'jammed' : contact.is_client ? 'client' : contact.has_traction ? 'traction' : 'none';
+    const priorityLabel = contact.is_client ? 'High Value' : contact.has_traction ? 'Warm' : contact.last_activity_date ? 'Follow-Up' : 'Cold';
+
+    const maxDisplayOrder = Math.max(...callSchedules.map(s => s.display_order), 0);
+
+    const { error } = await supabase
+      .from('call_schedules')
+      .insert({
+        goal_id: selectedGoal.id,
+        scheduled_time: lastCallEnd.toISOString(),
+        contact_id: addCallAfterLastContactId,
+        contact_name: contact.name,
+        priority_label: priorityLabel,
+        contact_status: currentStatus,
+        is_suggested: false,
+        completed: false,
+        call_duration_mins: scheduleDuration,
+        timezone_label: contact.timezone || null,
+        display_order: maxDisplayOrder + 1,
+        user_id: user!.id
+      });
+
+    if (!error) {
+      const newCallEnd = new Date(lastCallEnd);
+      newCallEnd.setMinutes(newCallEnd.getMinutes() + scheduleDuration);
+
+      const [currentHours, currentMinutes] = selectedGoal.target_time.split(':').map(Number);
+      const currentTargetTime = new Date(selectedGoal.target_date);
+      currentTargetTime.setHours(currentHours, currentMinutes, 0, 0);
+
+      if (newCallEnd > currentTargetTime) {
+        const newTargetHours = newCallEnd.getHours();
+        const newTargetMinutes = newCallEnd.getMinutes();
+        const newTargetTime = `${String(newTargetHours).padStart(2, '0')}:${String(newTargetMinutes).padStart(2, '0')}`;
+
+        await supabase
+          .from('daily_goals')
+          .update({ target_time: newTargetTime })
+          .eq('id', selectedGoal.id);
+
+        setGoals(goals.map(g => g.id === selectedGoal.id ? { ...g, target_time: newTargetTime } : g));
+        setSelectedGoal({ ...selectedGoal, target_time: newTargetTime });
+      }
+
+      setShowAddCallAfterLast(false);
+      setAddCallAfterLastContactId('');
       loadSchedulesForGoal(selectedGoal.id);
     }
   };
@@ -1292,7 +1361,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                         })}
                       </div>
                       <div className="p-3 bg-gray-100 border-t border-gray-300">
-                        <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center justify-between text-sm mb-3">
                           <span className="font-medium text-gray-700">
                             Calls: {filteredSchedules.filter(s => s.completed).length} / {filteredSchedules.length} completed
                             {scheduledTasks.length > 0 && ` • Tasks: ${scheduledTasks.filter(t => t.completed).length} / ${scheduledTasks.length} completed`}
@@ -1301,6 +1370,46 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                             {filteredSchedules.length > 0 ? Math.round((filteredSchedules.filter(s => s.completed).length / filteredSchedules.length) * 100) : 0}%
                           </span>
                         </div>
+                        {filteredSchedules.length > 0 && (
+                          showAddCallAfterLast ? (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={handleAddCallAfterLast}
+                                disabled={!addCallAfterLastContactId}
+                                className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                              >
+                                ✓ Add
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setShowAddCallAfterLast(false);
+                                  setAddCallAfterLastContactId('');
+                                }}
+                                className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                              >
+                                Cancel
+                              </button>
+                              <select
+                                value={addCallAfterLastContactId}
+                                onChange={(e) => setAddCallAfterLastContactId(e.target.value)}
+                                className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              >
+                                <option value="">Select contact</option>
+                                {contacts.map(c => (
+                                  <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setShowAddCallAfterLast(true)}
+                              className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add Call After Last
+                            </button>
+                          )
+                        )}
                       </div>
                     </div>
                           )}
