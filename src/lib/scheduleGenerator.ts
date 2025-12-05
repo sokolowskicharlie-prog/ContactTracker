@@ -374,8 +374,7 @@ export function generateCallSchedule(
     let attempts = 0;
 
     while (attempts < maxAttempts && candidateTime < deadline) {
-      // When filling rest of day, just use the candidate time without business hours check
-      const availableSlot = fillRestOfDay ? candidateTime : getNextAvailableSlot(candidateTime, timezone, callDurationMins);
+      const availableSlot = getNextAvailableSlot(candidateTime, timezone, callDurationMins);
       if (!availableSlot || availableSlot >= deadline) return null;
 
       if (!hasConflict(availableSlot)) {
@@ -415,7 +414,7 @@ export function generateCallSchedule(
         if (schedule.length >= targetCalls) return;
         if (currentTime >= deadline) return;
 
-        const availableSlot = fillRestOfDay ? currentTime : findNextAvailableSlot(currentTime, timezone);
+        const availableSlot = findNextAvailableSlot(currentTime, timezone);
         if (!availableSlot) return;
 
         const scheduledTime = availableSlot;
@@ -424,8 +423,8 @@ export function generateCallSchedule(
         // Ensure call completes before deadline
         if (callEndTime > deadline) return;
 
-        // Verify the scheduled time is within 9 AM - 5 PM for this contact's timezone (skip check if filling rest of day)
-        if (!fillRestOfDay && !isWithinBusinessHours(scheduledTime, timezone)) return;
+        // Verify the scheduled time is within 9 AM - 5 PM for this contact's timezone
+        if (!isWithinBusinessHours(scheduledTime, timezone)) return;
 
         let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
         if (s.contact) {
@@ -485,9 +484,9 @@ export function generateCallSchedule(
       const timezone = contact.timezone || 'GMT+0';
       const tzLabel = getTimezoneLabel(timezone);
 
-      // Check if the current time is within business hours for this contact's timezone (skip check if filling rest of day)
-      if (fillRestOfDay || isWithinBusinessHours(currentTime, timezone)) {
-        const availableSlot = fillRestOfDay ? currentTime : findNextAvailableSlot(currentTime, timezone);
+      // Check if the current time is within business hours for this contact's timezone
+      if (isWithinBusinessHours(currentTime, timezone)) {
+        const availableSlot = findNextAvailableSlot(currentTime, timezone);
 
         if (availableSlot) {
           const callEndTime = new Date(availableSlot.getTime() + callDurationMins * 60 * 1000);
