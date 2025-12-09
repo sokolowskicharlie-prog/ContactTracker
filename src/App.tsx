@@ -2580,7 +2580,12 @@ function App() {
                         const ports = s.ports.split(';').map(p => p.trim().toLowerCase());
                         return ports.some(port => port.includes(filterPort.toLowerCase()));
                       })
-                      .map(s => s.email)
+                      .map(s => {
+                        const emails = [];
+                        if (s.general_email) emails.push(s.general_email);
+                        if (s.email) emails.push(s.email);
+                        return emails.join('; ');
+                      })
                       .filter(Boolean)
                       .join('; ')}
                     className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm"
@@ -2598,7 +2603,12 @@ function App() {
                           const ports = s.ports.split(';').map(p => p.trim().toLowerCase());
                           return ports.some(port => port.includes(filterPort.toLowerCase()));
                         })
-                        .map(s => s.email)
+                        .map(s => {
+                          const emails = [];
+                          if (s.general_email) emails.push(s.general_email);
+                          if (s.email) emails.push(s.email);
+                          return emails.join('; ');
+                        })
                         .filter(Boolean)
                         .join('; ');
                       navigator.clipboard.writeText(emails);

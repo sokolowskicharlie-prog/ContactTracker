@@ -60,10 +60,12 @@ export default function SupplierList({ suppliers, onSupplierClick, onDeleteSuppl
             )}
 
             <div className="space-y-1 mb-3">
-              {supplier.email && (
+              {(supplier.general_email || supplier.email) && (
                 <div className="flex items-center text-sm text-gray-600">
                   <Mail className="w-4 h-4 mr-2 text-gray-400" />
-                  <span className="truncate">{supplier.email}</span>
+                  <span className="truncate">
+                    {[supplier.general_email, supplier.email].filter(Boolean).join('; ')}
+                  </span>
                 </div>
               )}
               {supplier.phone && (

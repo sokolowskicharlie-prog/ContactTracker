@@ -158,10 +158,12 @@ export default function SupplierTableView({
                           <span className="truncate">{supplier.phone}</span>
                         </div>
                       )}
-                      {supplier.email && (
+                      {(supplier.general_email || supplier.email) && (
                         <div className="flex items-center gap-1 text-sm text-gray-600">
                           <Mail className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{supplier.email}</span>
+                          <span className="truncate">
+                            {[supplier.general_email, supplier.email].filter(Boolean).join('; ')}
+                          </span>
                         </div>
                       )}
                     </div>
