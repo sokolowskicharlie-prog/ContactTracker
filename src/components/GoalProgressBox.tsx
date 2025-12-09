@@ -1251,8 +1251,12 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                             <div
                               key={schedule.id}
                               className={`flex items-start gap-3 p-3 border-b border-gray-200 last:border-b-0 ${
-                                schedule.completed ? 'bg-gray-100 opacity-60' : 'bg-white hover:bg-gray-50'
-                              } ${isPast && !schedule.completed ? 'bg-red-50' : ''}`}
+                                schedule.completed
+                                  ? 'bg-gray-100 opacity-60'
+                                  : isPast
+                                    ? 'bg-red-50'
+                                    : 'bg-white hover:bg-gray-50'
+                              }`}
                             >
                               <div className="flex items-center pt-1">
                                 <button
