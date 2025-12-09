@@ -2161,12 +2161,12 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                     <div className="mb-6">
                       <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <Calendar className="w-5 h-5 text-blue-600" />
-                        Schedule ({remainingCalls} calls, {remainingTasks} tasks)
+                        Schedule ({remainingCalls} calls, {remainingTasks} tasks for today)
                       </h4>
                       {mergedSchedule.length === 0 ? (
                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
                           <Clock className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                          <p className="text-gray-600">No scheduled activities between {selectedGoal.start_time} and {selectedGoal.target_time}</p>
+                          <p className="text-gray-600">No scheduled activities for today</p>
                         </div>
                       ) : (
                         <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">

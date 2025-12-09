@@ -1095,13 +1095,15 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
 
                 {selectedGoal.goal_type === 'calls' && (callSchedules.length > 0 || scheduledTasks.length > 0) && (() => {
                   const now = new Date();
-                  const [targetHours, targetMinutes] = selectedGoal.target_time.split(':').map(Number);
-                  const targetDateTime = new Date(selectedGoal.target_date);
-                  targetDateTime.setHours(targetHours, targetMinutes, 0, 0);
+                  const goalDate = new Date(selectedGoal.target_date);
+                  const dayStart = new Date(goalDate);
+                  dayStart.setHours(0, 0, 0, 0);
+                  const dayEnd = new Date(goalDate);
+                  dayEnd.setHours(23, 59, 59, 999);
 
                   const filteredSchedules = callSchedules.filter(schedule => {
                     const schedTime = new Date(schedule.scheduled_time);
-                    return schedTime >= now && schedTime <= targetDateTime;
+                    return schedTime >= dayStart && schedTime <= dayEnd;
                   });
 
                   type ScheduleItem = {
@@ -1122,12 +1124,12 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                     <div className="mb-6">
                       <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <Calendar className="w-5 h-5 text-blue-600" />
-                        Schedule ({remainingCalls} calls, {remainingTasks} tasks until {selectedGoal.target_time})
+                        Schedule ({remainingCalls} calls, {remainingTasks} tasks for today)
                       </h4>
                       {mergedSchedule.length === 0 ? (
                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
                           <Clock className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                          <p className="text-gray-600">No scheduled activities between now and {selectedGoal.target_time}</p>
+                          <p className="text-gray-600">No scheduled activities for today</p>
                         </div>
                       ) : (
                         <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
