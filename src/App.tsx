@@ -3100,6 +3100,7 @@ function App() {
         onClose={() => setShowNotepad(false)}
         content={noteContent}
         onSave={handleSaveNote}
+        showGoals={showGoalProgressBox}
       />
     </div>
   );

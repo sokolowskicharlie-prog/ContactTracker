@@ -1,4 +1,4 @@
-import { X, Save } from 'lucide-react';
+import { X, Save, StickyNote, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface NotepadProps {
@@ -6,11 +6,13 @@ interface NotepadProps {
   onClose: () => void;
   content: string;
   onSave: (content: string) => void;
+  showGoals: boolean;
 }
 
-export default function Notepad({ isOpen, onClose, content, onSave }: NotepadProps) {
+export default function Notepad({ isOpen, onClose, content, onSave, showGoals }: NotepadProps) {
   const [noteContent, setNoteContent] = useState(content);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   useEffect(() => {
     setNoteContent(content);
@@ -25,44 +27,51 @@ export default function Notepad({ isOpen, onClose, content, onSave }: NotepadPro
   if (!isOpen) return null;
 
   return (
-    <div
-      className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
-        isOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}
-    >
-      <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-amber-50">
-          <h2 className="text-xl font-bold text-gray-900">Notes</h2>
+    <div className={`fixed ${showGoals ? 'top-[32rem]' : 'top-20'} right-4 z-40 w-80`}>
+      <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <StickyNote className="w-5 h-5" />
+            <h3 className="font-semibold">Notes</h3>
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+              className="px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-xs transition-colors disabled:opacity-50"
             >
-              <Save className="w-4 h-4" />
               {isSaving ? 'Saving...' : 'Save'}
             </button>
             <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1 hover:bg-white/20 rounded transition-colors"
+              title={isExpanded ? 'Collapse' : 'Expand'}
             >
-              <X className="w-5 h-5" />
+              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-white/20 rounded transition-colors"
+              title="Close"
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <div className="flex-1 p-4">
-          <textarea
-            value={noteContent}
-            onChange={(e) => setNoteContent(e.target.value)}
-            placeholder="Start typing your notes..."
-            className="w-full h-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none font-mono text-sm"
-          />
-        </div>
-
-        <div className="p-4 border-t border-gray-200 bg-gray-50 text-xs text-gray-500">
-          Your notes are automatically saved and synced across sessions.
-        </div>
+        {isExpanded && (
+          <div className="p-4">
+            <textarea
+              value={noteContent}
+              onChange={(e) => setNoteContent(e.target.value)}
+              placeholder="Start typing your notes..."
+              className="w-full h-64 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none text-sm"
+            />
+            <div className="mt-2 text-xs text-gray-500">
+              Notes are automatically synced
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
