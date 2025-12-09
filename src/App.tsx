@@ -2905,6 +2905,7 @@ function App() {
             loadSuppliers();
           }}
           onEdit={() => {
+            setShowSupplierDetail(false);
             setEditingSupplier(selectedSupplier);
             setShowSupplierModal(true);
           }}
