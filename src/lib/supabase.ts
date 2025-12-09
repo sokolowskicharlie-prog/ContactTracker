@@ -42,6 +42,7 @@ export type Call = {
   spoke_with?: string;
   phone_number?: string;
   notes?: string;
+  communication_type?: string;
   created_at: string;
 };
 

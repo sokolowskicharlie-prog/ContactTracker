@@ -1,4 +1,4 @@
-import { X, User, Phone, CheckSquare } from 'lucide-react';
+import { X, User, Phone, CheckSquare, MessageSquare, Mail } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Call, ContactPerson, Contact, Supplier } from '../lib/supabase';
 
@@ -10,10 +10,13 @@ interface CallModalProps {
   contacts: Contact[];
   suppliers: Supplier[];
   onClose: () => void;
-  onSave: (call: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string }, newPIC?: { name: string; phone: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => void;
+  onSave: (call: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string; communication_type?: string }, newPIC?: { name: string; phone: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => void;
 }
 
+type CommunicationType = 'phone_call' | 'whatsapp' | 'email';
+
 export default function CallModal({ call, contactId, contactName, contactPersons = [], contacts, suppliers, onClose, onSave }: CallModalProps) {
+  const [communicationType, setCommunicationType] = useState<CommunicationType>('phone_call');
   const [callDate, setCallDate] = useState(
     new Date().toISOString().slice(0, 16)
   );
@@ -115,6 +118,7 @@ export default function CallModal({ call, contactId, contactName, contactPersons
       spoke_with: spokeWith || undefined,
       phone_number: phoneNumber || undefined,
       notes: notes.trim() || undefined,
+      communication_type: communicationType,
     }, newPIC, taskData);
 
     onClose();
@@ -122,12 +126,24 @@ export default function CallModal({ call, contactId, contactName, contactPersons
 
   const selectedPhones = selectedPersonId ? getPhoneNumbers(selectedPersonId) : [];
 
+  const typeLabels = {
+    phone_call: 'Phone Call',
+    whatsapp: 'WhatsApp Message',
+    email: 'Email'
+  };
+
+  const typeIcons = {
+    phone_call: Phone,
+    whatsapp: MessageSquare,
+    email: Mail
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            {call ? 'Edit Call' : 'Log Call'} with {contactName}
+            {call ? 'Edit' : 'Log'} {typeLabels[communicationType]} with {contactName}
           </h2>
           <button
             onClick={onClose}
@@ -138,6 +154,33 @@ export default function CallModal({ call, contactId, contactName, contactPersons
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Communication Type
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['phone_call', 'whatsapp', 'email'] as CommunicationType[]).map((type) => {
+                const Icon = typeIcons[type];
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setCommunicationType(type)}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
+                      communicationType === type
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="text-xs font-medium">
+                      {type === 'phone_call' ? 'Call' : type === 'whatsapp' ? 'WhatsApp' : 'Email'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Date & Time *
