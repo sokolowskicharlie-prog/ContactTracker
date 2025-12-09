@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import AuthForm from './components/AuthForm';
-import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, Task, TaskWithRelated, Contact, DailyGoal } from './lib/supabase';
+import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, Task, TaskWithRelated, Contact, DailyGoal, SavedNote } from './lib/supabase';
 import { getTimezoneForCountry } from './lib/timezones';
 import * as XLSX from 'xlsx';
 import ContactList from './components/ContactList';
@@ -34,6 +34,7 @@ import GlobalGoalNotifications from './components/GlobalGoalNotifications';
 import GoalProgressBox from './components/GoalProgressBox';
 import BulkSearchModal from './components/BulkSearchModal';
 import Notepad from './components/Notepad';
+import NotesList from './components/NotesList';
 
 interface NotificationSettings {
   id?: string;
@@ -43,7 +44,7 @@ interface NotificationSettings {
 }
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'contacts' | 'suppliers' | 'tasks'>('contacts');
+  const [currentPage, setCurrentPage] = useState<'contacts' | 'suppliers' | 'tasks' | 'notes'>('contacts');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [contacts, setContacts] = useState<ContactWithActivity[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<ContactWithActivity[]>([]);
@@ -148,8 +149,7 @@ function App() {
     return saved !== null ? saved === 'true' : true;
   });
   const [showNotepad, setShowNotepad] = useState(false);
-  const [noteContent, setNoteContent] = useState('');
-  const [noteId, setNoteId] = useState<string | undefined>();
+  const [editingNote, setEditingNote] = useState<SavedNote | null>(null);
   const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact']);
   const { user, loading: authLoading, signOut } = useAuth();
 
@@ -964,55 +964,8 @@ function App() {
     }
   };
 
-  const loadNotes = async () => {
-    if (!user) return;
-    try {
-      const { data, error } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (data) {
-        setNoteContent(data.content || '');
-        setNoteId(data.id);
-      }
-    } catch (error) {
-      console.error('Error loading notes:', error);
-    }
-  };
-
-  const handleSaveNote = async (content: string) => {
-    if (!user) return;
-    try {
-      if (noteId) {
-        const { error } = await supabase
-          .from('notes')
-          .update({
-            content,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', noteId);
-
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase
-          .from('notes')
-          .insert([{ user_id: user.id, content }])
-          .select()
-          .single();
-
-        if (error) throw error;
-        if (data) {
-          setNoteId(data.id);
-        }
-      }
-
-      setNoteContent(content);
-    } catch (error) {
-      console.error('Error saving note:', error);
-    }
+  const handleNoteSaved = () => {
+    setEditingNote(null);
   };
 
   const handleImportContacts = async (importedContacts: Partial<ContactWithActivity>[]) => {
@@ -2093,20 +2046,24 @@ function App() {
               <div className={`p-3 rounded-xl ${
                 currentPage === 'contacts' ? 'bg-blue-600' :
                 currentPage === 'suppliers' ? 'bg-green-600' :
-                'bg-orange-600'
+                currentPage === 'tasks' ? 'bg-orange-600' :
+                'bg-amber-600'
               }`}>
                 {currentPage === 'contacts' ? (
                   <Users className="w-8 h-8 text-white" />
                 ) : currentPage === 'suppliers' ? (
                   <Package className="w-8 h-8 text-white" />
-                ) : (
+                ) : currentPage === 'tasks' ? (
                   <CheckSquare className="w-8 h-8 text-white" />
+                ) : (
+                  <StickyNote className="w-8 h-8 text-white" />
                 )}
               </div>
               <h1 className="text-4xl font-bold text-gray-900">
                 {currentPage === 'contacts' ? 'Contact Tracker' :
                  currentPage === 'suppliers' ? 'Supplier Tracker' :
-                 'Task Manager'}
+                 currentPage === 'tasks' ? 'Task Manager' :
+                 'Notes'}
               </h1>
             </div>
             <div className="flex items-center gap-2">
@@ -2127,13 +2084,21 @@ function App() {
                 <span className="hidden sm:inline">Goals</span>
               </button>
               <button
-                onClick={() => setShowNotepad(!showNotepad)}
+                onClick={() => {
+                  if (showNotepad) {
+                    setShowNotepad(false);
+                    setEditingNote(null);
+                  } else {
+                    setEditingNote(null);
+                    setShowNotepad(true);
+                  }
+                }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                   showNotepad
                     ? 'text-amber-600 bg-amber-50 hover:bg-amber-100'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-white'
                 }`}
-                title={showNotepad ? 'Hide Notes' : 'Show Notes'}
+                title={showNotepad ? 'Hide Notes' : 'New Note'}
               >
                 <StickyNote className="w-5 h-5" />
                 <span className="hidden sm:inline">Notes</span>
@@ -2161,7 +2126,9 @@ function App() {
               ? 'Manage your contacts and track your calls and emails'
               : currentPage === 'suppliers'
               ? 'Manage your suppliers and track purchase orders'
-              : 'Manage your tasks and stay on top of follow-ups'}
+              : currentPage === 'tasks'
+              ? 'Manage your tasks and stay on top of follow-ups'
+              : 'Organize your thoughts and save important notes'}
           </p>
         </div>
 
@@ -2207,6 +2174,20 @@ function App() {
           >
             <CheckSquare className="w-4 h-4" />
             Tasks
+          </button>
+          <button
+            onClick={() => {
+              setCurrentPage('notes');
+              setSearchQuery('');
+            }}
+            className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+              currentPage === 'notes'
+                ? 'bg-amber-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <StickyNote className="w-4 h-4" />
+            Notes
           </button>
         </div>
 
@@ -2784,6 +2765,13 @@ function App() {
               onEditSupplier={handleEditSupplier}
             />
           )
+        ) : currentPage === 'notes' ? (
+          <NotesList
+            onEditNote={(note) => {
+              setEditingNote(note);
+              setShowNotepad(true);
+            }}
+          />
         ) : (
           <>
             <DailyGoals
@@ -3097,10 +3085,13 @@ function App() {
 
       <Notepad
         isOpen={showNotepad}
-        onClose={() => setShowNotepad(false)}
-        content={noteContent}
-        onSave={handleSaveNote}
+        onClose={() => {
+          setShowNotepad(false);
+          setEditingNote(null);
+        }}
         showGoals={showGoalProgressBox}
+        editingNote={editingNote}
+        onNoteSaved={handleNoteSaved}
       />
     </div>
   );
