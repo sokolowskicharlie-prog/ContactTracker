@@ -41,13 +41,13 @@ export default function SupplierContactModal({ contact, supplierName, onClose, o
     onSave({
       ...(contact?.id ? { id: contact.id } : {}),
       name: name.trim(),
-      title: title.trim() || undefined,
-      email: email.trim() || undefined,
-      phone: phone.trim() || undefined,
-      phone_type: phone.trim() ? phoneType : undefined,
-      mobile: mobile.trim() || undefined,
-      mobile_type: mobile.trim() ? mobileType : undefined,
-      notes: notes.trim() || undefined,
+      title: title.trim() || null,
+      email: email.trim() || null,
+      phone: phone.trim() || null,
+      phone_type: phone.trim() ? phoneType : null,
+      mobile: mobile.trim() || null,
+      mobile_type: mobile.trim() ? mobileType : null,
+      notes: notes.trim() || null,
       is_primary: isPrimary,
     });
 

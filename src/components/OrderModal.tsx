@@ -40,14 +40,14 @@ export default function OrderModal({ order, supplierName, defaultCurrency, onClo
 
     onSave({
       ...(order?.id ? { id: order.id } : {}),
-      order_number: orderNumber.trim() || undefined,
+      order_number: orderNumber.trim() || null,
       order_date: new Date(orderDate).toISOString(),
-      delivery_date: deliveryDate ? new Date(deliveryDate).toISOString() : undefined,
-      total_amount: totalAmount ? parseFloat(totalAmount) : undefined,
-      currency: currency || undefined,
+      delivery_date: deliveryDate ? new Date(deliveryDate).toISOString() : null,
+      total_amount: totalAmount ? parseFloat(totalAmount) : null,
+      currency: currency || null,
       status,
-      items: items.trim() || undefined,
-      notes: notes.trim() || undefined,
+      items: items.trim() || null,
+      notes: notes.trim() || null,
     });
 
     onClose();

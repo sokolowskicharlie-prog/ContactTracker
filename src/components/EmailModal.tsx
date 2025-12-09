@@ -58,10 +58,10 @@ export default function EmailModal({ email, contactId, contactName, contacts, su
     onSave({
       ...(email ? { id: email.id } : {}),
       email_date: new Date(emailDate).toISOString(),
-      subject: subject.trim() || undefined,
-      emailed_to: emailedTo.trim() || undefined,
-      email_address: emailAddress.trim() || undefined,
-      notes: notes.trim() || undefined,
+      subject: subject.trim() || null,
+      emailed_to: emailedTo.trim() || null,
+      email_address: emailAddress.trim() || null,
+      notes: notes.trim() || null,
     }, taskData);
 
     onClose();

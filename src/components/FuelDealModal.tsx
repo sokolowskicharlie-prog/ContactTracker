@@ -98,13 +98,13 @@ export default function FuelDealModal({ deal, vessels, contactId, contactName, c
 
     onSave({
       ...(deal?.id ? { id: deal.id } : {}),
-      vessel_id: vesselId || undefined,
+      vessel_id: vesselId || null,
       vessel_name: vesselName.trim(),
       fuel_quantity: parseFloat(fuelQuantity),
       fuel_type: fuelType,
       deal_date: new Date(dealDate).toISOString(),
       port: port.trim(),
-      notes: notes.trim() || undefined,
+      notes: notes.trim() || null,
     }, taskData);
 
     onClose();

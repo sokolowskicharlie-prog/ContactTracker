@@ -101,12 +101,12 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       .map(p => ({
         ...p,
         name: p.name!.trim(),
-        job_title: p.job_title?.trim() || undefined,
-        phone: p.phone?.trim() || undefined,
-        phone_type: p.phone?.trim() ? (p.phone_type || 'general') : undefined,
-        mobile: p.mobile?.trim() || undefined,
-        mobile_type: p.mobile?.trim() ? (p.mobile_type || 'general') : undefined,
-        email: p.email?.trim() || undefined,
+        job_title: p.job_title?.trim() || null,
+        phone: p.phone?.trim() || null,
+        phone_type: p.phone?.trim() ? (p.phone_type || 'general') : null,
+        mobile: p.mobile?.trim() || null,
+        mobile_type: p.mobile?.trim() ? (p.mobile_type || 'general') : null,
+        email: p.email?.trim() || null,
       }));
 
     console.log('Submitting contact with', validContactPersons.length, 'valid PICs');

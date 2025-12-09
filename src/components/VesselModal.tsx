@@ -60,10 +60,10 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
     onSave({
       ...(vessel ? { id: vessel.id } : {}),
       vessel_name: vesselName.trim(),
-      imo_number: imoNumber.trim() || undefined,
-      vessel_type: vesselType || undefined,
-      marine_traffic_url: marineTrafficUrl.trim() || undefined,
-      notes: notes.trim() || undefined,
+      imo_number: imoNumber.trim() || null,
+      vessel_type: vesselType || null,
+      marine_traffic_url: marineTrafficUrl.trim() || null,
+      notes: notes.trim() || null,
     });
 
     onClose();

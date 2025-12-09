@@ -114,10 +114,10 @@ export default function CallModal({ call, contactId, contactName, contactPersons
     onSave({
       ...(call ? { id: call.id } : {}),
       call_date: new Date(callDate).toISOString(),
-      duration: duration ? parseInt(duration) : undefined,
-      spoke_with: spokeWith || undefined,
-      phone_number: phoneNumber || undefined,
-      notes: notes.trim() || undefined,
+      duration: duration ? parseInt(duration) : null,
+      spoke_with: spokeWith || null,
+      phone_number: phoneNumber || null,
+      notes: notes.trim() || null,
       communication_type: communicationType,
     }, newPIC, taskData);
 
