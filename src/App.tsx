@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target } from 'lucide-react';
+import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import AuthForm from './components/AuthForm';
 import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, Task, TaskWithRelated, Contact, DailyGoal } from './lib/supabase';
@@ -33,6 +33,7 @@ import DailyGoals from './components/DailyGoals';
 import GlobalGoalNotifications from './components/GlobalGoalNotifications';
 import GoalProgressBox from './components/GoalProgressBox';
 import BulkSearchModal from './components/BulkSearchModal';
+import Notepad from './components/Notepad';
 
 interface NotificationSettings {
   id?: string;
@@ -146,6 +147,9 @@ function App() {
     const saved = localStorage.getItem('goalProgressBoxVisible');
     return saved !== null ? saved === 'true' : true;
   });
+  const [showNotepad, setShowNotepad] = useState(false);
+  const [noteContent, setNoteContent] = useState('');
+  const [noteId, setNoteId] = useState<string | undefined>();
   const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact']);
   const { user, loading: authLoading, signOut } = useAuth();
 
@@ -155,6 +159,7 @@ function App() {
     loadNotificationSettings();
     loadTasks();
     loadButtonOrder();
+    loadNotes();
   }, []);
 
   useEffect(() => {
@@ -956,6 +961,57 @@ function App() {
       await loadNotificationSettings();
     } catch (error) {
       console.error('Error saving notification settings:', error);
+    }
+  };
+
+  const loadNotes = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data) {
+        setNoteContent(data.content || '');
+        setNoteId(data.id);
+      }
+    } catch (error) {
+      console.error('Error loading notes:', error);
+    }
+  };
+
+  const handleSaveNote = async (content: string) => {
+    if (!user) return;
+    try {
+      if (noteId) {
+        const { error } = await supabase
+          .from('notes')
+          .update({
+            content,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', noteId);
+
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('notes')
+          .insert([{ user_id: user.id, content }])
+          .select()
+          .single();
+
+        if (error) throw error;
+        if (data) {
+          setNoteId(data.id);
+        }
+      }
+
+      setNoteContent(content);
+    } catch (error) {
+      console.error('Error saving note:', error);
     }
   };
 
@@ -2071,6 +2127,18 @@ function App() {
                 <span className="hidden sm:inline">Goals</span>
               </button>
               <button
+                onClick={() => setShowNotepad(!showNotepad)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  showNotepad
+                    ? 'text-amber-600 bg-amber-50 hover:bg-amber-100'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                }`}
+                title={showNotepad ? 'Hide Notes' : 'Show Notes'}
+              >
+                <StickyNote className="w-5 h-5" />
+                <span className="hidden sm:inline">Notes</span>
+              </button>
+              <button
                 onClick={() => setShowAccountSettings(true)}
                 className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg transition-colors"
                 title="Account Settings"
@@ -3026,6 +3094,13 @@ function App() {
           onClose={() => setShowAccountSettings(false)}
         />
       )}
+
+      <Notepad
+        isOpen={showNotepad}
+        onClose={() => setShowNotepad(false)}
+        content={noteContent}
+        onSave={handleSaveNote}
+      />
     </div>
   );
 }
