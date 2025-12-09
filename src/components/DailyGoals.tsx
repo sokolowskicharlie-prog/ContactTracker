@@ -2132,16 +2132,15 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
 
                 {selectedGoal.goal_type === 'calls' && (callSchedules.length > 0 || scheduledTasks.length > 0) && (() => {
                   const now = new Date();
-                  const [startHours, startMinutes] = selectedGoal.start_time.split(':').map(Number);
-                  const [targetHours, targetMinutes] = selectedGoal.target_time.split(':').map(Number);
-                  const startDateTime = new Date(selectedGoal.target_date);
-                  startDateTime.setHours(startHours, startMinutes, 0, 0);
-                  const targetDateTime = new Date(selectedGoal.target_date);
-                  targetDateTime.setHours(targetHours, targetMinutes, 0, 0);
+                  const goalDate = new Date(selectedGoal.target_date);
+                  const dayStart = new Date(goalDate);
+                  dayStart.setHours(0, 0, 0, 0);
+                  const dayEnd = new Date(goalDate);
+                  dayEnd.setHours(23, 59, 59, 999);
 
                   const filteredSchedules = callSchedules.filter(schedule => {
                     const schedTime = new Date(schedule.scheduled_time);
-                    return schedTime >= startDateTime && schedTime <= targetDateTime;
+                    return schedTime >= dayStart && schedTime <= dayEnd;
                   });
 
                   type ScheduleItem = {
