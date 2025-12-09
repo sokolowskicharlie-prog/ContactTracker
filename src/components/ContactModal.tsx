@@ -92,8 +92,8 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
     setContactPersons(updated);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!name.trim()) return;
 
     const validContactPersons = contactPersons
@@ -137,6 +137,15 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
     onClose();
   };
 
+  const handleClose = () => {
+    // If editing an existing contact and name is filled, save changes
+    if (contact && name.trim()) {
+      handleSubmit();
+    } else {
+      onClose();
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -145,7 +154,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
             {contact ? 'Edit Contact' : 'Add Contact'}
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
@@ -487,7 +496,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancel

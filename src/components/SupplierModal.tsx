@@ -62,8 +62,8 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
     }
   }, [supplier]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!companyName.trim()) return;
 
     onSave({
@@ -89,6 +89,15 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
     onClose();
   };
 
+  const handleClose = () => {
+    // If editing an existing supplier and company name is filled, save changes
+    if (supplier && companyName.trim()) {
+      handleSubmit();
+    } else {
+      onClose();
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
       <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
@@ -97,7 +106,7 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
             {supplier ? 'Edit Supplier' : 'Add Supplier'}
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
@@ -368,7 +377,7 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
           <div className="flex gap-3 pt-4">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Cancel
