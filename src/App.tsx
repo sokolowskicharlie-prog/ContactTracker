@@ -1432,6 +1432,14 @@ function App() {
       }
 
       await loadSuppliers();
+
+      if (selectedSupplier && supplierData.id === selectedSupplier.id) {
+        const updatedSupplier = suppliers.find(s => s.id === selectedSupplier.id);
+        if (updatedSupplier) {
+          setSelectedSupplier(updatedSupplier);
+        }
+      }
+
       setEditingSupplier(undefined);
     } catch (error) {
       console.error('Error saving supplier:', error);
@@ -2840,6 +2848,10 @@ function App() {
             setShowSupplierDetail(false);
             setSelectedSupplier(undefined);
             loadSuppliers();
+          }}
+          onEdit={() => {
+            setEditingSupplier(selectedSupplier);
+            setShowSupplierModal(true);
           }}
           onAddOrder={() => {
             setEditingOrder(undefined);
