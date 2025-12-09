@@ -855,13 +855,19 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     if (type === 'calls') {
       return calls.filter(c => {
         const callDate = new Date(c.call_date);
-        return callDate <= deadline;
+        const commType = c.communication_type || 'phone_call';
+        return callDate <= deadline && (commType === 'phone_call' || commType === 'whatsapp');
       }).length;
     } else if (type === 'emails') {
-      return emails.filter(e => {
+      const emailCount = emails.filter(e => {
         const emailDate = new Date(e.email_date);
         return emailDate <= deadline;
       }).length;
+      const emailCallCount = calls.filter(c => {
+        const callDate = new Date(c.call_date);
+        return callDate <= deadline && c.communication_type === 'email';
+      }).length;
+      return emailCount + emailCallCount;
     } else {
       return deals.filter(d => {
         const dealDate = new Date(d.deal_date);

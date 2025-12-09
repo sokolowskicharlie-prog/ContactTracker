@@ -619,13 +619,19 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
     if (goal.goal_type === 'calls') {
       currentCount = calls.filter(c => {
         const callDate = new Date(c.call_date).toISOString().split('T')[0];
-        return callDate === today;
+        const commType = c.communication_type || 'phone_call';
+        return callDate === today && (commType === 'phone_call' || commType === 'whatsapp');
       }).length;
     } else if (goal.goal_type === 'emails') {
-      currentCount = emails.filter(e => {
+      const emailCount = emails.filter(e => {
         const emailDate = new Date(e.email_date).toISOString().split('T')[0];
         return emailDate === today;
       }).length;
+      const emailCallCount = calls.filter(c => {
+        const callDate = new Date(c.call_date).toISOString().split('T')[0];
+        return callDate === today && c.communication_type === 'email';
+      }).length;
+      currentCount = emailCount + emailCallCount;
     } else if (goal.goal_type === 'deals') {
       currentCount = deals.filter(d => {
         const dealDate = new Date(d.deal_date).toISOString().split('T')[0];
@@ -790,13 +796,29 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
 
         const goalCalls = calls.filter(call => {
           const callDate = new Date(call.call_date).toISOString().split('T')[0];
-          return callDate === goalDate;
+          const commType = call.communication_type || 'phone_call';
+          return callDate === goalDate && (commType === 'phone_call' || commType === 'whatsapp');
         });
 
-        const goalEmails = emails.filter(email => {
-          const emailDate = new Date(email.email_date).toISOString().split('T')[0];
-          return emailDate === goalDate;
-        });
+        const goalEmails = [
+          ...emails.filter(email => {
+            const emailDate = new Date(email.email_date).toISOString().split('T')[0];
+            return emailDate === goalDate;
+          }),
+          ...calls.filter(call => {
+            const callDate = new Date(call.call_date).toISOString().split('T')[0];
+            return callDate === goalDate && call.communication_type === 'email';
+          }).map(call => ({
+            id: call.id,
+            contact_id: call.contact_id,
+            email_date: call.call_date,
+            emailed_to: call.spoke_with || '',
+            email_address: call.phone_number || '',
+            subject: '',
+            notes: call.notes || '',
+            created_at: call.created_at
+          }))
+        ];
 
         const goalDeals = deals.filter(deal => {
           const dealDate = new Date(deal.deal_date).toISOString().split('T')[0];
