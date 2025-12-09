@@ -2565,6 +2565,51 @@ function App() {
                 </select>
               </div>
             </div>
+            {filterPort !== 'all' && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Emails for {filterPort}
+                </label>
+                <div className="flex items-start gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={suppliers
+                      .filter(s => {
+                        if (!s.ports) return false;
+                        const ports = s.ports.split(';').map(p => p.trim().toLowerCase());
+                        return ports.some(port => port.includes(filterPort.toLowerCase()));
+                      })
+                      .map(s => s.email)
+                      .filter(Boolean)
+                      .join('; ')}
+                    className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm"
+                    onClick={(e) => {
+                      const input = e.target as HTMLInputElement;
+                      input.select();
+                      navigator.clipboard.writeText(input.value);
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const emails = suppliers
+                        .filter(s => {
+                          if (!s.ports) return false;
+                          const ports = s.ports.split(';').map(p => p.trim().toLowerCase());
+                          return ports.some(port => port.includes(filterPort.toLowerCase()));
+                        })
+                        .map(s => s.email)
+                        .filter(Boolean)
+                        .join('; ');
+                      navigator.clipboard.writeText(emails);
+                    }}
+                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
+                  >
+                    Copy All
+                  </button>
+                </div>
+              </div>
+            )}
             {(filterPort !== 'all' || filterFuelType !== 'all') && (
               <div className="mt-3 flex items-center gap-2">
                 <span className="text-sm text-gray-600">
