@@ -2218,7 +2218,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <GlobalGoalNotifications />
-      {showGoalProgressBox && <GoalProgressBox onSelectContact={handleSelectContactFromGoals} onLogCall={handleLogCallFromSchedule} onLogEmail={handleLogEmailFromSchedule} />}
+      {showGoalProgressBox && <GoalProgressBox onSelectContact={handleSelectContactFromGoals} onLogCall={handleLogCallFromSchedule} onLogEmail={handleLogEmailFromSchedule} showNotepad={showNotepad} />}
       <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -2252,6 +2252,18 @@ function App() {
             </div>
             <div className="flex items-center gap-2">
               <button
+                onClick={() => setShowNotepad(!showNotepad)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  showNotepad
+                    ? 'text-amber-600 bg-amber-50 hover:bg-amber-100'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                }`}
+                title={showNotepad ? 'Hide Notes' : 'Show Notes'}
+              >
+                <StickyNote className="w-5 h-5" />
+                <span className="hidden sm:inline">Notes</span>
+              </button>
+              <button
                 onClick={() => {
                   const newValue = !showGoalProgressBox;
                   setShowGoalProgressBox(newValue);
@@ -2266,18 +2278,6 @@ function App() {
               >
                 <Target className="w-5 h-5" />
                 <span className="hidden sm:inline">Goals</span>
-              </button>
-              <button
-                onClick={() => setShowNotepad(!showNotepad)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  showNotepad
-                    ? 'text-amber-600 bg-amber-50 hover:bg-amber-100'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                }`}
-                title={showNotepad ? 'Hide Notes' : 'Show Notes'}
-              >
-                <StickyNote className="w-5 h-5" />
-                <span className="hidden sm:inline">Notes</span>
               </button>
               <button
                 onClick={() => setShowPriorityPanel(!showPriorityPanel)}

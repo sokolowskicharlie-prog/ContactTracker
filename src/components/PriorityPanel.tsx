@@ -80,8 +80,8 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
 
   const calculateTopPosition = () => {
     let top = 80;
-    if (showGoals) top += 496;
-    if (showNotepad) top += 384;
+    if (showNotepad) top += 384 + 16;
+    if (showGoals) top += 496 + 16;
     return top;
   };
 

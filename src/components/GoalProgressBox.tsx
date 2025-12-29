@@ -7,9 +7,10 @@ interface GoalProgressBoxProps {
   onSelectContact?: (contactId: string) => void;
   onLogCall?: (contactId: string) => void;
   onLogEmail?: (contactId: string) => void;
+  showNotepad?: boolean;
 }
 
-export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail }: GoalProgressBoxProps) {
+export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false }: GoalProgressBoxProps) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
@@ -691,7 +692,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
   }
 
   return (
-    <div className="fixed top-20 right-4 z-40 w-80">
+    <div className={`fixed ${showNotepad ? 'top-[30rem]' : 'top-20'} right-4 z-40 w-80`}>
       <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">

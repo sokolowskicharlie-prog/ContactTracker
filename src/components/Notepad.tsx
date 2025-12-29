@@ -55,7 +55,7 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed ${showGoals ? 'top-[32rem]' : 'top-20'} right-4 z-40 w-80`}>
+    <div className="fixed top-20 right-4 z-40 w-80">
       <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
