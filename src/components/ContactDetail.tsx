@@ -461,10 +461,22 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
               <div className="space-y-2 mt-3">
                 {contact.traction_note && contact.has_traction && (
                   <div className="text-sm text-gray-700 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                    <span className="font-medium flex items-center gap-1">
-                      <Star className="w-3 h-3 text-yellow-600 fill-yellow-600" />
-                      Traction:
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium flex items-center gap-1">
+                        <Star className="w-3 h-3 text-yellow-600 fill-yellow-600" />
+                        Traction:
+                      </span>
+                      <button
+                        onClick={() => {
+                          setExpandedStatusNote('traction');
+                          setIsEditingStatusNote(true);
+                        }}
+                        className="p-1 hover:bg-yellow-100 rounded transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-3 h-3 text-yellow-600" />
+                      </button>
+                    </div>
                     <p className="mt-1 text-gray-600">{contact.traction_note}</p>
                     {contact.traction_additional_note && (
                       <div className="mt-2 pt-2 border-t border-yellow-200">
@@ -476,10 +488,22 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                 )}
                 {contact.client_note && contact.is_client && (
                   <div className="text-sm text-gray-700 bg-green-50 p-3 rounded-lg border border-green-200">
-                    <span className="font-medium flex items-center gap-1">
-                      <Check className="w-3 h-3 text-green-600" />
-                      Client:
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium flex items-center gap-1">
+                        <Check className="w-3 h-3 text-green-600" />
+                        Client:
+                      </span>
+                      <button
+                        onClick={() => {
+                          setExpandedStatusNote('client');
+                          setIsEditingStatusNote(true);
+                        }}
+                        className="p-1 hover:bg-green-100 rounded transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-3 h-3 text-green-600" />
+                      </button>
+                    </div>
                     <p className="mt-1 text-gray-600">{contact.client_note}</p>
                     {contact.client_additional_note && (
                       <div className="mt-2 pt-2 border-t border-green-200">
@@ -491,10 +515,22 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                 )}
                 {contact.jammed_note && contact.is_jammed && (
                   <div className="text-sm text-gray-700 bg-red-50 p-3 rounded-lg border border-red-200">
-                    <span className="font-medium flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3 text-red-600" />
-                      Jammed:
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3 text-red-600" />
+                        Jammed:
+                      </span>
+                      <button
+                        onClick={() => {
+                          setExpandedStatusNote('jammed');
+                          setIsEditingStatusNote(true);
+                        }}
+                        className="p-1 hover:bg-red-100 rounded transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-3 h-3 text-red-600" />
+                      </button>
+                    </div>
                     <p className="mt-1 text-gray-600">{contact.jammed_note}</p>
                     {contact.jammed_additional_note && (
                       <div className="mt-2 pt-2 border-t border-red-200">
