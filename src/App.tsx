@@ -179,6 +179,7 @@ function App() {
   const { user, loading: authLoading, signOut } = useAuth();
 
   useEffect(() => {
+    if (!user) return;
     loadContacts();
     loadSuppliers();
     loadNotificationSettings();
@@ -186,7 +187,7 @@ function App() {
     loadButtonOrder();
     loadNotes();
     loadSavedNotes();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     let filtered = [...contacts];
@@ -1086,9 +1087,15 @@ function App() {
       const { data, error } = await supabase
         .from('saved_notes')
         .select('*')
+        .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading saved notes:', error);
+        throw error;
+      }
+
+      console.log('Loaded saved notes:', data?.length || 0);
       setSavedNotes(data || []);
     } catch (error) {
       console.error('Error loading saved notes:', error);
