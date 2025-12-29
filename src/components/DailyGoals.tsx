@@ -850,28 +850,26 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   };
 
   const getActivityForDate = (type: GoalType, targetDate: string, targetTime: string): number => {
-    const deadline = new Date(`${targetDate}T${targetTime}:00.000Z`);
-
     if (type === 'calls') {
       return calls.filter(c => {
-        const callDate = new Date(c.call_date);
+        const callDate = new Date(c.call_date).toISOString().split('T')[0];
         const commType = c.communication_type || 'phone_call';
-        return callDate <= deadline && (commType === 'phone_call' || commType === 'whatsapp');
+        return callDate === targetDate && (commType === 'phone_call' || commType === 'whatsapp');
       }).length;
     } else if (type === 'emails') {
       const emailCount = emails.filter(e => {
-        const emailDate = new Date(e.email_date);
-        return emailDate <= deadline;
+        const emailDate = new Date(e.email_date).toISOString().split('T')[0];
+        return emailDate === targetDate;
       }).length;
       const emailCallCount = calls.filter(c => {
-        const callDate = new Date(c.call_date);
-        return callDate <= deadline && c.communication_type === 'email';
+        const callDate = new Date(c.call_date).toISOString().split('T')[0];
+        return callDate === targetDate && c.communication_type === 'email';
       }).length;
       return emailCount + emailCallCount;
     } else {
       return deals.filter(d => {
-        const dealDate = new Date(d.deal_date);
-        return dealDate <= deadline;
+        const dealDate = new Date(d.deal_date).toISOString().split('T')[0];
+        return dealDate === targetDate;
       }).length;
     }
   };
