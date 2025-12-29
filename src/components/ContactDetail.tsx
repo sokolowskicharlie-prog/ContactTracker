@@ -47,7 +47,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
   const jammedReasons = [
     'Direct with suppliers',
     'TC only',
-    'No traders',
+    'They already have a set panel of traders',
     'Other'
   ];
 
