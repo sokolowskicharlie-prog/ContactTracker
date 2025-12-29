@@ -945,6 +945,33 @@ function App() {
     setShowContactModal(true);
   };
 
+  const handleUpdateContact = async (contact: ContactWithActivity) => {
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .update({
+          traction_note: contact.traction_note,
+          client_note: contact.client_note,
+          jammed_note: contact.jammed_note,
+          jammed_additional_note: contact.jammed_additional_note,
+          traction_additional_note: contact.traction_additional_note,
+          client_additional_note: contact.client_additional_note,
+        })
+        .eq('id', contact.id);
+
+      if (error) throw error;
+
+      await loadContacts();
+
+      const updatedContact = contacts.find(c => c.id === contact.id);
+      if (updatedContact) {
+        setSelectedContact(updatedContact);
+      }
+    } catch (error) {
+      console.error('Error updating contact:', error);
+    }
+  };
+
   const loadNotificationSettings = async () => {
     try {
       const { data, error } = await supabase
@@ -2967,6 +2994,7 @@ function App() {
             setShowContactDetail(false);
             setShowContactModal(true);
           }}
+          onEditContact={handleUpdateContact}
           onLogCall={() => {
             setEditingCall(undefined);
             setShowCallModal(true);
