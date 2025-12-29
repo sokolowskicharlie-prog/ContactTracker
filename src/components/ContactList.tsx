@@ -22,8 +22,8 @@ interface ContactListProps {
 export default function ContactList({ contacts, notes, onContactClick, onDeleteContact, onEditContact }: ContactListProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  const getNotesCount = (contactId: string) => {
-    return notes.filter(n => n.contact_id === contactId).length;
+  const getContactNotes = (contactId: string) => {
+    return notes.filter(n => n.contact_id === contactId);
   };
 
   useEffect(() => {
@@ -400,15 +400,19 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                   </div>
                 </div>
               )}
-              {getNotesCount(contact.id) > 0 && (
-                <div className="flex items-center justify-between">
+              {getContactNotes(contact.id).length > 0 && (
+                <div className="space-y-1">
                   <div className="flex items-center text-sm text-gray-600">
                     <StickyNote className="w-4 h-4 mr-1" />
-                    Notes
+                    <span className="font-medium">Notes ({getContactNotes(contact.id).length})</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-700">
-                    {getNotesCount(contact.id)} {getNotesCount(contact.id) === 1 ? 'note' : 'notes'}
-                  </span>
+                  <div className="ml-5 space-y-1">
+                    {getContactNotes(contact.id).map(note => (
+                      <div key={note.id} className="text-xs text-gray-600 truncate">
+                        • {note.title}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
