@@ -1,5 +1,6 @@
-import { Phone, Mail, Building2, Edit, Trash2, Star, AlertTriangle, Check, TrendingUp } from 'lucide-react';
+import { Phone, Mail, Building2, Edit, Trash2, Star, AlertTriangle, Check, TrendingUp, ArrowUpDown, Filter } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
+import { useState } from 'react';
 
 interface PriorityListProps {
   contacts: ContactWithActivity[];
@@ -16,15 +17,58 @@ const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: s
   5: { label: 'Lowest Priority', color: 'text-gray-700', bgColor: 'bg-gray-50', borderColor: 'border-gray-200' },
 };
 
+type SortOption = 'name' | 'company' | 'activity' | 'priority';
+type FilterStatus = 'all' | 'client' | 'traction' | 'jammed' | 'none';
+
 export default function PriorityList({ contacts, onContactClick, onEditContact, onDeleteContact }: PriorityListProps) {
-  const priorityContacts = contacts.filter(c => c.priority_rank && c.priority_rank >= 1 && c.priority_rank <= 5);
+  const [sortBy, setSortBy] = useState<SortOption>('priority');
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+  const [selectedPriorities, setSelectedPriorities] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [showFilters, setShowFilters] = useState(false);
+
+  let priorityContacts = contacts.filter(c => c.priority_rank && c.priority_rank >= 1 && c.priority_rank <= 5);
+
+  priorityContacts = priorityContacts.filter(c => selectedPriorities.includes(c.priority_rank!));
+
+  if (filterStatus !== 'all') {
+    priorityContacts = priorityContacts.filter(c => {
+      if (filterStatus === 'client') return c.is_client;
+      if (filterStatus === 'traction') return c.has_traction && !c.is_client;
+      if (filterStatus === 'jammed') return c.is_jammed;
+      if (filterStatus === 'none') return !c.is_client && !c.has_traction && !c.is_jammed;
+      return true;
+    });
+  }
+
   const groupedByPriority: Record<number, ContactWithActivity[]> = {};
 
   for (let i = 1; i <= 5; i++) {
-    groupedByPriority[i] = priorityContacts
-      .filter(c => c.priority_rank === i)
-      .sort((a, b) => a.name.localeCompare(b.name));
+    let contactsInPriority = priorityContacts.filter(c => c.priority_rank === i);
+
+    if (sortBy === 'name') {
+      contactsInPriority = contactsInPriority.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === 'company') {
+      contactsInPriority = contactsInPriority.sort((a, b) =>
+        (a.company || '').localeCompare(b.company || '')
+      );
+    } else if (sortBy === 'activity') {
+      contactsInPriority = contactsInPriority.sort((a, b) =>
+        (b.total_calls + b.total_emails) - (a.total_calls + a.total_emails)
+      );
+    } else {
+      contactsInPriority = contactsInPriority.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    groupedByPriority[i] = contactsInPriority;
   }
+
+  const togglePriority = (priority: number) => {
+    setSelectedPriorities(prev =>
+      prev.includes(priority)
+        ? prev.filter(p => p !== priority)
+        : [...prev, priority].sort()
+    );
+  };
 
   const getStatusIcon = (contact: ContactWithActivity) => {
     if (contact.is_client) {
@@ -39,7 +83,10 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
     return null;
   };
 
-  if (priorityContacts.length === 0) {
+  const totalPriorityContacts = contacts.filter(c => c.priority_rank && c.priority_rank >= 1 && c.priority_rank <= 5).length;
+  const displayedCount = priorityContacts.length;
+
+  if (totalPriorityContacts === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
         <div className="text-center text-gray-500">
@@ -54,9 +101,94 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
 
   return (
     <div className="space-y-6">
-      {[1, 2, 3, 4, 5].map(priority => {
-        const contactsInPriority = groupedByPriority[priority];
-        if (contactsInPriority.length === 0) return null;
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="w-4 h-4 text-gray-500" />
+              <label className="text-sm font-medium text-gray-700">Sort by:</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="priority">Priority</option>
+                <option value="name">Name</option>
+                <option value="company">Company</option>
+                <option value="activity">Activity</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Status:</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="all">All Status</option>
+                <option value="client">Client</option>
+                <option value="traction">Traction</option>
+                <option value="jammed">Jammed</option>
+                <option value="none">No Status</option>
+              </select>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+              showFilters ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Filter className="w-4 h-4" />
+            Priority Filters
+          </button>
+        </div>
+
+        {showFilters && (
+          <div className="pt-4 border-t border-gray-200">
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Show Priority Levels:</label>
+            <div className="flex flex-wrap gap-2">
+              {[1, 2, 3, 4, 5].map(priority => {
+                const config = PRIORITY_LABELS[priority];
+                const isSelected = selectedPriorities.includes(priority);
+                return (
+                  <button
+                    key={priority}
+                    onClick={() => togglePriority(priority)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                      isSelected
+                        ? `${config.bgColor} ${config.color} border ${config.borderColor}`
+                        : 'bg-gray-100 text-gray-400 border border-gray-200'
+                    }`}
+                  >
+                    P{priority} - {config.label.replace(' Priority', '')}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 text-sm text-gray-600">
+          Showing {displayedCount} of {totalPriorityContacts} priority contacts
+        </div>
+      </div>
+
+      {displayedCount === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+          <div className="text-center text-gray-500">
+            <Filter className="w-16 h-16 mx-auto mb-4 opacity-20" />
+            <h3 className="text-lg font-medium mb-2">No Contacts Match Filters</h3>
+            <p>Try adjusting your filters or status selection.</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {[1, 2, 3, 4, 5].map(priority => {
+            const contactsInPriority = groupedByPriority[priority];
+            if (contactsInPriority.length === 0) return null;
 
         const priorityConfig = PRIORITY_LABELS[priority];
 
@@ -157,6 +289,8 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
           </div>
         );
       })}
+        </>
+      )}
     </div>
   );
 }
