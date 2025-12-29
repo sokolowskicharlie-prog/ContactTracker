@@ -84,25 +84,28 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
   };
 
   const getStatusNote = (contact: ContactWithActivity) => {
-    if (contact.is_client && contact.client_additional_note) {
+    if (contact.is_client && (contact.client_note || contact.client_additional_note)) {
+      const noteText = contact.client_additional_note || contact.client_note || '';
       return {
-        text: contact.client_additional_note,
+        text: noteText,
         bgColor: 'bg-green-50',
         borderColor: 'border-green-200',
         textColor: 'text-gray-600'
       };
     }
-    if (contact.has_traction && contact.traction_additional_note) {
+    if (contact.has_traction && (contact.traction_note || contact.traction_additional_note)) {
+      const noteText = contact.traction_additional_note || contact.traction_note || '';
       return {
-        text: contact.traction_additional_note,
+        text: noteText,
         bgColor: 'bg-yellow-50',
         borderColor: 'border-yellow-200',
         textColor: 'text-gray-600'
       };
     }
-    if (contact.is_jammed && contact.jammed_additional_note) {
+    if (contact.is_jammed && (contact.jammed_note || contact.jammed_additional_note)) {
+      const noteText = contact.jammed_additional_note || contact.jammed_note || '';
       return {
-        text: contact.jammed_additional_note,
+        text: noteText,
         bgColor: 'bg-red-50',
         borderColor: 'border-red-200',
         textColor: 'text-gray-600'
