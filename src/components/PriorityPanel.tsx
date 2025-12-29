@@ -89,7 +89,7 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
     const PANEL_SIZES = {
       notesExpanded: 388,
       notesCollapsed: 52,
-      goalsExpanded: 436,
+      goalsExpanded: 220,
       goalsCollapsed: 52,
       priority: 0
     };

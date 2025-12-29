@@ -67,7 +67,7 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
     const PANEL_SIZES = {
       notesExpanded: 388,
       notesCollapsed: 52,
-      goalsExpanded: 436,
+      goalsExpanded: 220,
       goalsCollapsed: 52,
       priority: 0
     };
