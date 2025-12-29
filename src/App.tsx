@@ -37,6 +37,7 @@ import Notepad from './components/Notepad';
 import NotesSection from './components/NotesSection';
 import NoteModal from './components/NoteModal';
 import PriorityList from './components/PriorityList';
+import PriorityPanel from './components/PriorityPanel';
 
 interface NotificationSettings {
   id?: string;
@@ -164,6 +165,7 @@ function App() {
     return saved !== null ? saved === 'true' : true;
   });
   const [showNotepad, setShowNotepad] = useState(false);
+  const [showPriorityPanel, setShowPriorityPanel] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [noteId, setNoteId] = useState<string | undefined>();
   const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact']);
@@ -2278,6 +2280,18 @@ function App() {
                 <span className="hidden sm:inline">Notes</span>
               </button>
               <button
+                onClick={() => setShowPriorityPanel(!showPriorityPanel)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  showPriorityPanel
+                    ? 'text-purple-600 bg-purple-50 hover:bg-purple-100'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                }`}
+                title={showPriorityPanel ? 'Hide Priority' : 'Show Priority'}
+              >
+                <TrendingUp className="w-5 h-5" />
+                <span className="hidden sm:inline">Priority</span>
+              </button>
+              <button
                 onClick={() => setShowAccountSettings(true)}
                 className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg transition-colors"
                 title="Account Settings"
@@ -3339,6 +3353,15 @@ function App() {
             throw error;
           }
         }}
+      />
+
+      <PriorityPanel
+        isOpen={showPriorityPanel}
+        onClose={() => setShowPriorityPanel(false)}
+        contacts={contacts}
+        onContactClick={handleContactClick}
+        showGoals={showGoalProgressBox}
+        showNotepad={showNotepad}
       />
     </div>
   );
