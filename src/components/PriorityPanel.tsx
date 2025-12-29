@@ -47,6 +47,19 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
     return null;
   };
 
+  const getStatusNote = (contact: ContactWithActivity) => {
+    if (contact.is_client && contact.client_additional_note) {
+      return contact.client_additional_note;
+    }
+    if (contact.has_traction && contact.traction_additional_note) {
+      return contact.traction_additional_note;
+    }
+    if (contact.is_jammed && contact.jammed_additional_note) {
+      return contact.jammed_additional_note;
+    }
+    return null;
+  };
+
   const calculateTopPosition = () => {
     let top = 80;
     if (showGoals) top += 496;
@@ -151,6 +164,12 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
                                     <div className="flex items-center text-xs text-gray-600">
                                       <Mail className="w-3 h-3 mr-1 flex-shrink-0" />
                                       <span className="truncate">{contact.email}</span>
+                                    </div>
+                                  )}
+
+                                  {getStatusNote(contact) && (
+                                    <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-700 border border-gray-200">
+                                      <p className="italic">{getStatusNote(contact)}</p>
                                     </div>
                                   )}
 
