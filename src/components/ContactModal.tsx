@@ -24,6 +24,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
   const [country, setCountry] = useState('');
   const [timezone, setTimezone] = useState('');
   const [reminderDays, setReminderDays] = useState('');
+  const [priorityRank, setPriorityRank] = useState('');
   const [notes, setNotes] = useState('');
   const [contactPersons, setContactPersons] = useState<Partial<ContactPerson>[]>([]);
 
@@ -45,6 +46,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       setCountry(contact.country || '');
       setTimezone(contact.timezone || '');
       setReminderDays(contact.reminder_days?.toString() || '');
+      setPriorityRank(contact.priority_rank?.toString() || '');
       setNotes(contact.notes || '');
       setContactPersons(contact.contact_persons || []);
       console.log('Contact persons loaded into state:', contact.contact_persons?.length || 0);
@@ -64,6 +66,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       setCountry('');
       setTimezone('');
       setReminderDays('');
+      setPriorityRank('');
       setNotes('');
       setContactPersons([]);
     }
@@ -128,6 +131,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       country: country || null,
       timezone: timezone || null,
       reminder_days: reminderDays ? parseInt(reminderDays) : null,
+      priority_rank: priorityRank ? parseInt(priorityRank) : null,
       notes: notes.trim() || null,
     };
 
@@ -372,6 +376,25 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
               placeholder="e.g., 7, 14, 30"
             />
             <p className="text-xs text-gray-500 mt-1">How often you want to call this contact</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Priority Rank
+            </label>
+            <select
+              value={priorityRank}
+              onChange={(e) => setPriorityRank(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">No Priority</option>
+              <option value="1">1 - Highest Priority</option>
+              <option value="2">2 - High Priority</option>
+              <option value="3">3 - Medium Priority</option>
+              <option value="4">4 - Low Priority</option>
+              <option value="5">5 - Lowest Priority</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Set priority level for this contact</p>
           </div>
 
           <div>

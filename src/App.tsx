@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote } from 'lucide-react';
+import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import AuthForm from './components/AuthForm';
 import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, Task, TaskWithRelated, Contact, DailyGoal } from './lib/supabase';
@@ -36,6 +36,7 @@ import BulkSearchModal from './components/BulkSearchModal';
 import Notepad from './components/Notepad';
 import NotesSection from './components/NotesSection';
 import NoteModal from './components/NoteModal';
+import PriorityList from './components/PriorityList';
 
 interface NotificationSettings {
   id?: string;
@@ -55,7 +56,7 @@ interface SavedNote {
 }
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'contacts' | 'suppliers' | 'tasks' | 'notes'>('contacts');
+  const [currentPage, setCurrentPage] = useState<'contacts' | 'suppliers' | 'tasks' | 'notes' | 'priority'>('contacts');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [contacts, setContacts] = useState<ContactWithActivity[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<ContactWithActivity[]>([]);
@@ -2220,12 +2221,18 @@ function App() {
               <div className={`p-3 rounded-xl ${
                 currentPage === 'contacts' ? 'bg-blue-600' :
                 currentPage === 'suppliers' ? 'bg-green-600' :
+                currentPage === 'priority' ? 'bg-purple-600' :
+                currentPage === 'notes' ? 'bg-amber-600' :
                 'bg-orange-600'
               }`}>
                 {currentPage === 'contacts' ? (
                   <Users className="w-8 h-8 text-white" />
                 ) : currentPage === 'suppliers' ? (
                   <Package className="w-8 h-8 text-white" />
+                ) : currentPage === 'priority' ? (
+                  <TrendingUp className="w-8 h-8 text-white" />
+                ) : currentPage === 'notes' ? (
+                  <StickyNote className="w-8 h-8 text-white" />
                 ) : (
                   <CheckSquare className="w-8 h-8 text-white" />
                 )}
@@ -2233,6 +2240,8 @@ function App() {
               <h1 className="text-4xl font-bold text-gray-900">
                 {currentPage === 'contacts' ? 'Contact Tracker' :
                  currentPage === 'suppliers' ? 'Supplier Tracker' :
+                 currentPage === 'priority' ? 'Priority List' :
+                 currentPage === 'notes' ? 'Notes' :
                  'Task Manager'}
               </h1>
             </div>
@@ -2288,6 +2297,10 @@ function App() {
               ? 'Manage your contacts and track your calls and emails'
               : currentPage === 'suppliers'
               ? 'Manage your suppliers and track purchase orders'
+              : currentPage === 'priority'
+              ? 'View and manage your priority-ranked contacts'
+              : currentPage === 'notes'
+              ? 'Your saved notes and important information'
               : 'Manage your tasks and stay on top of follow-ups'}
           </p>
         </div>
@@ -2306,6 +2319,20 @@ function App() {
           >
             <Users className="w-4 h-4" />
             Contacts
+          </button>
+          <button
+            onClick={() => {
+              setCurrentPage('priority');
+              setSearchQuery('');
+            }}
+            className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+              currentPage === 'priority'
+                ? 'bg-purple-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Priority
           </button>
           <button
             onClick={() => {
@@ -2358,6 +2385,7 @@ function App() {
               type="text"
               placeholder={
                 currentPage === 'contacts' ? 'Search contacts...' :
+                currentPage === 'priority' ? 'Search priority contacts...' :
                 currentPage === 'suppliers' ? 'Search suppliers...' :
                 currentPage === 'tasks' ? 'Search tasks...' :
                 'Search notes...'
@@ -2375,6 +2403,8 @@ function App() {
                   viewMode === 'grid'
                     ? currentPage === 'contacts'
                       ? 'bg-blue-600 text-white'
+                      : currentPage === 'priority'
+                      ? 'bg-purple-600 text-white'
                       : 'bg-green-600 text-white'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
@@ -2388,6 +2418,8 @@ function App() {
                   viewMode === 'table'
                     ? currentPage === 'contacts'
                       ? 'bg-blue-600 text-white'
+                      : currentPage === 'priority'
+                      ? 'bg-purple-600 text-white'
                       : 'bg-green-600 text-white'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
@@ -2397,7 +2429,7 @@ function App() {
               </button>
             </div>
           )}
-          {currentPage === 'contacts' ? (
+          {currentPage === 'contacts' || currentPage === 'priority' ? (
             renderContactButtons()
           ) : currentPage === 'suppliers' ? (
             <div className="flex gap-2">
@@ -2964,6 +2996,13 @@ function App() {
             onAddNote={handleAddNote}
             onEditNote={handleEditSavedNote}
             onDeleteNote={handleDeleteSavedNote}
+          />
+        ) : currentPage === 'priority' ? (
+          <PriorityList
+            contacts={filteredContacts}
+            onContactClick={handleContactClick}
+            onEditContact={handleEditContact}
+            onDeleteContact={handleDeleteContact}
           />
         ) : null}
       </div>

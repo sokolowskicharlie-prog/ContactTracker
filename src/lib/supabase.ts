@@ -38,6 +38,7 @@ export type Contact = {
   client_additional_note?: string;
   traction_note?: string;
   traction_additional_note?: string;
+  priority_rank?: number;
   last_called?: string;
   last_emailed?: string;
   created_at: string;
