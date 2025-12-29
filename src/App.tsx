@@ -2870,6 +2870,7 @@ function App() {
           viewMode === 'grid' ? (
             <ContactList
               contacts={filteredContacts}
+              notes={savedNotes}
               onContactClick={handleContactClick}
               onDeleteContact={handleDeleteContact}
               onEditContact={handleEditContact}

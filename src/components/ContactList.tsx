@@ -1,16 +1,30 @@
-import { Phone, Mail, Building2, Calendar, Trash2, CreditCard as Edit, Globe, Bell, AlertCircle, User, Star, Check, Globe2, Clock, CheckSquare, AlertTriangle } from 'lucide-react';
+import { Phone, Mail, Building2, Calendar, Trash2, CreditCard as Edit, Globe, Bell, AlertCircle, User, Star, Check, Globe2, Clock, CheckSquare, AlertTriangle, StickyNote } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 
+interface SavedNote {
+  id: string;
+  title: string;
+  content: string;
+  contact_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface ContactListProps {
   contacts: ContactWithActivity[];
+  notes: SavedNote[];
   onContactClick: (contact: ContactWithActivity) => void;
   onDeleteContact: (id: string) => void;
   onEditContact: (contact: ContactWithActivity) => void;
 }
 
-export default function ContactList({ contacts, onContactClick, onDeleteContact, onEditContact }: ContactListProps) {
+export default function ContactList({ contacts, notes, onContactClick, onDeleteContact, onEditContact }: ContactListProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  const getNotesCount = (contactId: string) => {
+    return notes.filter(n => n.contact_id === contactId).length;
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -384,6 +398,17 @@ export default function ContactList({ contacts, onContactClick, onDeleteContact,
                       {contact.total_tasks} total
                     </span>
                   </div>
+                </div>
+              )}
+              {getNotesCount(contact.id) > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <StickyNote className="w-4 h-4 mr-1" />
+                    Notes
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">
+                    {getNotesCount(contact.id)} {getNotesCount(contact.id) === 1 ? 'note' : 'notes'}
+                  </span>
                 </div>
               )}
             </div>
