@@ -16,6 +16,7 @@ interface NotepadProps {
   showGoals: boolean;
   contacts?: Contact[];
   onSaveToNotesSection?: (title: string, content: string, contactId?: string) => Promise<void>;
+  onRefreshNotes?: () => Promise<void>;
   panelOrder?: string[];
   showNotepad?: boolean;
   showPriority?: boolean;
@@ -34,7 +35,7 @@ interface SavedNote {
   updated_at: string;
 }
 
-export default function Notepad({ isOpen, onClose, content, onSave, showGoals, contacts = [], onSaveToNotesSection, panelOrder = ['notes', 'goals', 'priority'], showNotepad = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange }: NotepadProps) {
+export default function Notepad({ isOpen, onClose, content, onSave, showGoals, contacts = [], onSaveToNotesSection, onRefreshNotes, panelOrder = ['notes', 'goals', 'priority'], showNotepad = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange }: NotepadProps) {
   const [noteContent, setNoteContent] = useState(content);
   const [isSaving, setIsSaving] = useState(false);
   const [isExpanded, setIsExpanded] = useState(notepadExpanded);
@@ -63,10 +64,34 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
 
     setIsSavingToSection(true);
     try {
-      await onSaveToNotesSection(saveTitle, noteContent, saveContactId || undefined);
+      if (loadedNote) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const { error } = await supabase
+          .from('saved_notes')
+          .update({
+            title: saveTitle,
+            content: noteContent,
+            contact_id: saveContactId || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', loadedNote.id);
+
+        if (error) throw error;
+
+        if (onRefreshNotes) {
+          await onRefreshNotes();
+        }
+      } else {
+        await onSaveToNotesSection(saveTitle, noteContent, saveContactId || undefined);
+      }
+
       setShowSaveModal(false);
       setSaveTitle('');
       setSaveContactId('');
+      setLoadedNote(null);
+      setNoteContent('');
     } catch (error) {
       console.error('Error saving to notes section:', error);
     } finally {
@@ -284,12 +309,18 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
               </div>
               {onSaveToNotesSection && (
                 <button
-                  onClick={() => setShowSaveModal(true)}
+                  onClick={() => {
+                    if (loadedNote) {
+                      setSaveTitle(loadedNote.title);
+                      setSaveContactId(loadedNote.contact_id || '');
+                    }
+                    setShowSaveModal(true);
+                  }}
                   disabled={!noteContent.trim()}
                   className="px-3 py-1.5 bg-amber-600 text-white rounded text-xs hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                   <FolderPlus className="w-3.5 h-3.5" />
-                  Save to Notes
+                  {loadedNote ? 'Update Note' : 'Save to Notes'}
                 </button>
               )}
             </div>

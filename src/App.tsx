@@ -3402,6 +3402,7 @@ function App() {
         goalsExpanded={goalsExpanded}
         priorityExpanded={priorityExpanded}
         onExpandedChange={setNotepadExpanded}
+        onRefreshNotes={loadSavedNotes}
         onSaveToNotesSection={async (title: string, content: string, contactId?: string) => {
           if (!user) return;
           try {

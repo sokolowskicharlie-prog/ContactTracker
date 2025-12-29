@@ -31,17 +31,23 @@ export default function NotesSection({
   const [filterContact, setFilterContact] = useState<string>('');
   const [sortBy, setSortBy] = useState<'updated' | 'created' | 'title'>('updated');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [searchResults, setSearchResults] = useState<SavedNote[]>([]);
 
   useEffect(() => {
     let filtered = [...notes];
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
+      const matches = filtered.filter(
         (note) =>
           note.title.toLowerCase().includes(query) ||
           note.content.toLowerCase().includes(query)
       );
+      setSearchResults(matches.slice(0, 10));
+      filtered = matches;
+    } else {
+      setSearchResults([]);
     }
 
     if (filterContact) {
@@ -108,9 +114,53 @@ export default function NotesSection({
               type="text"
               placeholder="Search notes..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSearchDropdown(!!e.target.value);
+              }}
+              onFocus={() => {
+                if (searchQuery) {
+                  setShowSearchDropdown(true);
+                }
+              }}
+              onBlur={() => {
+                setTimeout(() => setShowSearchDropdown(false), 200);
+              }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
             />
+            {showSearchDropdown && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto z-50">
+                <div className="py-1">
+                  {searchResults.map((note) => (
+                    <button
+                      key={note.id}
+                      onClick={() => {
+                        onEditNote(note);
+                        setShowSearchDropdown(false);
+                      }}
+                      className="w-full px-4 py-3 text-left hover:bg-amber-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                    >
+                      <div className="font-medium text-gray-900">{note.title}</div>
+                      <div className="text-sm text-gray-600 mt-1 line-clamp-2">
+                        {note.content}
+                      </div>
+                      <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                        {note.contact_id && (
+                          <span className="flex items-center gap-1 text-amber-600">
+                            <User className="w-3 h-3" />
+                            {getContactName(note.contact_id)}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(note.updated_at)}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <select
