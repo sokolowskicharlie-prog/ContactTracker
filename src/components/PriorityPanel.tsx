@@ -1,5 +1,5 @@
-import { X, TrendingUp, ChevronDown, ChevronUp, Star, AlertTriangle, Check, Phone, Mail, Building2, GripHorizontal } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { X, TrendingUp, ChevronDown, ChevronUp, Star, AlertTriangle, Check, Phone, Mail, Building2 } from 'lucide-react';
+import { useState } from 'react';
 import { ContactWithActivity } from '../lib/supabase';
 
 interface PriorityPanelProps {
@@ -13,10 +13,6 @@ interface PriorityPanelProps {
   showPriority?: boolean;
   notepadExpanded?: boolean;
   goalsExpanded?: boolean;
-  notepadHeight?: number;
-  goalsHeight?: number;
-  height?: number;
-  onHeightChange?: (height: number) => void;
 }
 
 const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: string; borderColor: string }> = {
@@ -27,11 +23,9 @@ const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: s
   5: { label: 'Lowest', color: 'text-gray-700', bgColor: 'bg-gray-50', borderColor: 'border-gray-200' },
 };
 
-export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad, panelOrder = ['notes', 'goals', 'priority'], showPriority = false, notepadExpanded = true, goalsExpanded = true, notepadHeight = 388, goalsHeight = 496, height = 400, onHeightChange }: PriorityPanelProps) {
+export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad, panelOrder = ['notes', 'goals', 'priority'], showPriority = false, notepadExpanded = true, goalsExpanded = true }: PriorityPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [selectedPriority, setSelectedPriority] = useState<number | null>(null);
-  const [isResizing, setIsResizing] = useState(false);
-  const resizeRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen) return null;
 
@@ -88,45 +82,28 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
     return null;
   };
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing || !onHeightChange) return;
-
-      const containerTop = resizeRef.current?.getBoundingClientRect().top || 0;
-      const newHeight = Math.max(200, Math.min(800, e.clientY - containerTop - 52));
-      onHeightChange(newHeight);
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isResizing, onHeightChange]);
-
   const calculateTopPosition = () => {
     let top = 80;
     const myIndex = panelOrder.indexOf('priority');
-    const PANEL_SPACING = 16;
-    const collapsedHeight = 52;
+    const PANEL_SPACING = 40;
+    const PANEL_SIZES = {
+      notesExpanded: 388,
+      notesCollapsed: 52,
+      goalsExpanded: 496,
+      goalsCollapsed: 52,
+      priority: 0
+    };
 
     for (let i = 0; i < myIndex; i++) {
       const panelId = panelOrder[i];
       if (panelId === 'notes' && showNotepad) {
-        const panelHeight = notepadExpanded ? notepadHeight : collapsedHeight;
-        top += panelHeight + PANEL_SPACING;
+        const height = notepadExpanded ? PANEL_SIZES.notesExpanded : PANEL_SIZES.notesCollapsed;
+        top += height + PANEL_SPACING;
       } else if (panelId === 'goals' && showGoals) {
-        const panelHeight = goalsExpanded ? goalsHeight : collapsedHeight;
-        top += panelHeight + PANEL_SPACING;
+        const height = goalsExpanded ? PANEL_SIZES.goalsExpanded : PANEL_SIZES.goalsCollapsed;
+        top += height + PANEL_SPACING;
       } else if (panelId === 'priority' && showPriority) {
-        top += PANEL_SPACING;
+        top += PANEL_SIZES.priority + PANEL_SPACING;
       }
     }
 
@@ -135,11 +112,10 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
 
   return (
     <div
-      ref={resizeRef}
       className="fixed right-4 z-40 w-80"
       style={{ top: `${calculateTopPosition()}px` }}
     >
-      <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden flex flex-col">
+      <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden max-h-[600px] flex flex-col">
         <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
@@ -164,7 +140,7 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
         </div>
 
         {isExpanded && (
-          <div className="overflow-y-auto" style={{ maxHeight: `${height}px` }}>
+          <div className="overflow-y-auto flex-1">
             {priorityContacts.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-20" />
@@ -255,12 +231,6 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
                 })}
               </div>
             )}
-            <div
-              onMouseDown={() => setIsResizing(true)}
-              className="flex items-center justify-center py-1 cursor-ns-resize hover:bg-gray-100 border-t border-gray-200"
-            >
-              <GripHorizontal className="w-4 h-4 text-gray-400" />
-            </div>
           </div>
         )}
       </div>
