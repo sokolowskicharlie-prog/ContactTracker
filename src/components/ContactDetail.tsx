@@ -110,6 +110,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
 
     await onEditContact(updatedContact);
     setIsEditingStatusNote(false);
+    setExpandedStatusNote(null);
   };
 
   const formatDateTime = (dateString: string) => {
