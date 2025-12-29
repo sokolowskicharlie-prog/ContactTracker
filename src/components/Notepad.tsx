@@ -63,11 +63,11 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
   const calculateTopPosition = () => {
     let top = 80;
     const myIndex = panelOrder.indexOf('notes');
-    const PANEL_SPACING = 40;
+    const PANEL_SPACING = 16;
     const PANEL_SIZES = {
       notesExpanded: 388,
       notesCollapsed: 52,
-      goalsExpanded: 496,
+      goalsExpanded: 436,
       goalsCollapsed: 52,
       priority: 0
     };
