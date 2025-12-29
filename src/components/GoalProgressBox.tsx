@@ -11,9 +11,12 @@ interface GoalProgressBoxProps {
   panelOrder?: string[];
   showGoals?: boolean;
   showPriority?: boolean;
+  notepadExpanded?: boolean;
+  goalsExpanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
-export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false, panelOrder = ['notes', 'goals', 'priority'], showGoals = false, showPriority = false }: GoalProgressBoxProps) {
+export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false, panelOrder = ['notes', 'goals', 'priority'], showGoals = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, onExpandedChange }: GoalProgressBoxProps) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
@@ -21,7 +24,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
   const [deals, setDeals] = useState<FuelDeal[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [contactPersons, setContactPersons] = useState<ContactPerson[]>([]);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(goalsExpanded);
   const [selectedGoal, setSelectedGoal] = useState<DailyGoal | null>(null);
   const [showAddActivity, setShowAddActivity] = useState(false);
   const [editingCall, setEditingCall] = useState<Call | null>(null);
@@ -699,17 +702,21 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
     const myIndex = panelOrder.indexOf('goals');
     const PANEL_SPACING = 40;
     const PANEL_SIZES = {
-      notes: 384,
-      goals: 496,
+      notesExpanded: 388,
+      notesCollapsed: 52,
+      goalsExpanded: 496,
+      goalsCollapsed: 52,
       priority: 0
     };
 
     for (let i = 0; i < myIndex; i++) {
       const panelId = panelOrder[i];
       if (panelId === 'notes' && showNotepad) {
-        top += PANEL_SIZES.notes + PANEL_SPACING;
+        const height = notepadExpanded ? PANEL_SIZES.notesExpanded : PANEL_SIZES.notesCollapsed;
+        top += height + PANEL_SPACING;
       } else if (panelId === 'goals' && showGoals) {
-        top += PANEL_SIZES.goals + PANEL_SPACING;
+        const height = goalsExpanded ? PANEL_SIZES.goalsExpanded : PANEL_SIZES.goalsCollapsed;
+        top += height + PANEL_SPACING;
       } else if (panelId === 'priority' && showPriority) {
         top += PANEL_SIZES.priority + PANEL_SPACING;
       }
@@ -727,7 +734,13 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
             <h3 className="font-semibold">Today's Goals</h3>
           </div>
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => {
+              const newExpanded = !isExpanded;
+              setIsExpanded(newExpanded);
+              if (onExpandedChange) {
+                onExpandedChange(newExpanded);
+              }
+            }}
             className="p-1 hover:bg-white/20 rounded transition-colors"
             title={isExpanded ? 'Collapse' : 'Expand'}
           >

@@ -18,12 +18,15 @@ interface NotepadProps {
   panelOrder?: string[];
   showNotepad?: boolean;
   showPriority?: boolean;
+  notepadExpanded?: boolean;
+  goalsExpanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
-export default function Notepad({ isOpen, onClose, content, onSave, showGoals, contacts = [], onSaveToNotesSection, panelOrder = ['notes', 'goals', 'priority'], showNotepad = false, showPriority = false }: NotepadProps) {
+export default function Notepad({ isOpen, onClose, content, onSave, showGoals, contacts = [], onSaveToNotesSection, panelOrder = ['notes', 'goals', 'priority'], showNotepad = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, onExpandedChange }: NotepadProps) {
   const [noteContent, setNoteContent] = useState(content);
   const [isSaving, setIsSaving] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(notepadExpanded);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveTitle, setSaveTitle] = useState('');
   const [saveContactId, setSaveContactId] = useState('');
@@ -62,17 +65,21 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
     const myIndex = panelOrder.indexOf('notes');
     const PANEL_SPACING = 40;
     const PANEL_SIZES = {
-      notes: 384,
-      goals: 496,
+      notesExpanded: 388,
+      notesCollapsed: 52,
+      goalsExpanded: 496,
+      goalsCollapsed: 52,
       priority: 0
     };
 
     for (let i = 0; i < myIndex; i++) {
       const panelId = panelOrder[i];
       if (panelId === 'notes' && showNotepad) {
-        top += PANEL_SIZES.notes + PANEL_SPACING;
+        const height = notepadExpanded ? PANEL_SIZES.notesExpanded : PANEL_SIZES.notesCollapsed;
+        top += height + PANEL_SPACING;
       } else if (panelId === 'goals' && showGoals) {
-        top += PANEL_SIZES.goals + PANEL_SPACING;
+        const height = goalsExpanded ? PANEL_SIZES.goalsExpanded : PANEL_SIZES.goalsCollapsed;
+        top += height + PANEL_SPACING;
       } else if (panelId === 'priority' && showPriority) {
         top += PANEL_SIZES.priority + PANEL_SPACING;
       }
@@ -98,7 +105,13 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
               {isSaving ? 'Saving...' : 'Save'}
             </button>
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => {
+                const newExpanded = !isExpanded;
+                setIsExpanded(newExpanded);
+                if (onExpandedChange) {
+                  onExpandedChange(newExpanded);
+                }
+              }}
               className="p-1 hover:bg-white/20 rounded transition-colors"
               title={isExpanded ? 'Collapse' : 'Expand'}
             >
