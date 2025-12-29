@@ -1,5 +1,6 @@
-import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, Edit2, StickyNote } from 'lucide-react';
+import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, Edit2, StickyNote, AlertTriangle } from 'lucide-react';
 import { ContactWithActivity, Vessel, FuelDeal, Call, Email, TaskWithRelated } from '../lib/supabase';
+import { useState } from 'react';
 
 interface SavedNote {
   id: string;
@@ -16,6 +17,7 @@ interface ContactDetailProps {
   notes: SavedNote[];
   onClose: () => void;
   onEdit: () => void;
+  onEditContact: (contact: ContactWithActivity) => void;
   onLogCall: () => void;
   onLogEmail: () => void;
   onEditCall: (call: Call) => void;
@@ -37,7 +39,28 @@ interface ContactDetailProps {
   onDeleteNote: (noteId: string) => void;
 }
 
-export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, onLogCall, onLogEmail, onEditCall, onEditEmail, onDeleteCall, onDeleteEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask, onEditNote, onDeleteNote }: ContactDetailProps) {
+export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, onEditContact, onLogCall, onLogEmail, onEditCall, onEditEmail, onDeleteCall, onDeleteEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask, onEditNote, onDeleteNote }: ContactDetailProps) {
+  const [expandedStatusNote, setExpandedStatusNote] = useState<'jammed' | 'client' | 'traction' | null>(null);
+  const [statusNoteValue, setStatusNoteValue] = useState('');
+
+  const toggleStatusNote = (type: 'jammed' | 'client' | 'traction') => {
+    if (expandedStatusNote === type) {
+      setExpandedStatusNote(null);
+    } else {
+      setExpandedStatusNote(type);
+      setStatusNoteValue(contact[`${type}_note`] || '');
+    }
+  };
+
+  const saveStatusNote = async (type: 'jammed' | 'client' | 'traction') => {
+    const updatedContact = {
+      ...contact,
+      [`${type}_note`]: statusNoteValue
+    };
+    await onEditContact(updatedContact);
+    setExpandedStatusNote(null);
+  };
+
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       month: 'short',
@@ -111,41 +134,146 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                 <Edit2 className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => onUpdateStatus('has_traction', !contact.has_traction)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                  contact.has_traction
-                    ? 'bg-yellow-400 text-yellow-900 border border-yellow-500'
-                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
-                }`}
-              >
-                <Star className={`w-4 h-4 ${contact.has_traction ? 'fill-yellow-900' : ''}`} />
-                Traction
-              </button>
-              <button
-                onClick={() => onUpdateStatus('is_client', !contact.is_client)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                  contact.is_client
-                    ? 'bg-green-500 text-white border border-green-600'
-                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
-                }`}
-              >
-                <Check className="w-4 h-4" />
-                Client
-              </button>
-              <button
-                onClick={() => onUpdateStatus('is_jammed', !contact.is_jammed)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                  contact.is_jammed
-                    ? 'bg-red-500 text-white border border-red-600'
-                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
-                }`}
-              >
-                <XCircle className="w-4 h-4" />
-                Jammed
-              </button>
+            <div className="flex gap-2 flex-wrap">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onUpdateStatus('has_traction', !contact.has_traction)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    contact.has_traction
+                      ? 'bg-yellow-400 text-yellow-900 border border-yellow-500'
+                      : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                  }`}
+                >
+                  <Star className={`w-4 h-4 ${contact.has_traction ? 'fill-yellow-900' : ''}`} />
+                  Traction
+                </button>
+                {contact.has_traction && (
+                  <button
+                    onClick={() => toggleStatusNote('traction')}
+                    className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                    title="Add/edit traction note"
+                  >
+                    <StickyNote className="w-4 h-4 text-gray-600" />
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onUpdateStatus('is_client', !contact.is_client)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    contact.is_client
+                      ? 'bg-green-500 text-white border border-green-600'
+                      : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                  }`}
+                >
+                  <Check className="w-4 h-4" />
+                  Client
+                </button>
+                {contact.is_client && (
+                  <button
+                    onClick={() => toggleStatusNote('client')}
+                    className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                    title="Add/edit client note"
+                  >
+                    <StickyNote className="w-4 h-4 text-gray-600" />
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onUpdateStatus('is_jammed', !contact.is_jammed)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    contact.is_jammed
+                      ? 'bg-red-500 text-white border border-red-600'
+                      : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                  }`}
+                >
+                  <XCircle className="w-4 h-4" />
+                  Jammed
+                </button>
+                {contact.is_jammed && (
+                  <button
+                    onClick={() => toggleStatusNote('jammed')}
+                    className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                    title="Add/edit jammed note"
+                  >
+                    <StickyNote className="w-4 h-4 text-gray-600" />
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Expandable Status Note Section */}
+            {expandedStatusNote && (
+              <div className="mt-3 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {expandedStatusNote === 'traction' && <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
+                  {expandedStatusNote === 'client' && <Check className="w-4 h-4 text-green-600" />}
+                  {expandedStatusNote === 'jammed' && <AlertTriangle className="w-4 h-4 text-red-600" />}
+                  {expandedStatusNote === 'traction' && 'Traction Note'}
+                  {expandedStatusNote === 'client' && 'Client Note'}
+                  {expandedStatusNote === 'jammed' && 'Jammed Note'}
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                  placeholder={
+                    expandedStatusNote === 'traction' ? 'What traction does this contact have?' :
+                    expandedStatusNote === 'client' ? 'What makes this a client?' :
+                    'Why is this contact jammed?'
+                  }
+                  value={statusNoteValue}
+                  onChange={(e) => setStatusNoteValue(e.target.value)}
+                />
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => saveStatusNote(expandedStatusNote)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    Save Note
+                  </button>
+                  <button
+                    onClick={() => setExpandedStatusNote(null)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Display existing status notes when not editing */}
+            {!expandedStatusNote && (
+              <div className="space-y-2 mt-3">
+                {contact.traction_note && contact.has_traction && (
+                  <div className="text-sm text-gray-700 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                    <span className="font-medium flex items-center gap-1">
+                      <Star className="w-3 h-3 text-yellow-600 fill-yellow-600" />
+                      Traction:
+                    </span>
+                    <p className="mt-1 text-gray-600">{contact.traction_note}</p>
+                  </div>
+                )}
+                {contact.client_note && contact.is_client && (
+                  <div className="text-sm text-gray-700 bg-green-50 p-3 rounded-lg border border-green-200">
+                    <span className="font-medium flex items-center gap-1">
+                      <Check className="w-3 h-3 text-green-600" />
+                      Client:
+                    </span>
+                    <p className="mt-1 text-gray-600">{contact.client_note}</p>
+                  </div>
+                )}
+                {contact.jammed_note && contact.is_jammed && (
+                  <div className="text-sm text-gray-700 bg-red-50 p-3 rounded-lg border border-red-200">
+                    <span className="font-medium flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 text-red-600" />
+                      Jammed:
+                    </span>
+                    <p className="mt-1 text-gray-600">{contact.jammed_note}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <button
             onClick={onClose}
