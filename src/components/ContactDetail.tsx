@@ -42,20 +42,45 @@ interface ContactDetailProps {
 export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, onEditContact, onLogCall, onLogEmail, onEditCall, onEditEmail, onDeleteCall, onDeleteEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask, onEditNote, onDeleteNote }: ContactDetailProps) {
   const [expandedStatusNote, setExpandedStatusNote] = useState<'jammed' | 'client' | 'traction' | null>(null);
   const [statusNoteValue, setStatusNoteValue] = useState('');
+  const [jammedReason, setJammedReason] = useState('');
+
+  const jammedReasons = [
+    'Direct with suppliers',
+    'TC only',
+    'No traders',
+    'Other'
+  ];
 
   const toggleStatusNote = (type: 'jammed' | 'client' | 'traction') => {
     if (expandedStatusNote === type) {
       setExpandedStatusNote(null);
     } else {
       setExpandedStatusNote(type);
-      setStatusNoteValue(contact[`${type}_note`] || '');
+      const currentNote = contact[`${type}_note`] || '';
+      setStatusNoteValue(currentNote);
+
+      if (type === 'jammed') {
+        if (jammedReasons.slice(0, 3).includes(currentNote)) {
+          setJammedReason(currentNote);
+        } else if (currentNote) {
+          setJammedReason('Other');
+        } else {
+          setJammedReason('');
+        }
+      }
     }
   };
 
   const saveStatusNote = async (type: 'jammed' | 'client' | 'traction') => {
+    let noteValue = statusNoteValue;
+
+    if (type === 'jammed' && jammedReason && jammedReason !== 'Other') {
+      noteValue = jammedReason;
+    }
+
     const updatedContact = {
       ...contact,
-      [`${type}_note`]: statusNoteValue
+      [`${type}_note`]: noteValue
     };
     await onEditContact(updatedContact);
     setExpandedStatusNote(null);
@@ -212,19 +237,54 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                   {expandedStatusNote === 'jammed' && <AlertTriangle className="w-4 h-4 text-red-600" />}
                   {expandedStatusNote === 'traction' && 'Traction Note'}
                   {expandedStatusNote === 'client' && 'Client Note'}
-                  {expandedStatusNote === 'jammed' && 'Jammed Note'}
+                  {expandedStatusNote === 'jammed' && 'Jammed Reason'}
                 </label>
-                <textarea
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows={3}
-                  placeholder={
-                    expandedStatusNote === 'traction' ? 'What traction does this contact have?' :
-                    expandedStatusNote === 'client' ? 'What makes this a client?' :
-                    'Why is this contact jammed?'
-                  }
-                  value={statusNoteValue}
-                  onChange={(e) => setStatusNoteValue(e.target.value)}
-                />
+
+                {expandedStatusNote === 'jammed' ? (
+                  <>
+                    <select
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={jammedReason}
+                      onChange={(e) => {
+                        setJammedReason(e.target.value);
+                        if (e.target.value !== 'Other') {
+                          setStatusNoteValue(e.target.value);
+                        } else {
+                          setStatusNoteValue('');
+                        }
+                      }}
+                    >
+                      <option value="">Select a reason...</option>
+                      {jammedReasons.map((reason) => (
+                        <option key={reason} value={reason}>
+                          {reason}
+                        </option>
+                      ))}
+                    </select>
+
+                    {jammedReason === 'Other' && (
+                      <textarea
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-3"
+                        rows={3}
+                        placeholder="Enter custom reason..."
+                        value={statusNoteValue}
+                        onChange={(e) => setStatusNoteValue(e.target.value)}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <textarea
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    rows={3}
+                    placeholder={
+                      expandedStatusNote === 'traction' ? 'What traction does this contact have?' :
+                      'What makes this a client?'
+                    }
+                    value={statusNoteValue}
+                    onChange={(e) => setStatusNoteValue(e.target.value)}
+                  />
+                )}
+
                 <div className="flex gap-2 mt-3">
                   <button
                     onClick={() => saveStatusNote(expandedStatusNote)}
