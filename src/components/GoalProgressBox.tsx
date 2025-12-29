@@ -700,11 +700,11 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
   const calculateTopPosition = () => {
     let top = 80;
     const myIndex = panelOrder.indexOf('goals');
-    const PANEL_SPACING = 16;
+    const PANEL_SPACING = 8;
     const PANEL_SIZES = {
       notesExpanded: 388,
       notesCollapsed: 52,
-      goalsExpanded: 220,
+      goalsExpanded: 180,
       goalsCollapsed: 52,
       priority: 0
     };
