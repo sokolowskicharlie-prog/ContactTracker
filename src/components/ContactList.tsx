@@ -206,6 +206,30 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                       <AlertTriangle className="w-4 h-4 text-red-600 fill-red-100" />
                     )}
                   </div>
+                  {(contact.is_jammed && contact.jammed_note) && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <AlertTriangle className="w-3 h-3 text-red-600" />
+                      <span className="text-xs text-red-700 font-medium">
+                        {contact.jammed_note}
+                      </span>
+                    </div>
+                  )}
+                  {(contact.is_client && contact.client_note) && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <Check className="w-3 h-3 text-green-600" />
+                      <span className="text-xs text-green-700 font-medium">
+                        {contact.client_note}
+                      </span>
+                    </div>
+                  )}
+                  {(contact.has_traction && contact.traction_note) && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <Star className="w-3 h-3 text-yellow-600" />
+                      <span className="text-xs text-yellow-700 font-medium">
+                        {contact.traction_note}
+                      </span>
+                    </div>
+                  )}
                   {contact.updated_at && (
                     <div className="flex items-center gap-1 mt-0.5">
                       <Clock className="w-3 h-3 text-gray-400" />

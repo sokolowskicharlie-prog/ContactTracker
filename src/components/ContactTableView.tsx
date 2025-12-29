@@ -96,26 +96,47 @@ export default function ContactTableView({
   const getStatusBadge = (contact: ContactWithActivity) => {
     if (contact.is_client) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <CheckCircle className="w-3 h-3" />
-          Client
-        </span>
+        <div className="flex flex-col gap-1">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <CheckCircle className="w-3 h-3" />
+            Client
+          </span>
+          {contact.client_note && (
+            <div className="text-xs text-green-700 font-medium truncate" title={contact.client_note}>
+              {contact.client_note}
+            </div>
+          )}
+        </div>
       );
     }
     if (contact.has_traction) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          <TrendingUp className="w-3 h-3" />
-          Traction
-        </span>
+        <div className="flex flex-col gap-1">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <TrendingUp className="w-3 h-3" />
+            Traction
+          </span>
+          {contact.traction_note && (
+            <div className="text-xs text-yellow-700 font-medium truncate" title={contact.traction_note}>
+              {contact.traction_note}
+            </div>
+          )}
+        </div>
       );
     }
     if (contact.is_jammed) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          <AlertCircle className="w-3 h-3" />
-          Jammed
-        </span>
+        <div className="flex flex-col gap-1">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <AlertCircle className="w-3 h-3" />
+            Jammed
+          </span>
+          {contact.jammed_note && (
+            <div className="text-xs text-red-700 font-medium truncate" title={contact.jammed_note}>
+              {contact.jammed_note}
+            </div>
+          )}
+        </div>
       );
     }
     return null;
