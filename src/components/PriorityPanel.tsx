@@ -87,7 +87,7 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
   const calculateTopPosition = () => {
     let top = 80;
     const myIndex = panelOrder.indexOf('priority');
-    const PANEL_SPACING = 16;
+    const PANEL_SPACING = 8;
     const PANEL_SIZES = {
       notesExpanded: 388,
       notesCollapsed: 52,
