@@ -41,6 +41,7 @@ interface ContactDetailProps {
 
 export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, onEditContact, onLogCall, onLogEmail, onEditCall, onEditEmail, onDeleteCall, onDeleteEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask, onEditNote, onDeleteNote }: ContactDetailProps) {
   const [expandedStatusNote, setExpandedStatusNote] = useState<'jammed' | 'client' | 'traction' | null>(null);
+  const [isEditingStatusNote, setIsEditingStatusNote] = useState(false);
   const [statusNoteValue, setStatusNoteValue] = useState('');
   const [jammedReason, setJammedReason] = useState('');
   const [jammedAdditionalNote, setJammedAdditionalNote] = useState('');
@@ -58,9 +59,16 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
   const toggleStatusNote = (type: 'jammed' | 'client' | 'traction') => {
     if (expandedStatusNote === type) {
       setExpandedStatusNote(null);
+      setIsEditingStatusNote(false);
     } else {
       setExpandedStatusNote(type);
       const currentNote = contact[`${type}_note`] || '';
+      const hasNote = currentNote ||
+        (type === 'jammed' && contact.jammed_additional_note) ||
+        (type === 'traction' && contact.traction_additional_note) ||
+        (type === 'client' && contact.client_additional_note);
+
+      setIsEditingStatusNote(!hasNote);
       setStatusNoteValue(currentNote);
 
       if (type === 'jammed') {
@@ -101,7 +109,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
     }
 
     await onEditContact(updatedContact);
-    setExpandedStatusNote(null);
+    setIsEditingStatusNote(false);
   };
 
   const formatDateTime = (dateString: string) => {
@@ -311,97 +319,140 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                   {expandedStatusNote === 'jammed' && 'Jammed Reason'}
                 </label>
 
-                {expandedStatusNote === 'jammed' ? (
+                {isEditingStatusNote ? (
                   <>
-                    <select
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={jammedReason}
-                      onChange={(e) => {
-                        setJammedReason(e.target.value);
-                        if (e.target.value !== 'Other') {
-                          setStatusNoteValue(e.target.value);
-                        } else {
-                          setStatusNoteValue('');
-                        }
-                      }}
-                    >
-                      <option value="">Select a reason...</option>
-                      {jammedReasons.map((reason) => (
-                        <option key={reason} value={reason}>
-                          {reason}
-                        </option>
-                      ))}
-                    </select>
+                    {expandedStatusNote === 'jammed' ? (
+                      <>
+                        <select
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={jammedReason}
+                          onChange={(e) => {
+                            setJammedReason(e.target.value);
+                            if (e.target.value !== 'Other') {
+                              setStatusNoteValue(e.target.value);
+                            } else {
+                              setStatusNoteValue('');
+                            }
+                          }}
+                        >
+                          <option value="">Select a reason...</option>
+                          {jammedReasons.map((reason) => (
+                            <option key={reason} value={reason}>
+                              {reason}
+                            </option>
+                          ))}
+                        </select>
 
-                    {jammedReason === 'Other' && (
-                      <textarea
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-3"
-                        rows={3}
-                        placeholder="Enter custom reason..."
-                        value={statusNoteValue}
-                        onChange={(e) => setStatusNoteValue(e.target.value)}
-                      />
-                    )}
+                        {jammedReason === 'Other' && (
+                          <textarea
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-3"
+                            rows={3}
+                            placeholder="Enter custom reason..."
+                            value={statusNoteValue}
+                            onChange={(e) => setStatusNoteValue(e.target.value)}
+                          />
+                        )}
 
-                    {jammedReason && (
-                      <div className="mt-3">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Additional Notes</label>
+                        {jammedReason && (
+                          <div className="mt-3">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Additional Notes</label>
+                            <textarea
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              rows={2}
+                              placeholder="Add any additional details..."
+                              value={jammedAdditionalNote}
+                              onChange={(e) => setJammedAdditionalNote(e.target.value)}
+                            />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
                         <textarea
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          rows={2}
-                          placeholder="Add any additional details..."
-                          value={jammedAdditionalNote}
-                          onChange={(e) => setJammedAdditionalNote(e.target.value)}
+                          rows={3}
+                          placeholder={
+                            expandedStatusNote === 'traction' ? 'What traction does this contact have?' :
+                            'What makes this a client?'
+                          }
+                          value={statusNoteValue}
+                          onChange={(e) => setStatusNoteValue(e.target.value)}
                         />
-                      </div>
+
+                        <div className="mt-3">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Additional Notes</label>
+                          <textarea
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            rows={2}
+                            placeholder="Add any additional details..."
+                            value={expandedStatusNote === 'traction' ? tractionAdditionalNote : clientAdditionalNote}
+                            onChange={(e) => {
+                              if (expandedStatusNote === 'traction') {
+                                setTractionAdditionalNote(e.target.value);
+                              } else {
+                                setClientAdditionalNote(e.target.value);
+                              }
+                            }}
+                          />
+                        </div>
+                      </>
                     )}
+
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => saveStatusNote(expandedStatusNote)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                      >
+                        Save Note
+                      </button>
+                      <button
+                        onClick={() => setExpandedStatusNote(null)}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>
-                    <textarea
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      rows={3}
-                      placeholder={
-                        expandedStatusNote === 'traction' ? 'What traction does this contact have?' :
-                        'What makes this a client?'
-                      }
-                      value={statusNoteValue}
-                      onChange={(e) => setStatusNoteValue(e.target.value)}
-                    />
+                    <div className="space-y-3">
+                      {contact[`${expandedStatusNote}_note`] && (
+                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{contact[`${expandedStatusNote}_note`]}</p>
+                        </div>
+                      )}
+                      {(expandedStatusNote === 'jammed' && contact.jammed_additional_note) ||
+                       (expandedStatusNote === 'traction' && contact.traction_additional_note) ||
+                       (expandedStatusNote === 'client' && contact.client_additional_note) ? (
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Additional Notes</label>
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                              {expandedStatusNote === 'jammed' && contact.jammed_additional_note}
+                              {expandedStatusNote === 'traction' && contact.traction_additional_note}
+                              {expandedStatusNote === 'client' && contact.client_additional_note}
+                            </p>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
 
-                    <div className="mt-3">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Additional Notes</label>
-                      <textarea
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        rows={2}
-                        placeholder="Add any additional details..."
-                        value={expandedStatusNote === 'traction' ? tractionAdditionalNote : clientAdditionalNote}
-                        onChange={(e) => {
-                          if (expandedStatusNote === 'traction') {
-                            setTractionAdditionalNote(e.target.value);
-                          } else {
-                            setClientAdditionalNote(e.target.value);
-                          }
-                        }}
-                      />
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => setIsEditingStatusNote(true)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                      >
+                        Edit Note
+                      </button>
+                      <button
+                        onClick={() => setExpandedStatusNote(null)}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+                      >
+                        Close
+                      </button>
                     </div>
                   </>
                 )}
-
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={() => saveStatusNote(expandedStatusNote)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                  >
-                    Save Note
-                  </button>
-                  <button
-                    onClick={() => setExpandedStatusNote(null)}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
               </div>
             )}
 
