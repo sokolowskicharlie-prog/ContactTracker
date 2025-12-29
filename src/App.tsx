@@ -553,6 +553,7 @@ function App() {
           country: contactData.country,
           timezone: contactData.timezone,
           reminder_days: contactData.reminder_days,
+          priority_rank: contactData.priority_rank,
           notes: contactData.notes,
           updated_at: new Date().toISOString(),
         };
