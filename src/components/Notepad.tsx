@@ -46,6 +46,7 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
   const [searchResults, setSearchResults] = useState<SavedNote[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [loadedNote, setLoadedNote] = useState<SavedNote | null>(null);
 
   useEffect(() => {
     setNoteContent(content);
@@ -108,9 +109,15 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
 
   const loadNote = (note: SavedNote) => {
     setNoteContent(note.content);
+    setLoadedNote(note);
     setSearchQuery('');
     setSearchResults([]);
     setShowSearchResults(false);
+  };
+
+  const clearLoadedNote = () => {
+    setLoadedNote(null);
+    setNoteContent('');
   };
 
   const getContactName = (contactId?: string) => {
@@ -192,6 +199,33 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
 
         {isExpanded && (
           <div className="p-4">
+            {loadedNote && (
+              <div className="mb-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-gray-900 truncate">
+                      {loadedNote.title}
+                    </div>
+                    {loadedNote.contact_id && (
+                      <div className="text-xs text-amber-600 mt-1">
+                        {getContactName(loadedNote.contact_id)}
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-500 mt-1">
+                      Last updated: {new Date(loadedNote.updated_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <button
+                    onClick={clearLoadedNote}
+                    className="p-1 hover:bg-amber-100 rounded transition-colors flex-shrink-0"
+                    title="Clear and start new note"
+                  >
+                    <X className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="mb-3 relative">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
