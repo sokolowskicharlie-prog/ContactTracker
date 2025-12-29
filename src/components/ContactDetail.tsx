@@ -466,6 +466,12 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                       Traction:
                     </span>
                     <p className="mt-1 text-gray-600">{contact.traction_note}</p>
+                    {contact.traction_additional_note && (
+                      <div className="mt-2 pt-2 border-t border-yellow-200">
+                        <p className="text-xs font-medium text-gray-500 mb-1">Additional Notes:</p>
+                        <p className="text-gray-600 whitespace-pre-wrap">{contact.traction_additional_note}</p>
+                      </div>
+                    )}
                   </div>
                 )}
                 {contact.client_note && contact.is_client && (
@@ -475,6 +481,12 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                       Client:
                     </span>
                     <p className="mt-1 text-gray-600">{contact.client_note}</p>
+                    {contact.client_additional_note && (
+                      <div className="mt-2 pt-2 border-t border-green-200">
+                        <p className="text-xs font-medium text-gray-500 mb-1">Additional Notes:</p>
+                        <p className="text-gray-600 whitespace-pre-wrap">{contact.client_additional_note}</p>
+                      </div>
+                    )}
                   </div>
                 )}
                 {contact.jammed_note && contact.is_jammed && (
@@ -484,6 +496,12 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                       Jammed:
                     </span>
                     <p className="mt-1 text-gray-600">{contact.jammed_note}</p>
+                    {contact.jammed_additional_note && (
+                      <div className="mt-2 pt-2 border-t border-red-200">
+                        <p className="text-xs font-medium text-gray-500 mb-1">Additional Notes:</p>
+                        <p className="text-gray-600 whitespace-pre-wrap">{contact.jammed_additional_note}</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
