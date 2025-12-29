@@ -63,12 +63,8 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
     } else {
       setExpandedStatusNote(type);
       const currentNote = contact[`${type}_note`] || '';
-      const hasNote = currentNote ||
-        (type === 'jammed' && contact.jammed_additional_note) ||
-        (type === 'traction' && contact.traction_additional_note) ||
-        (type === 'client' && contact.client_additional_note);
 
-      setIsEditingStatusNote(!hasNote);
+      setIsEditingStatusNote(true);
       setStatusNoteValue(currentNote);
 
       if (type === 'jammed') {
