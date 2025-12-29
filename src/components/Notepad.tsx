@@ -1,5 +1,6 @@
-import { X, Save, StickyNote, ChevronDown, ChevronUp, FolderPlus } from 'lucide-react';
+import { X, Save, StickyNote, ChevronDown, ChevronUp, FolderPlus, Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 interface Contact {
   id: string;
@@ -24,6 +25,15 @@ interface NotepadProps {
   onExpandedChange?: (expanded: boolean) => void;
 }
 
+interface SavedNote {
+  id: string;
+  title: string;
+  content: string;
+  contact_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export default function Notepad({ isOpen, onClose, content, onSave, showGoals, contacts = [], onSaveToNotesSection, panelOrder = ['notes', 'goals', 'priority'], showNotepad = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange }: NotepadProps) {
   const [noteContent, setNoteContent] = useState(content);
   const [isSaving, setIsSaving] = useState(false);
@@ -32,6 +42,10 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
   const [saveTitle, setSaveTitle] = useState('');
   const [saveContactId, setSaveContactId] = useState('');
   const [isSavingToSection, setIsSavingToSection] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SavedNote[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   useEffect(() => {
     setNoteContent(content);
@@ -57,6 +71,52 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
     } finally {
       setIsSavingToSection(false);
     }
+  };
+
+  const searchNotes = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowSearchResults(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('saved_notes')
+        .select('*')
+        .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+        .order('updated_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setSearchResults(data || []);
+    } catch (error) {
+      console.error('Error searching notes:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    searchNotes(query);
+  };
+
+  const loadNote = (note: SavedNote) => {
+    setNoteContent(note.content);
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowSearchResults(false);
+  };
+
+  const getContactName = (contactId?: string) => {
+    if (!contactId) return null;
+    const contact = contacts.find(c => c.id === contactId);
+    return contact ? `${contact.company} - ${contact.name}` : 'Unknown Contact';
   };
 
   if (!isOpen) return null;
@@ -132,6 +192,52 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
 
         {isExpanded && (
           <div className="p-4">
+            <div className="mb-3 relative">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  placeholder="Search saved notes..."
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                />
+              </div>
+
+              {showSearchResults && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto z-50">
+                  {isSearching ? (
+                    <div className="p-4 text-center text-sm text-gray-500">Searching...</div>
+                  ) : searchResults.length > 0 ? (
+                    <div className="py-1">
+                      {searchResults.map((note) => (
+                        <button
+                          key={note.id}
+                          onClick={() => loadNote(note)}
+                          className="w-full px-4 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                        >
+                          <div className="font-medium text-sm text-gray-900">{note.title}</div>
+                          <div className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                            {note.content}
+                          </div>
+                          {note.contact_id && (
+                            <div className="text-xs text-amber-600 mt-1">
+                              {getContactName(note.contact_id)}
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-400 mt-1">
+                            {new Date(note.updated_at).toLocaleDateString()}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-sm text-gray-500">No notes found</div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <textarea
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
