@@ -176,6 +176,7 @@ function App() {
   const [noteId, setNoteId] = useState<string | undefined>();
   const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact']);
   const [panelOrder, setPanelOrder] = useState<string[]>(['notes', 'goals', 'priority']);
+  const [panelSpacing, setPanelSpacing] = useState<number>(8);
   const { user, loading: authLoading, signOut } = useAuth();
 
   useEffect(() => {
@@ -1998,7 +1999,7 @@ function App() {
     try {
       const { data, error } = await supabase
         .from('user_preferences')
-        .select('button_order, visible_filters, panel_order')
+        .select('button_order, visible_filters, panel_order, panel_spacing')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -2012,6 +2013,9 @@ function App() {
         }
         if (data.panel_order) {
           setPanelOrder(data.panel_order);
+        }
+        if (data.panel_spacing !== null && data.panel_spacing !== undefined) {
+          setPanelSpacing(data.panel_spacing);
         }
       }
     } catch (error) {
@@ -2074,6 +2078,35 @@ function App() {
       setPanelOrder(order);
     } catch (error) {
       console.error('Error saving panel order:', error);
+    }
+  };
+
+  const handleSavePanelSpacing = async (spacing: number) => {
+    try {
+      const { data: existing } = await supabase
+        .from('user_preferences')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('user_preferences')
+          .update({ panel_spacing: spacing })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_preferences')
+          .insert([{ user_id: user.id, panel_spacing: spacing }]);
+
+        if (error) throw error;
+      }
+
+      setPanelSpacing(spacing);
+    } catch (error) {
+      console.error('Error saving panel spacing:', error);
     }
   };
 
@@ -2271,7 +2304,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <GlobalGoalNotifications />
-      {showGoalProgressBox && <GoalProgressBox onSelectContact={handleSelectContactFromGoals} onLogCall={handleLogCallFromSchedule} onLogEmail={handleLogEmailFromSchedule} showNotepad={showNotepad} panelOrder={panelOrder} showGoals={showGoalProgressBox && hasGoals} showPriority={showPriorityPanel} notepadExpanded={notepadExpanded} goalsExpanded={goalsExpanded} priorityExpanded={priorityExpanded} onExpandedChange={setGoalsExpanded} onHasGoalsChange={setHasGoals} />}
+      {showGoalProgressBox && <GoalProgressBox onSelectContact={handleSelectContactFromGoals} onLogCall={handleLogCallFromSchedule} onLogEmail={handleLogEmailFromSchedule} showNotepad={showNotepad} panelOrder={panelOrder} showGoals={showGoalProgressBox && hasGoals} showPriority={showPriorityPanel} notepadExpanded={notepadExpanded} goalsExpanded={goalsExpanded} priorityExpanded={priorityExpanded} onExpandedChange={setGoalsExpanded} onHasGoalsChange={setHasGoals} panelSpacing={panelSpacing} />}
       <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -3221,6 +3254,8 @@ function App() {
           onClose={() => setShowSettingsModal(false)}
           onSave={handleSaveNotificationSettings}
           currentSettings={notificationSettings}
+          panelSpacing={panelSpacing}
+          onSavePanelSpacing={handleSavePanelSpacing}
         />
       )}
 
@@ -3403,6 +3438,7 @@ function App() {
         priorityExpanded={priorityExpanded}
         onExpandedChange={setNotepadExpanded}
         onRefreshNotes={loadSavedNotes}
+        panelSpacing={panelSpacing}
         onSaveToNotesSection={async (title: string, content: string, contactId?: string) => {
           if (!user) return;
           try {
@@ -3437,6 +3473,7 @@ function App() {
         goalsExpanded={goalsExpanded}
         priorityExpanded={priorityExpanded}
         onExpandedChange={setPriorityExpanded}
+        panelSpacing={panelSpacing}
       />
     </div>
   );

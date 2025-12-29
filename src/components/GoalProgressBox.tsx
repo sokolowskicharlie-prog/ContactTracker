@@ -16,9 +16,10 @@ interface GoalProgressBoxProps {
   priorityExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
   onHasGoalsChange?: (hasGoals: boolean) => void;
+  panelSpacing?: number;
 }
 
-export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false, panelOrder = ['notes', 'goals', 'priority'], showGoals = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, onHasGoalsChange }: GoalProgressBoxProps) {
+export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false, panelOrder = ['notes', 'goals', 'priority'], showGoals = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, onHasGoalsChange, panelSpacing = 8 }: GoalProgressBoxProps) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
@@ -708,7 +709,6 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
   const calculateTopPosition = () => {
     let top = 80;
     const myIndex = panelOrder.indexOf('goals');
-    const PANEL_SPACING = 8;
     const PANEL_SIZES = {
       notesExpanded: 388,
       notesCollapsed: 52,
@@ -722,13 +722,13 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
       const panelId = panelOrder[i];
       if (panelId === 'notes' && showNotepad) {
         const height = notepadExpanded ? PANEL_SIZES.notesExpanded : PANEL_SIZES.notesCollapsed;
-        top += height + PANEL_SPACING;
+        top += height + panelSpacing;
       } else if (panelId === 'goals' && showGoals) {
         const height = goalsExpanded ? PANEL_SIZES.goalsExpanded : PANEL_SIZES.goalsCollapsed;
-        top += height + PANEL_SPACING;
+        top += height + panelSpacing;
       } else if (panelId === 'priority' && showPriority) {
         const height = priorityExpanded ? PANEL_SIZES.priorityExpanded : PANEL_SIZES.priorityCollapsed;
-        top += height + PANEL_SPACING;
+        top += height + panelSpacing;
       }
     }
 

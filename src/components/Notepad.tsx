@@ -24,6 +24,7 @@ interface NotepadProps {
   goalsExpanded?: boolean;
   priorityExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  panelSpacing?: number;
 }
 
 interface SavedNote {
@@ -35,7 +36,7 @@ interface SavedNote {
   updated_at: string;
 }
 
-export default function Notepad({ isOpen, onClose, content, onSave, showGoals, contacts = [], onSaveToNotesSection, onRefreshNotes, panelOrder = ['notes', 'goals', 'priority'], showNotepad = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange }: NotepadProps) {
+export default function Notepad({ isOpen, onClose, content, onSave, showGoals, contacts = [], onSaveToNotesSection, onRefreshNotes, panelOrder = ['notes', 'goals', 'priority'], showNotepad = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, panelSpacing = 8 }: NotepadProps) {
   const [noteContent, setNoteContent] = useState(content);
   const [isSaving, setIsSaving] = useState(false);
   const [isExpanded, setIsExpanded] = useState(notepadExpanded);
@@ -156,7 +157,6 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
   const calculateTopPosition = () => {
     let top = 80;
     const myIndex = panelOrder.indexOf('notes');
-    const PANEL_SPACING = 8;
     const PANEL_SIZES = {
       notesExpanded: 388,
       notesCollapsed: 52,
@@ -170,13 +170,13 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
       const panelId = panelOrder[i];
       if (panelId === 'notes' && showNotepad) {
         const height = notepadExpanded ? PANEL_SIZES.notesExpanded : PANEL_SIZES.notesCollapsed;
-        top += height + PANEL_SPACING;
+        top += height + panelSpacing;
       } else if (panelId === 'goals' && showGoals) {
         const height = goalsExpanded ? PANEL_SIZES.goalsExpanded : PANEL_SIZES.goalsCollapsed;
-        top += height + PANEL_SPACING;
+        top += height + panelSpacing;
       } else if (panelId === 'priority' && showPriority) {
         const height = priorityExpanded ? PANEL_SIZES.priorityExpanded : PANEL_SIZES.priorityCollapsed;
-        top += height + PANEL_SPACING;
+        top += height + panelSpacing;
       }
     }
 

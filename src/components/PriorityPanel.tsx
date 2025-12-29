@@ -15,6 +15,7 @@ interface PriorityPanelProps {
   goalsExpanded?: boolean;
   priorityExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  panelSpacing?: number;
 }
 
 const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: string; borderColor: string }> = {
@@ -25,7 +26,7 @@ const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: s
   5: { label: 'Lowest', color: 'text-gray-700', bgColor: 'bg-gray-50', borderColor: 'border-gray-200' },
 };
 
-export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad, panelOrder = ['notes', 'goals', 'priority'], showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange }: PriorityPanelProps) {
+export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad, panelOrder = ['notes', 'goals', 'priority'], showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, panelSpacing = 8 }: PriorityPanelProps) {
   const [isExpanded, setIsExpanded] = useState(priorityExpanded);
   const [selectedPriority, setSelectedPriority] = useState<number | null>(null);
 
@@ -87,7 +88,6 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
   const calculateTopPosition = () => {
     let top = 80;
     const myIndex = panelOrder.indexOf('priority');
-    const PANEL_SPACING = 8;
     const PANEL_SIZES = {
       notesExpanded: 388,
       notesCollapsed: 52,
@@ -101,13 +101,13 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
       const panelId = panelOrder[i];
       if (panelId === 'notes' && showNotepad) {
         const height = notepadExpanded ? PANEL_SIZES.notesExpanded : PANEL_SIZES.notesCollapsed;
-        top += height + PANEL_SPACING;
+        top += height + panelSpacing;
       } else if (panelId === 'goals' && showGoals) {
         const height = goalsExpanded ? PANEL_SIZES.goalsExpanded : PANEL_SIZES.goalsCollapsed;
-        top += height + PANEL_SPACING;
+        top += height + panelSpacing;
       } else if (panelId === 'priority' && showPriority) {
         const height = isExpanded ? PANEL_SIZES.priorityExpanded : PANEL_SIZES.priorityCollapsed;
-        top += height + PANEL_SPACING;
+        top += height + panelSpacing;
       }
     }
 

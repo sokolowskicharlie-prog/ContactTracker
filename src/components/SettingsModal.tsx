@@ -12,12 +12,15 @@ interface SettingsModalProps {
   onClose: () => void;
   onSave: (settings: NotificationSettings) => void;
   currentSettings?: NotificationSettings;
+  panelSpacing?: number;
+  onSavePanelSpacing?: (spacing: number) => void;
 }
 
-export default function SettingsModal({ onClose, onSave, currentSettings }: SettingsModalProps) {
+export default function SettingsModal({ onClose, onSave, currentSettings, panelSpacing = 8, onSavePanelSpacing }: SettingsModalProps) {
   const [email, setEmail] = useState('');
   const [daysBefore, setDaysBefore] = useState('1');
   const [enabled, setEnabled] = useState(true);
+  const [spacing, setSpacing] = useState(panelSpacing);
 
   useEffect(() => {
     if (currentSettings) {
@@ -26,6 +29,10 @@ export default function SettingsModal({ onClose, onSave, currentSettings }: Sett
       setEnabled(currentSettings.enabled);
     }
   }, [currentSettings]);
+
+  useEffect(() => {
+    setSpacing(panelSpacing);
+  }, [panelSpacing]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +46,13 @@ export default function SettingsModal({ onClose, onSave, currentSettings }: Sett
     });
 
     onClose();
+  };
+
+  const handleSpacingChange = (newSpacing: number) => {
+    setSpacing(newSpacing);
+    if (onSavePanelSpacing) {
+      onSavePanelSpacing(newSpacing);
+    }
   };
 
   return (
@@ -121,6 +135,28 @@ export default function SettingsModal({ onClose, onSave, currentSettings }: Sett
             </select>
             <p className="text-xs text-gray-500 mt-1">
               When to send the reminder before a call is due
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Panel Spacing
+            </label>
+            <div className="flex items-center gap-4">
+              <input
+                type="range"
+                min="0"
+                max="40"
+                value={spacing}
+                onChange={(e) => handleSpacingChange(Number(e.target.value))}
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              />
+              <span className="text-sm font-medium text-gray-900 w-12 text-right">
+                {spacing}px
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Adjust the vertical spacing between Notes, Goals, and Priority panels
             </p>
           </div>
 
