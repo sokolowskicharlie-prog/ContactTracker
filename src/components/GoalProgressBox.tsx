@@ -8,9 +8,12 @@ interface GoalProgressBoxProps {
   onLogCall?: (contactId: string) => void;
   onLogEmail?: (contactId: string) => void;
   showNotepad?: boolean;
+  panelOrder?: string[];
+  showGoals?: boolean;
+  showPriority?: boolean;
 }
 
-export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false }: GoalProgressBoxProps) {
+export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false, panelOrder = ['notes', 'goals', 'priority'], showGoals = false, showPriority = false }: GoalProgressBoxProps) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
@@ -691,8 +694,32 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
     return null;
   }
 
+  const calculateTopPosition = () => {
+    let top = 80;
+    const myIndex = panelOrder.indexOf('goals');
+    const PANEL_SPACING = 40;
+    const PANEL_SIZES = {
+      notes: 384,
+      goals: 496,
+      priority: 0
+    };
+
+    for (let i = 0; i < myIndex; i++) {
+      const panelId = panelOrder[i];
+      if (panelId === 'notes' && showNotepad) {
+        top += PANEL_SIZES.notes + PANEL_SPACING;
+      } else if (panelId === 'goals' && showGoals) {
+        top += PANEL_SIZES.goals + PANEL_SPACING;
+      } else if (panelId === 'priority' && showPriority) {
+        top += PANEL_SIZES.priority + PANEL_SPACING;
+      }
+    }
+
+    return top;
+  };
+
   return (
-    <div className={`fixed ${showNotepad ? 'top-[30rem]' : 'top-20'} right-4 z-40 w-80`}>
+    <div className="fixed right-4 z-40 w-80" style={{ top: `${calculateTopPosition()}px` }}>
       <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">

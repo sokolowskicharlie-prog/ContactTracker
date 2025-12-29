@@ -9,6 +9,8 @@ interface PriorityPanelProps {
   onContactClick: (contact: ContactWithActivity) => void;
   showGoals: boolean;
   showNotepad: boolean;
+  panelOrder?: string[];
+  showPriority?: boolean;
 }
 
 const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: string; borderColor: string }> = {
@@ -19,7 +21,7 @@ const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: s
   5: { label: 'Lowest', color: 'text-gray-700', bgColor: 'bg-gray-50', borderColor: 'border-gray-200' },
 };
 
-export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad }: PriorityPanelProps) {
+export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad, panelOrder = ['notes', 'goals', 'priority'], showPriority = false }: PriorityPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [selectedPriority, setSelectedPriority] = useState<number | null>(null);
 
@@ -80,8 +82,25 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
 
   const calculateTopPosition = () => {
     let top = 80;
-    if (showNotepad) top += 384 + 16;
-    if (showGoals) top += 496 + 16;
+    const myIndex = panelOrder.indexOf('priority');
+    const PANEL_SPACING = 40;
+    const PANEL_SIZES = {
+      notes: 384,
+      goals: 496,
+      priority: 0
+    };
+
+    for (let i = 0; i < myIndex; i++) {
+      const panelId = panelOrder[i];
+      if (panelId === 'notes' && showNotepad) {
+        top += PANEL_SIZES.notes + PANEL_SPACING;
+      } else if (panelId === 'goals' && showGoals) {
+        top += PANEL_SIZES.goals + PANEL_SPACING;
+      } else if (panelId === 'priority' && showPriority) {
+        top += PANEL_SIZES.priority + PANEL_SPACING;
+      }
+    }
+
     return top;
   };
 

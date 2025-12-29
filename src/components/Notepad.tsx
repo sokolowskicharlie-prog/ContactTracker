@@ -15,9 +15,12 @@ interface NotepadProps {
   showGoals: boolean;
   contacts?: Contact[];
   onSaveToNotesSection?: (title: string, content: string, contactId?: string) => Promise<void>;
+  panelOrder?: string[];
+  showNotepad?: boolean;
+  showPriority?: boolean;
 }
 
-export default function Notepad({ isOpen, onClose, content, onSave, showGoals, contacts = [], onSaveToNotesSection }: NotepadProps) {
+export default function Notepad({ isOpen, onClose, content, onSave, showGoals, contacts = [], onSaveToNotesSection, panelOrder = ['notes', 'goals', 'priority'], showNotepad = false, showPriority = false }: NotepadProps) {
   const [noteContent, setNoteContent] = useState(content);
   const [isSaving, setIsSaving] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -54,8 +57,32 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
 
   if (!isOpen) return null;
 
+  const calculateTopPosition = () => {
+    let top = 80;
+    const myIndex = panelOrder.indexOf('notes');
+    const PANEL_SPACING = 40;
+    const PANEL_SIZES = {
+      notes: 384,
+      goals: 496,
+      priority: 0
+    };
+
+    for (let i = 0; i < myIndex; i++) {
+      const panelId = panelOrder[i];
+      if (panelId === 'notes' && showNotepad) {
+        top += PANEL_SIZES.notes + PANEL_SPACING;
+      } else if (panelId === 'goals' && showGoals) {
+        top += PANEL_SIZES.goals + PANEL_SPACING;
+      } else if (panelId === 'priority' && showPriority) {
+        top += PANEL_SIZES.priority + PANEL_SPACING;
+      }
+    }
+
+    return top;
+  };
+
   return (
-    <div className="fixed top-20 right-4 z-40 w-80">
+    <div className="fixed right-4 z-40 w-80" style={{ top: `${calculateTopPosition()}px` }}>
       <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">

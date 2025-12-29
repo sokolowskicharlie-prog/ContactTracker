@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp } from 'lucide-react';
+import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import AuthForm from './components/AuthForm';
 import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, Task, TaskWithRelated, Contact, DailyGoal } from './lib/supabase';
@@ -25,6 +25,7 @@ import TaskModal from './components/TaskModal';
 import TaskList from './components/TaskList';
 import CommunicationsHistory from './components/CommunicationsHistory';
 import ButtonOrderSettings from './components/ButtonOrderSettings';
+import PanelOrderSettings from './components/PanelOrderSettings';
 import MultiSelectDropdown from './components/MultiSelectDropdown';
 import AccountSettings from './components/AccountSettings';
 import DuplicatesModal from './components/DuplicatesModal';
@@ -158,6 +159,7 @@ function App() {
   const [allDeals, setAllDeals] = useState<FuelDeal[]>([]);
   const [completedGoals, setCompletedGoals] = useState<DailyGoal[]>([]);
   const [showButtonOrderSettings, setShowButtonOrderSettings] = useState(false);
+  const [showPanelOrderSettings, setShowPanelOrderSettings] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
   const [showGoalProgressBox, setShowGoalProgressBox] = useState(() => {
@@ -169,6 +171,7 @@ function App() {
   const [noteContent, setNoteContent] = useState('');
   const [noteId, setNoteId] = useState<string | undefined>();
   const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact']);
+  const [panelOrder, setPanelOrder] = useState<string[]>(['notes', 'goals', 'priority']);
   const { user, loading: authLoading, signOut } = useAuth();
 
   useEffect(() => {
@@ -1984,7 +1987,7 @@ function App() {
     try {
       const { data, error } = await supabase
         .from('user_preferences')
-        .select('button_order, visible_filters')
+        .select('button_order, visible_filters, panel_order')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -1995,6 +1998,9 @@ function App() {
         }
         if (data.visible_filters) {
           setVisibleFilters(data.visible_filters as typeof visibleFilters);
+        }
+        if (data.panel_order) {
+          setPanelOrder(data.panel_order);
         }
       }
     } catch (error) {
@@ -2028,6 +2034,35 @@ function App() {
       setButtonOrder(order);
     } catch (error) {
       console.error('Error saving button order:', error);
+    }
+  };
+
+  const handleSavePanelOrder = async (order: string[]) => {
+    try {
+      const { data: existing } = await supabase
+        .from('user_preferences')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('user_preferences')
+          .update({ panel_order: order })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_preferences')
+          .insert([{ user_id: user.id, panel_order: order }]);
+
+        if (error) throw error;
+      }
+
+      setPanelOrder(order);
+    } catch (error) {
+      console.error('Error saving panel order:', error);
     }
   };
 
@@ -2198,6 +2233,13 @@ function App() {
         >
           <ArrowUpDown className="w-5 h-5" />
         </button>
+        <button
+          onClick={() => setShowPanelOrderSettings(true)}
+          className="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+          title="Panel Order"
+        >
+          <Layers className="w-5 h-5" />
+        </button>
         {buttonOrder.map(id => buttonComponents[id]).filter(Boolean)}
       </div>
     );
@@ -2218,7 +2260,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <GlobalGoalNotifications />
-      {showGoalProgressBox && <GoalProgressBox onSelectContact={handleSelectContactFromGoals} onLogCall={handleLogCallFromSchedule} onLogEmail={handleLogEmailFromSchedule} showNotepad={showNotepad} />}
+      {showGoalProgressBox && <GoalProgressBox onSelectContact={handleSelectContactFromGoals} onLogCall={handleLogCallFromSchedule} onLogEmail={handleLogEmailFromSchedule} showNotepad={showNotepad} panelOrder={panelOrder} showGoals={showGoalProgressBox} showPriority={showPriorityPanel} />}
       <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -3302,6 +3344,14 @@ function App() {
         />
       )}
 
+      {showPanelOrderSettings && (
+        <PanelOrderSettings
+          currentOrder={panelOrder}
+          onClose={() => setShowPanelOrderSettings(false)}
+          onSave={handleSavePanelOrder}
+        />
+      )}
+
       {showDuplicatesModal && (
         <DuplicatesModal
           contacts={contacts}
@@ -3334,6 +3384,9 @@ function App() {
         onSave={handleSaveNote}
         showGoals={showGoalProgressBox}
         contacts={contacts}
+        panelOrder={panelOrder}
+        showNotepad={showNotepad}
+        showPriority={showPriorityPanel}
         onSaveToNotesSection={async (title: string, content: string, contactId?: string) => {
           if (!user) return;
           try {
@@ -3362,6 +3415,8 @@ function App() {
         onContactClick={handleContactClick}
         showGoals={showGoalProgressBox}
         showNotepad={showNotepad}
+        panelOrder={panelOrder}
+        showPriority={showPriorityPanel}
       />
     </div>
   );
