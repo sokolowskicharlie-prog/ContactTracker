@@ -2898,7 +2898,7 @@ function App() {
               onEditSupplier={handleEditSupplier}
             />
           )
-        ) : (
+        ) : currentPage === 'tasks' ? (
           <>
             <DailyGoals
               calls={contacts.flatMap(c => c.calls)}
@@ -2920,9 +2920,7 @@ function App() {
               onEditTask={handleEditTask}
             />
           </>
-        )}
-
-        {currentPage === 'notes' && (
+        ) : currentPage === 'notes' ? (
           <NotesSection
             notes={savedNotes}
             contacts={contacts}
@@ -2930,7 +2928,7 @@ function App() {
             onEditNote={handleEditSavedNote}
             onDeleteNote={handleDeleteSavedNote}
           />
-        )}
+        ) : null}
       </div>
 
       {showContactModal && (
