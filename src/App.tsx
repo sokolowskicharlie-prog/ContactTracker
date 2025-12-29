@@ -34,6 +34,8 @@ import GlobalGoalNotifications from './components/GlobalGoalNotifications';
 import GoalProgressBox from './components/GoalProgressBox';
 import BulkSearchModal from './components/BulkSearchModal';
 import Notepad from './components/Notepad';
+import NotesSection from './components/NotesSection';
+import NoteModal from './components/NoteModal';
 
 interface NotificationSettings {
   id?: string;
@@ -42,8 +44,18 @@ interface NotificationSettings {
   enabled: boolean;
 }
 
+interface SavedNote {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  contact_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 function App() {
-  const [currentPage, setCurrentPage] = useState<'contacts' | 'suppliers' | 'tasks'>('contacts');
+  const [currentPage, setCurrentPage] = useState<'contacts' | 'suppliers' | 'tasks' | 'notes'>('contacts');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [contacts, setContacts] = useState<ContactWithActivity[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<ContactWithActivity[]>([]);
@@ -131,6 +143,9 @@ function App() {
   const [tasks, setTasks] = useState<TaskWithRelated[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<TaskWithRelated[]>([]);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [savedNotes, setSavedNotes] = useState<SavedNote[]>([]);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [editingNote, setEditingNote] = useState<SavedNote | undefined>();
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [taskFilter, setTaskFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [preselectedContactId, setPreselectedContactId] = useState<string | undefined>();
@@ -160,6 +175,7 @@ function App() {
     loadTasks();
     loadButtonOrder();
     loadNotes();
+    loadSavedNotes();
   }, []);
 
   useEffect(() => {
@@ -1013,6 +1029,81 @@ function App() {
     } catch (error) {
       console.error('Error saving note:', error);
     }
+  };
+
+  const loadSavedNotes = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('saved_notes')
+        .select('*')
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      setSavedNotes(data || []);
+    } catch (error) {
+      console.error('Error loading saved notes:', error);
+    }
+  };
+
+  const handleSaveSavedNote = async (note: Partial<SavedNote>) => {
+    if (!user) return;
+    try {
+      if (note.id) {
+        const { error } = await supabase
+          .from('saved_notes')
+          .update({
+            title: note.title,
+            content: note.content,
+            contact_id: note.contact_id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', note.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('saved_notes')
+          .insert([{
+            user_id: user.id,
+            title: note.title,
+            content: note.content,
+            contact_id: note.contact_id,
+          }]);
+
+        if (error) throw error;
+      }
+
+      await loadSavedNotes();
+      setShowNoteModal(false);
+      setEditingNote(undefined);
+    } catch (error) {
+      console.error('Error saving note:', error);
+    }
+  };
+
+  const handleDeleteSavedNote = async (noteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('saved_notes')
+        .delete()
+        .eq('id', noteId);
+
+      if (error) throw error;
+      await loadSavedNotes();
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
+  };
+
+  const handleAddNote = () => {
+    setEditingNote(undefined);
+    setShowNoteModal(true);
+  };
+
+  const handleEditSavedNote = (note: SavedNote) => {
+    setEditingNote(note);
+    setShowNoteModal(true);
   };
 
   const handleImportContacts = async (importedContacts: Partial<ContactWithActivity>[]) => {
@@ -2208,6 +2299,20 @@ function App() {
             <CheckSquare className="w-4 h-4" />
             Tasks
           </button>
+          <button
+            onClick={() => {
+              setCurrentPage('notes');
+              setSearchQuery('');
+            }}
+            className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+              currentPage === 'notes'
+                ? 'bg-amber-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <StickyNote className="w-4 h-4" />
+            Notes
+          </button>
         </div>
 
         <div className="mb-6 flex flex-col sm:flex-row gap-4">
@@ -2218,14 +2323,15 @@ function App() {
               placeholder={
                 currentPage === 'contacts' ? 'Search contacts...' :
                 currentPage === 'suppliers' ? 'Search suppliers...' :
-                'Search tasks...'
+                currentPage === 'tasks' ? 'Search tasks...' :
+                'Search notes...'
               }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
             />
           </div>
-          {currentPage !== 'tasks' && (
+          {currentPage !== 'tasks' && currentPage !== 'notes' && (
             <div className="flex gap-2 bg-white rounded-lg p-1 shadow-sm border border-gray-200">
               <button
                 onClick={() => setViewMode('grid')}
@@ -2291,7 +2397,7 @@ function App() {
                 Add Supplier
               </button>
             </div>
-          ) : (
+          ) : currentPage === 'tasks' ? (
             <button
               onClick={() => {
                 setEditingTask(undefined);
@@ -2301,6 +2407,14 @@ function App() {
             >
               <Plus className="w-5 h-5" />
               Add Task
+            </button>
+          ) : (
+            <button
+              onClick={handleAddNote}
+              className="px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+            >
+              <Plus className="w-5 h-5" />
+              New Note
             </button>
           )}
         </div>
@@ -2807,6 +2921,16 @@ function App() {
             />
           </>
         )}
+
+        {currentPage === 'notes' && (
+          <NotesSection
+            notes={savedNotes}
+            contacts={contacts}
+            onAddNote={handleAddNote}
+            onEditNote={handleEditSavedNote}
+            onDeleteNote={handleDeleteSavedNote}
+          />
+        )}
       </div>
 
       {showContactModal && (
@@ -3048,6 +3172,19 @@ function App() {
             setPreselectedSupplierId(undefined);
           }}
           onSave={handleSaveTask}
+        />
+      )}
+
+      {showNoteModal && (
+        <NoteModal
+          isOpen={showNoteModal}
+          note={editingNote}
+          contacts={contacts}
+          onClose={() => {
+            setShowNoteModal(false);
+            setEditingNote(undefined);
+          }}
+          onSave={handleSaveSavedNote}
         />
       )}
 
