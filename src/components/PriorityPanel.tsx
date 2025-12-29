@@ -146,6 +146,12 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
                                     {getStatusIcon(contact)}
                                   </div>
 
+                                  {getStatusNote(contact) && (
+                                    <div className="mb-2 p-2 bg-gray-50 rounded text-xs text-gray-700 border border-gray-200">
+                                      <p className="italic">{getStatusNote(contact)}</p>
+                                    </div>
+                                  )}
+
                                   {contact.company && (
                                     <div className="flex items-center text-xs text-gray-600 mb-0.5">
                                       <Building2 className="w-3 h-3 mr-1 flex-shrink-0" />
@@ -164,12 +170,6 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
                                     <div className="flex items-center text-xs text-gray-600">
                                       <Mail className="w-3 h-3 mr-1 flex-shrink-0" />
                                       <span className="truncate">{contact.email}</span>
-                                    </div>
-                                  )}
-
-                                  {getStatusNote(contact) && (
-                                    <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-700 border border-gray-200">
-                                      <p className="italic">{getStatusNote(contact)}</p>
                                     </div>
                                   )}
 
