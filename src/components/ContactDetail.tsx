@@ -47,6 +47,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
   const [jammedAdditionalNote, setJammedAdditionalNote] = useState('');
   const [tractionAdditionalNote, setTractionAdditionalNote] = useState('');
   const [clientAdditionalNote, setClientAdditionalNote] = useState('');
+  const [priorityRank, setPriorityRank] = useState<string>(contact.priority_rank?.toString() || '');
   const [followUpDate, setFollowUpDate] = useState(contact.follow_up_date || '');
 
   const jammedReasons = [
@@ -146,6 +147,14 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
     return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const savePriorityRank = async () => {
+    const updatedContact = {
+      ...contact,
+      priority_rank: priorityRank ? parseInt(priorityRank) : null
+    };
+    await onEditContact(updatedContact);
+  };
+
   const saveFollowUpDate = async () => {
     const updatedContact = {
       ...contact,
@@ -194,6 +203,36 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
               >
                 <Edit2 className="w-4 h-4" />
               </button>
+            </div>
+            {/* Priority Rank */}
+            <div className="mb-3 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-gray-500" />
+              <label className="text-sm font-medium text-gray-700">Priority:</label>
+              <select
+                value={priorityRank}
+                onChange={(e) => setPriorityRank(e.target.value)}
+                onBlur={savePriorityRank}
+                className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">No Priority</option>
+                <option value="1">1 - Highest</option>
+                <option value="2">2 - High</option>
+                <option value="3">3 - Medium</option>
+                <option value="4">4 - Low</option>
+                <option value="5">5 - Lowest</option>
+              </select>
+              {priorityRank && (
+                <button
+                  onClick={() => {
+                    setPriorityRank('');
+                    onEditContact({ ...contact, priority_rank: null });
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                  title="Clear priority rank"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
             {/* Follow-up Date */}
             <div className="mb-3 flex items-center gap-2">
