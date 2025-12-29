@@ -2946,6 +2946,7 @@ function App() {
         <ContactDetail
           contact={selectedContact}
           tasks={tasks.filter(t => t.contact_id === selectedContact.id)}
+          notes={savedNotes.filter(n => n.contact_id === selectedContact.id)}
           onClose={() => {
             setShowContactDetail(false);
             setSelectedContact(undefined);
@@ -2997,6 +2998,8 @@ function App() {
           onToggleTaskComplete={handleToggleTaskComplete}
           onEditTask={handleEditTask}
           onDeleteTask={handleDeleteTask}
+          onEditNote={handleEditSavedNote}
+          onDeleteNote={handleDeleteSavedNote}
         />
       )}
 

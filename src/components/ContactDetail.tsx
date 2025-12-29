@@ -1,9 +1,19 @@
-import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, Edit2 } from 'lucide-react';
+import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, Edit2, StickyNote } from 'lucide-react';
 import { ContactWithActivity, Vessel, FuelDeal, Call, Email, TaskWithRelated } from '../lib/supabase';
+
+interface SavedNote {
+  id: string;
+  title: string;
+  content: string;
+  contact_id?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface ContactDetailProps {
   contact: ContactWithActivity;
   tasks: TaskWithRelated[];
+  notes: SavedNote[];
   onClose: () => void;
   onEdit: () => void;
   onLogCall: () => void;
@@ -23,9 +33,11 @@ interface ContactDetailProps {
   onToggleTaskComplete: (taskId: string, completed: boolean) => void;
   onEditTask: (task: TaskWithRelated) => void;
   onDeleteTask: (taskId: string) => void;
+  onEditNote: (note: SavedNote) => void;
+  onDeleteNote: (noteId: string) => void;
 }
 
-export default function ContactDetail({ contact, tasks, onClose, onEdit, onLogCall, onLogEmail, onEditCall, onEditEmail, onDeleteCall, onDeleteEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask }: ContactDetailProps) {
+export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, onLogCall, onLogEmail, onEditCall, onEditEmail, onDeleteCall, onDeleteEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask, onEditNote, onDeleteNote }: ContactDetailProps) {
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       month: 'short',
@@ -788,6 +800,79 @@ export default function ContactDetail({ contact, tasks, onClose, onEdit, onLogCa
                 <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
                   <Mail className="w-10 h-10 mx-auto mb-2 opacity-20" />
                   <p>No emails logged yet</p>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <StickyNote className="w-5 h-5" />
+                  Notes ({notes.length})
+                </h3>
+              </div>
+
+              {notes.length > 0 ? (
+                <div className="space-y-3">
+                  {notes
+                    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+                    .map((note) => (
+                      <div
+                        key={note.id}
+                        className="bg-white border border-amber-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="font-semibold text-gray-900 mb-1">{note.title}</h4>
+                            <div className="flex items-center gap-3 text-xs text-gray-500">
+                              <div className="flex items-center">
+                                <Calendar className="w-3.5 h-3.5 mr-1" />
+                                Updated: {new Date(note.updated_at).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                })}
+                              </div>
+                              <div className="flex items-center">
+                                <Clock className="w-3.5 h-3.5 mr-1" />
+                                {new Date(note.updated_at).toLocaleTimeString('en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => onEditNote(note)}
+                              className="p-1 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
+                              title="Edit note"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm('Are you sure you want to delete this note?')) {
+                                  onDeleteNote(note.id);
+                                }
+                              }}
+                              className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                              title="Delete note"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        {note.content && (
+                          <p className="text-gray-700 text-sm whitespace-pre-wrap">{note.content}</p>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                  <StickyNote className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                  <p>No notes attached to this contact</p>
                 </div>
               )}
             </div>
