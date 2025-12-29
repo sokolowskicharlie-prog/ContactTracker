@@ -43,6 +43,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
   const [expandedStatusNote, setExpandedStatusNote] = useState<'jammed' | 'client' | 'traction' | null>(null);
   const [statusNoteValue, setStatusNoteValue] = useState('');
   const [jammedReason, setJammedReason] = useState('');
+  const [jammedAdditionalNote, setJammedAdditionalNote] = useState('');
   const [followUpDate, setFollowUpDate] = useState(contact.follow_up_date || '');
 
   const jammedReasons = [
@@ -68,6 +69,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
         } else {
           setJammedReason('');
         }
+        setJammedAdditionalNote(contact.jammed_additional_note || '');
       }
     }
   };
@@ -79,10 +81,15 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
       noteValue = jammedReason;
     }
 
-    const updatedContact = {
+    const updatedContact: any = {
       ...contact,
       [`${type}_note`]: noteValue
     };
+
+    if (type === 'jammed') {
+      updatedContact.jammed_additional_note = jammedAdditionalNote;
+    }
+
     await onEditContact(updatedContact);
     setExpandedStatusNote(null);
   };
@@ -324,6 +331,19 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                         value={statusNoteValue}
                         onChange={(e) => setStatusNoteValue(e.target.value)}
                       />
+                    )}
+
+                    {jammedReason && (
+                      <div className="mt-3">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Additional Notes</label>
+                        <textarea
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          rows={2}
+                          placeholder="Add any additional details..."
+                          value={jammedAdditionalNote}
+                          onChange={(e) => setJammedAdditionalNote(e.target.value)}
+                        />
+                      </div>
                     )}
                   </>
                 ) : (
