@@ -20,6 +20,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'name', label: 'Name', visible: true, width: 150 },
   { id: 'company', label: 'Company', visible: true, width: 150 },
   { id: 'companySize', label: 'Company Size', visible: true, width: 120 },
+  { id: 'priority', label: 'Priority', visible: true, width: 80 },
   { id: 'contactInfo', label: 'Contact Info', visible: true, width: 200 },
   { id: 'location', label: 'Location', visible: true, width: 150 },
   { id: 'status', label: 'Status', visible: true, width: 120 },
@@ -231,6 +232,15 @@ export default function ContactTableView({
         return <div className="text-sm text-gray-900 truncate">{contact.company || '-'}</div>;
       case 'companySize':
         return <div className="text-sm text-gray-600 truncate">{contact.company_size || '-'}</div>;
+      case 'priority':
+        return contact.priority_rank ? (
+          <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium w-fit">
+            <TrendingUp className="w-3 h-3" />
+            P{contact.priority_rank}
+          </div>
+        ) : (
+          <div className="text-sm text-gray-400">-</div>
+        );
       case 'contactInfo':
         return (
           <div className="flex flex-col gap-1">
