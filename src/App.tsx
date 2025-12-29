@@ -635,9 +635,18 @@ function App() {
 
   const handleUpdateContactStatus = async (contactId: string, statusField: 'is_jammed' | 'has_traction' | 'is_client', value: boolean) => {
     try {
+      const updateData: any = { [statusField]: value };
+
+      if (value) {
+        const dateField = statusField === 'is_jammed' ? 'jammed_date'
+          : statusField === 'has_traction' ? 'traction_date'
+          : 'client_date';
+        updateData[dateField] = new Date().toISOString();
+      }
+
       const { error } = await supabase
         .from('contacts')
-        .update({ [statusField]: value })
+        .update(updateData)
         .eq('id', contactId);
 
       if (error) throw error;

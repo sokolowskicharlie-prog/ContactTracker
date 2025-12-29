@@ -28,6 +28,10 @@ export type Contact = {
   is_jammed?: boolean;
   has_traction?: boolean;
   is_client?: boolean;
+  jammed_date?: string;
+  traction_date?: string;
+  client_date?: string;
+  follow_up_date?: string;
   last_called?: string;
   last_emailed?: string;
   created_at: string;

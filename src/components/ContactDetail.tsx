@@ -43,6 +43,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
   const [expandedStatusNote, setExpandedStatusNote] = useState<'jammed' | 'client' | 'traction' | null>(null);
   const [statusNoteValue, setStatusNoteValue] = useState('');
   const [jammedReason, setJammedReason] = useState('');
+  const [followUpDate, setFollowUpDate] = useState(contact.follow_up_date || '');
 
   const jammedReasons = [
     'Direct with suppliers',
@@ -118,6 +119,19 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const formatShortDate = (dateString?: string) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const saveFollowUpDate = async () => {
+    const updatedContact = {
+      ...contact,
+      follow_up_date: followUpDate || null
+    };
+    await onEditContact(updatedContact);
+  };
+
   const getTaskTypeLabel = (taskType: string) => {
     switch (taskType) {
       case 'call_back':
@@ -159,71 +173,111 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                 <Edit2 className="w-4 h-4" />
               </button>
             </div>
+            {/* Follow-up Date */}
+            <div className="mb-3 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-gray-500" />
+              <label className="text-sm font-medium text-gray-700">Follow-up:</label>
+              <input
+                type="date"
+                value={followUpDate ? new Date(followUpDate).toISOString().split('T')[0] : ''}
+                onChange={(e) => setFollowUpDate(e.target.value ? new Date(e.target.value).toISOString() : '')}
+                onBlur={saveFollowUpDate}
+                className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              {followUpDate && (
+                <button
+                  onClick={() => {
+                    setFollowUpDate('');
+                    onEditContact({ ...contact, follow_up_date: null });
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                  title="Clear follow-up date"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
             <div className="flex gap-2 flex-wrap">
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => onUpdateStatus('has_traction', !contact.has_traction)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                    contact.has_traction
-                      ? 'bg-yellow-400 text-yellow-900 border border-yellow-500'
-                      : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
-                  }`}
-                >
-                  <Star className={`w-4 h-4 ${contact.has_traction ? 'fill-yellow-900' : ''}`} />
-                  Traction
-                </button>
-                {contact.has_traction && (
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1">
                   <button
-                    onClick={() => toggleStatusNote('traction')}
-                    className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-                    title="Add/edit traction note"
+                    onClick={() => onUpdateStatus('has_traction', !contact.has_traction)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                      contact.has_traction
+                        ? 'bg-yellow-400 text-yellow-900 border border-yellow-500'
+                        : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                    }`}
                   >
-                    <StickyNote className="w-4 h-4 text-gray-600" />
+                    <Star className={`w-4 h-4 ${contact.has_traction ? 'fill-yellow-900' : ''}`} />
+                    Traction
                   </button>
+                  {contact.has_traction && (
+                    <button
+                      onClick={() => toggleStatusNote('traction')}
+                      className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                      title="Add/edit traction note"
+                    >
+                      <StickyNote className="w-4 h-4 text-gray-600" />
+                    </button>
+                  )}
+                </div>
+                {contact.has_traction && contact.traction_date && (
+                  <span className="text-xs text-gray-500 ml-1">Marked: {formatShortDate(contact.traction_date)}</span>
                 )}
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => onUpdateStatus('is_client', !contact.is_client)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                    contact.is_client
-                      ? 'bg-green-500 text-white border border-green-600'
-                      : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
-                  }`}
-                >
-                  <Check className="w-4 h-4" />
-                  Client
-                </button>
-                {contact.is_client && (
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1">
                   <button
-                    onClick={() => toggleStatusNote('client')}
-                    className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-                    title="Add/edit client note"
+                    onClick={() => onUpdateStatus('is_client', !contact.is_client)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                      contact.is_client
+                        ? 'bg-green-500 text-white border border-green-600'
+                        : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                    }`}
                   >
-                    <StickyNote className="w-4 h-4 text-gray-600" />
+                    <Check className="w-4 h-4" />
+                    Client
                   </button>
+                  {contact.is_client && (
+                    <button
+                      onClick={() => toggleStatusNote('client')}
+                      className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                      title="Add/edit client note"
+                    >
+                      <StickyNote className="w-4 h-4 text-gray-600" />
+                    </button>
+                  )}
+                </div>
+                {contact.is_client && contact.client_date && (
+                  <span className="text-xs text-gray-500 ml-1">Marked: {formatShortDate(contact.client_date)}</span>
                 )}
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => onUpdateStatus('is_jammed', !contact.is_jammed)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                    contact.is_jammed
-                      ? 'bg-red-500 text-white border border-red-600'
-                      : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
-                  }`}
-                >
-                  <XCircle className="w-4 h-4" />
-                  Jammed
-                </button>
-                {contact.is_jammed && (
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1">
                   <button
-                    onClick={() => toggleStatusNote('jammed')}
-                    className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-                    title="Add/edit jammed note"
+                    onClick={() => onUpdateStatus('is_jammed', !contact.is_jammed)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                      contact.is_jammed
+                        ? 'bg-red-500 text-white border border-red-600'
+                        : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                    }`}
                   >
-                    <StickyNote className="w-4 h-4 text-gray-600" />
+                    <XCircle className="w-4 h-4" />
+                    Jammed
                   </button>
+                  {contact.is_jammed && (
+                    <button
+                      onClick={() => toggleStatusNote('jammed')}
+                      className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                      title="Add/edit jammed note"
+                    >
+                      <StickyNote className="w-4 h-4 text-gray-600" />
+                    </button>
+                  )}
+                </div>
+                {contact.is_jammed && contact.jammed_date && (
+                  <span className="text-xs text-gray-500 ml-1">Marked: {formatShortDate(contact.jammed_date)}</span>
                 )}
               </div>
             </div>
