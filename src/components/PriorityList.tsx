@@ -83,6 +83,19 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
     return null;
   };
 
+  const getStatusNote = (contact: ContactWithActivity) => {
+    if (contact.is_client && contact.client_additional_note) {
+      return contact.client_additional_note;
+    }
+    if (contact.has_traction && contact.traction_additional_note) {
+      return contact.traction_additional_note;
+    }
+    if (contact.is_jammed && contact.jammed_additional_note) {
+      return contact.jammed_additional_note;
+    }
+    return null;
+  };
+
   const totalPriorityContacts = contacts.filter(c => c.priority_rank && c.priority_rank >= 1 && c.priority_rank <= 5).length;
   const displayedCount = priorityContacts.length;
 
@@ -221,6 +234,12 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
                         <h4 className="text-lg font-semibold text-gray-900">{contact.name}</h4>
                         {getStatusIcon(contact)}
                       </div>
+
+                      {getStatusNote(contact) && (
+                        <div className="mb-3 p-2 bg-gray-50 rounded text-sm text-gray-700 border border-gray-200">
+                          <p className="italic">{getStatusNote(contact)}</p>
+                        </div>
+                      )}
 
                       <div className="space-y-1">
                         {contact.company && (
