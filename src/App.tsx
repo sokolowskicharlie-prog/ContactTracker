@@ -958,6 +958,8 @@ function App() {
           jammed_additional_note: contact.jammed_additional_note,
           traction_additional_note: contact.traction_additional_note,
           client_additional_note: contact.client_additional_note,
+          priority_rank: contact.priority_rank,
+          follow_up_date: contact.follow_up_date,
         })
         .eq('id', contact.id);
 
