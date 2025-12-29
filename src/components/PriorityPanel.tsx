@@ -13,6 +13,8 @@ interface PriorityPanelProps {
   showPriority?: boolean;
   notepadExpanded?: boolean;
   goalsExpanded?: boolean;
+  priorityExpanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
 const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: string; borderColor: string }> = {
@@ -23,8 +25,8 @@ const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: s
   5: { label: 'Lowest', color: 'text-gray-700', bgColor: 'bg-gray-50', borderColor: 'border-gray-200' },
 };
 
-export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad, panelOrder = ['notes', 'goals', 'priority'], showPriority = false, notepadExpanded = true, goalsExpanded = true }: PriorityPanelProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad, panelOrder = ['notes', 'goals', 'priority'], showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange }: PriorityPanelProps) {
+  const [isExpanded, setIsExpanded] = useState(priorityExpanded);
   const [selectedPriority, setSelectedPriority] = useState<number | null>(null);
 
   if (!isOpen) return null;
@@ -91,7 +93,8 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
       notesCollapsed: 52,
       goalsExpanded: 180,
       goalsCollapsed: 52,
-      priority: 0
+      priorityExpanded: 600,
+      priorityCollapsed: 52
     };
 
     for (let i = 0; i < myIndex; i++) {
@@ -103,7 +106,8 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
         const height = goalsExpanded ? PANEL_SIZES.goalsExpanded : PANEL_SIZES.goalsCollapsed;
         top += height + PANEL_SPACING;
       } else if (panelId === 'priority' && showPriority) {
-        top += PANEL_SIZES.priority + PANEL_SPACING;
+        const height = isExpanded ? PANEL_SIZES.priorityExpanded : PANEL_SIZES.priorityCollapsed;
+        top += height + PANEL_SPACING;
       }
     }
 
@@ -123,7 +127,13 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => {
+                const newExpanded = !isExpanded;
+                setIsExpanded(newExpanded);
+                if (onExpandedChange) {
+                  onExpandedChange(newExpanded);
+                }
+              }}
               className="p-1 hover:bg-white/20 rounded transition-colors"
               title={isExpanded ? 'Collapse' : 'Expand'}
             >

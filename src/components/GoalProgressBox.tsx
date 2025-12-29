@@ -13,10 +13,11 @@ interface GoalProgressBoxProps {
   showPriority?: boolean;
   notepadExpanded?: boolean;
   goalsExpanded?: boolean;
+  priorityExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
 }
 
-export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false, panelOrder = ['notes', 'goals', 'priority'], showGoals = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, onExpandedChange }: GoalProgressBoxProps) {
+export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false, panelOrder = ['notes', 'goals', 'priority'], showGoals = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange }: GoalProgressBoxProps) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
@@ -706,7 +707,8 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
       notesCollapsed: 52,
       goalsExpanded: 180,
       goalsCollapsed: 52,
-      priority: 0
+      priorityExpanded: 600,
+      priorityCollapsed: 52
     };
 
     for (let i = 0; i < myIndex; i++) {
@@ -718,7 +720,8 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
         const height = goalsExpanded ? PANEL_SIZES.goalsExpanded : PANEL_SIZES.goalsCollapsed;
         top += height + PANEL_SPACING;
       } else if (panelId === 'priority' && showPriority) {
-        top += PANEL_SIZES.priority + PANEL_SPACING;
+        const height = priorityExpanded ? PANEL_SIZES.priorityExpanded : PANEL_SIZES.priorityCollapsed;
+        top += height + PANEL_SPACING;
       }
     }
 
