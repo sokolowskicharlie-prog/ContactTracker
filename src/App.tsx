@@ -171,6 +171,7 @@ function App() {
   const [notepadExpanded, setNotepadExpanded] = useState(true);
   const [goalsExpanded, setGoalsExpanded] = useState(true);
   const [priorityExpanded, setPriorityExpanded] = useState(true);
+  const [hasGoals, setHasGoals] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [noteId, setNoteId] = useState<string | undefined>();
   const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact']);
@@ -2263,7 +2264,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <GlobalGoalNotifications />
-      {showGoalProgressBox && <GoalProgressBox onSelectContact={handleSelectContactFromGoals} onLogCall={handleLogCallFromSchedule} onLogEmail={handleLogEmailFromSchedule} showNotepad={showNotepad} panelOrder={panelOrder} showGoals={showGoalProgressBox} showPriority={showPriorityPanel} notepadExpanded={notepadExpanded} goalsExpanded={goalsExpanded} priorityExpanded={priorityExpanded} onExpandedChange={setGoalsExpanded} />}
+      {showGoalProgressBox && <GoalProgressBox onSelectContact={handleSelectContactFromGoals} onLogCall={handleLogCallFromSchedule} onLogEmail={handleLogEmailFromSchedule} showNotepad={showNotepad} panelOrder={panelOrder} showGoals={showGoalProgressBox && hasGoals} showPriority={showPriorityPanel} notepadExpanded={notepadExpanded} goalsExpanded={goalsExpanded} priorityExpanded={priorityExpanded} onExpandedChange={setGoalsExpanded} onHasGoalsChange={setHasGoals} />}
       <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -3385,7 +3386,7 @@ function App() {
         onClose={() => setShowNotepad(false)}
         content={noteContent}
         onSave={handleSaveNote}
-        showGoals={showGoalProgressBox}
+        showGoals={showGoalProgressBox && hasGoals}
         contacts={contacts}
         panelOrder={panelOrder}
         showNotepad={showNotepad}
@@ -3420,7 +3421,7 @@ function App() {
         onClose={() => setShowPriorityPanel(false)}
         contacts={contacts}
         onContactClick={handleContactClick}
-        showGoals={showGoalProgressBox}
+        showGoals={showGoalProgressBox && hasGoals}
         showNotepad={showNotepad}
         panelOrder={panelOrder}
         showPriority={showPriorityPanel}

@@ -15,9 +15,10 @@ interface GoalProgressBoxProps {
   goalsExpanded?: boolean;
   priorityExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  onHasGoalsChange?: (hasGoals: boolean) => void;
 }
 
-export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false, panelOrder = ['notes', 'goals', 'priority'], showGoals = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange }: GoalProgressBoxProps) {
+export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false, panelOrder = ['notes', 'goals', 'priority'], showGoals = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, onHasGoalsChange }: GoalProgressBoxProps) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
@@ -129,6 +130,12 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
       loadScheduledTasksForGoal(selectedGoal);
     }
   }, [selectedGoal]);
+
+  useEffect(() => {
+    if (onHasGoalsChange) {
+      onHasGoalsChange(goals.length > 0);
+    }
+  }, [goals, onHasGoalsChange]);
 
   const loadGoals = async () => {
     if (!user) return;
