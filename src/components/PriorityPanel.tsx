@@ -49,13 +49,28 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
 
   const getStatusNote = (contact: ContactWithActivity) => {
     if (contact.is_client && contact.client_additional_note) {
-      return contact.client_additional_note;
+      return {
+        text: contact.client_additional_note,
+        bgColor: 'bg-green-50',
+        borderColor: 'border-green-200',
+        textColor: 'text-gray-600'
+      };
     }
     if (contact.has_traction && contact.traction_additional_note) {
-      return contact.traction_additional_note;
+      return {
+        text: contact.traction_additional_note,
+        bgColor: 'bg-yellow-50',
+        borderColor: 'border-yellow-200',
+        textColor: 'text-gray-600'
+      };
     }
     if (contact.is_jammed && contact.jammed_additional_note) {
-      return contact.jammed_additional_note;
+      return {
+        text: contact.jammed_additional_note,
+        bgColor: 'bg-red-50',
+        borderColor: 'border-red-200',
+        textColor: 'text-gray-600'
+      };
     }
     return null;
   };
@@ -147,8 +162,8 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
                                   </div>
 
                                   {getStatusNote(contact) && (
-                                    <div className="mb-2 p-2 bg-gray-50 rounded text-xs text-gray-700 border border-gray-200">
-                                      <p className="italic">{getStatusNote(contact)}</p>
+                                    <div className={`mb-2 p-2 rounded text-xs border ${getStatusNote(contact)!.bgColor} ${getStatusNote(contact)!.borderColor} ${getStatusNote(contact)!.textColor}`}>
+                                      <p className="italic">{getStatusNote(contact)!.text}</p>
                                     </div>
                                   )}
 
