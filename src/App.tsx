@@ -3236,6 +3236,26 @@ function App() {
         content={noteContent}
         onSave={handleSaveNote}
         showGoals={showGoalProgressBox}
+        contacts={contacts}
+        onSaveToNotesSection={async (title: string, content: string, contactId?: string) => {
+          if (!user) return;
+          try {
+            const { error } = await supabase
+              .from('saved_notes')
+              .insert([{
+                user_id: user.id,
+                title,
+                content,
+                contact_id: contactId,
+              }]);
+
+            if (error) throw error;
+            await loadSavedNotes();
+          } catch (error) {
+            console.error('Error saving note to notes section:', error);
+            throw error;
+          }
+        }}
       />
     </div>
   );
