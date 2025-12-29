@@ -44,6 +44,8 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
   const [statusNoteValue, setStatusNoteValue] = useState('');
   const [jammedReason, setJammedReason] = useState('');
   const [jammedAdditionalNote, setJammedAdditionalNote] = useState('');
+  const [tractionAdditionalNote, setTractionAdditionalNote] = useState('');
+  const [clientAdditionalNote, setClientAdditionalNote] = useState('');
   const [followUpDate, setFollowUpDate] = useState(contact.follow_up_date || '');
 
   const jammedReasons = [
@@ -70,6 +72,10 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
           setJammedReason('');
         }
         setJammedAdditionalNote(contact.jammed_additional_note || '');
+      } else if (type === 'traction') {
+        setTractionAdditionalNote(contact.traction_additional_note || '');
+      } else if (type === 'client') {
+        setClientAdditionalNote(contact.client_additional_note || '');
       }
     }
   };
@@ -88,6 +94,10 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
 
     if (type === 'jammed') {
       updatedContact.jammed_additional_note = jammedAdditionalNote;
+    } else if (type === 'traction') {
+      updatedContact.traction_additional_note = tractionAdditionalNote;
+    } else if (type === 'client') {
+      updatedContact.client_additional_note = clientAdditionalNote;
     }
 
     await onEditContact(updatedContact);
@@ -347,16 +357,35 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                     )}
                   </>
                 ) : (
-                  <textarea
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    rows={3}
-                    placeholder={
-                      expandedStatusNote === 'traction' ? 'What traction does this contact have?' :
-                      'What makes this a client?'
-                    }
-                    value={statusNoteValue}
-                    onChange={(e) => setStatusNoteValue(e.target.value)}
-                  />
+                  <>
+                    <textarea
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      rows={3}
+                      placeholder={
+                        expandedStatusNote === 'traction' ? 'What traction does this contact have?' :
+                        'What makes this a client?'
+                      }
+                      value={statusNoteValue}
+                      onChange={(e) => setStatusNoteValue(e.target.value)}
+                    />
+
+                    <div className="mt-3">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Additional Notes</label>
+                      <textarea
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        rows={2}
+                        placeholder="Add any additional details..."
+                        value={expandedStatusNote === 'traction' ? tractionAdditionalNote : clientAdditionalNote}
+                        onChange={(e) => {
+                          if (expandedStatusNote === 'traction') {
+                            setTractionAdditionalNote(e.target.value);
+                          } else {
+                            setClientAdditionalNote(e.target.value);
+                          }
+                        }}
+                      />
+                    </div>
+                  </>
                 )}
 
                 <div className="flex gap-2 mt-3">

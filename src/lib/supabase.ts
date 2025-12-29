@@ -35,7 +35,9 @@ export type Contact = {
   jammed_note?: string;
   jammed_additional_note?: string;
   client_note?: string;
+  client_additional_note?: string;
   traction_note?: string;
+  traction_additional_note?: string;
   last_called?: string;
   last_emailed?: string;
   created_at: string;
