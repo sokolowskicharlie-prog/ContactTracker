@@ -131,6 +131,8 @@ function App() {
   const [sortBy, setSortBy] = useState<string>('name');
   const [activityDateFilter, setActivityDateFilter] = useState<string>('all');
   const [jammedReasonFilter, setJammedReasonFilter] = useState<string>('');
+  const [tractionReasonFilter, setTractionReasonFilter] = useState<string>('');
+  const [clientReasonFilter, setClientReasonFilter] = useState<string>('');
   const [statusFilters, setStatusFilters] = useState<{
     hasTraction: boolean;
     isClient: boolean;
@@ -294,6 +296,40 @@ function App() {
       });
     }
 
+    // Apply traction reason filter
+    if (tractionReasonFilter.trim()) {
+      const searchLower = tractionReasonFilter.toLowerCase();
+      filtered = filtered.filter((contact) => {
+        if (!contact.has_traction) return false;
+
+        // Check for "no reason" variations
+        const noReasonKeywords = ['[no reason]', 'no reason', 'nothing', 'none', 'empty', 'blank'];
+        if (noReasonKeywords.some(keyword => searchLower.includes(keyword))) {
+          return !contact.traction_note?.trim();
+        }
+
+        const tractionNote = contact.traction_note?.toLowerCase() || '';
+        return tractionNote.includes(searchLower);
+      });
+    }
+
+    // Apply client reason filter
+    if (clientReasonFilter.trim()) {
+      const searchLower = clientReasonFilter.toLowerCase();
+      filtered = filtered.filter((contact) => {
+        if (!contact.is_client) return false;
+
+        // Check for "no reason" variations
+        const noReasonKeywords = ['[no reason]', 'no reason', 'nothing', 'none', 'empty', 'blank'];
+        if (noReasonKeywords.some(keyword => searchLower.includes(keyword))) {
+          return !contact.client_note?.trim();
+        }
+
+        const clientNote = contact.client_note?.toLowerCase() || '';
+        return clientNote.includes(searchLower);
+      });
+    }
+
     // Apply activity date filter
     if (activityDateFilter !== 'all') {
       const now = new Date();
@@ -355,7 +391,7 @@ function App() {
     });
 
     setFilteredContacts(filtered);
-  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterCities, filterPostCodes, filterWebsites, filterAddresses, sortBy, statusFilters, activityDateFilter, jammedReasonFilter]);
+  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterCities, filterPostCodes, filterWebsites, filterAddresses, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter]);
 
   useEffect(() => {
     let filtered = [...suppliers];
@@ -2779,6 +2815,134 @@ function App() {
               </div>
             )}
 
+            {statusFilters.hasTraction && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search Traction Reasons
+                  <span className="ml-2 text-xs text-gray-500 font-normal">
+                    ({contacts.filter(c => c.has_traction).length} traction contacts)
+                  </span>
+                </label>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={tractionReasonFilter}
+                      onChange={(e) => setTractionReasonFilter(e.target.value)}
+                      placeholder="Search in traction notes..."
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {tractionReasonFilter && (
+                      <button
+                        onClick={() => setTractionReasonFilter('')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  {(() => {
+                    const reasonCounts = new Map<string, number>();
+                    contacts
+                      .filter(c => c.has_traction && c.traction_note)
+                      .forEach(c => {
+                        const trimmed = c.traction_note!.trim();
+                        reasonCounts.set(trimmed, (reasonCounts.get(trimmed) || 0) + 1);
+                      });
+
+                    const sortedReasons = Array.from(reasonCounts.entries())
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 10);
+
+                    return sortedReasons.length > 0 ? (
+                      <>
+                        <p className="text-xs text-gray-500">Common reasons (click to filter):</p>
+                        <div className="flex flex-wrap gap-2">
+                          {sortedReasons.map(([reason, count]) => (
+                            <button
+                              key={reason}
+                              onClick={() => setTractionReasonFilter(reason)}
+                              className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors flex items-center gap-1"
+                              title={reason}
+                            >
+                              <span>{reason.length > 30 ? `${reason.substring(0, 30)}...` : reason}</span>
+                              <span className="bg-green-200 px-1.5 rounded-full text-[10px] font-semibold">
+                                {count}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : null;
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {statusFilters.isClient && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search Client Reasons
+                  <span className="ml-2 text-xs text-gray-500 font-normal">
+                    ({contacts.filter(c => c.is_client).length} client contacts)
+                  </span>
+                </label>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={clientReasonFilter}
+                      onChange={(e) => setClientReasonFilter(e.target.value)}
+                      placeholder="Search in client notes..."
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {clientReasonFilter && (
+                      <button
+                        onClick={() => setClientReasonFilter('')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  {(() => {
+                    const reasonCounts = new Map<string, number>();
+                    contacts
+                      .filter(c => c.is_client && c.client_note)
+                      .forEach(c => {
+                        const trimmed = c.client_note!.trim();
+                        reasonCounts.set(trimmed, (reasonCounts.get(trimmed) || 0) + 1);
+                      });
+
+                    const sortedReasons = Array.from(reasonCounts.entries())
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 10);
+
+                    return sortedReasons.length > 0 ? (
+                      <>
+                        <p className="text-xs text-gray-500">Common reasons (click to filter):</p>
+                        <div className="flex flex-wrap gap-2">
+                          {sortedReasons.map(([reason, count]) => (
+                            <button
+                              key={reason}
+                              onClick={() => setClientReasonFilter(reason)}
+                              className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors flex items-center gap-1"
+                              title={reason}
+                            >
+                              <span>{reason.length > 30 ? `${reason.substring(0, 30)}...` : reason}</span>
+                              <span className="bg-blue-200 px-1.5 rounded-full text-[10px] font-semibold">
+                                {count}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : null;
+                  })()}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               {visibleFilters.name && (
                 <MultiSelectDropdown
@@ -2928,7 +3092,7 @@ function App() {
                 </select>
               </div>
             </div>
-          {(filterNames.length > 0 || filterCompanies.length > 0 || filterCompanySizes.length > 0 || filterEmails.length > 0 || filterPhones.length > 0 || filterCities.length > 0 || filterPostCodes.length > 0 || filterWebsites.length > 0 || filterAddresses.length > 0 || filterCountries.length > 0 || filterTimezones.length > 0 || statusFilters.hasTraction || statusFilters.isClient || statusFilters.isJammed || statusFilters.none || activityDateFilter !== 'all' || jammedReasonFilter.trim()) && (
+          {(filterNames.length > 0 || filterCompanies.length > 0 || filterCompanySizes.length > 0 || filterEmails.length > 0 || filterPhones.length > 0 || filterCities.length > 0 || filterPostCodes.length > 0 || filterWebsites.length > 0 || filterAddresses.length > 0 || filterCountries.length > 0 || filterTimezones.length > 0 || statusFilters.hasTraction || statusFilters.isClient || statusFilters.isJammed || statusFilters.none || activityDateFilter !== 'all' || jammedReasonFilter.trim() || tractionReasonFilter.trim() || clientReasonFilter.trim()) && (
             <div className="mt-3 flex items-center gap-2">
               <span className="text-sm text-gray-600">
                 Showing {filteredContacts.length} of {contacts.length} contacts
@@ -2949,6 +3113,8 @@ function App() {
                   setStatusFilters({ hasTraction: false, isClient: false, isJammed: false, none: false });
                   setActivityDateFilter('all');
                   setJammedReasonFilter('');
+                  setTractionReasonFilter('');
+                  setClientReasonFilter('');
                 }}
                 className="text-sm text-blue-600 hover:text-blue-800 underline"
               >
