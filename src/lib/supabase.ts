@@ -252,3 +252,11 @@ export type CallSchedule = {
   created_at: string;
   updated_at: string;
 };
+
+export type CustomJammedReason = {
+  id: string;
+  user_id: string;
+  reason: string;
+  display_order: number;
+  created_at: string;
+};

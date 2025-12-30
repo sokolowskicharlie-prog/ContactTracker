@@ -1,6 +1,6 @@
 import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, Edit2, StickyNote, AlertTriangle } from 'lucide-react';
-import { ContactWithActivity, Vessel, FuelDeal, Call, Email, TaskWithRelated } from '../lib/supabase';
-import { useState } from 'react';
+import { ContactWithActivity, Vessel, FuelDeal, Call, Email, TaskWithRelated, CustomJammedReason, supabase } from '../lib/supabase';
+import { useState, useEffect } from 'react';
 
 interface SavedNote {
   id: string;
@@ -49,13 +49,69 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
   const [clientAdditionalNote, setClientAdditionalNote] = useState('');
   const [priorityRank, setPriorityRank] = useState<string>(contact.priority_rank?.toString() || '');
   const [followUpDate, setFollowUpDate] = useState(contact.follow_up_date || '');
+  const [customJammedReasons, setCustomJammedReasons] = useState<CustomJammedReason[]>([]);
+  const [isAddingNewReason, setIsAddingNewReason] = useState(false);
+  const [newReasonText, setNewReasonText] = useState('');
 
-  const jammedReasons = [
+  const defaultJammedReasons = [
     'Direct with suppliers',
     'TC only',
     'They already have a set panel of traders',
     'Other'
   ];
+
+  const jammedReasons = [...defaultJammedReasons, ...customJammedReasons.map(r => r.reason)];
+
+  useEffect(() => {
+    loadCustomJammedReasons();
+  }, []);
+
+  const loadCustomJammedReasons = async () => {
+    const { data, error } = await supabase
+      .from('custom_jammed_reasons')
+      .select('*')
+      .order('display_order', { ascending: true });
+
+    if (error) {
+      console.error('Error loading custom jammed reasons:', error);
+      return;
+    }
+
+    setCustomJammedReasons(data || []);
+  };
+
+  const addNewCustomReason = async () => {
+    if (!newReasonText.trim()) return;
+
+    const maxOrder = customJammedReasons.length > 0
+      ? Math.max(...customJammedReasons.map(r => r.display_order))
+      : 0;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('custom_jammed_reasons')
+      .insert({
+        reason: newReasonText.trim(),
+        display_order: maxOrder + 1,
+        user_id: user.id
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding custom reason:', error);
+      return;
+    }
+
+    if (data) {
+      setCustomJammedReasons([...customJammedReasons, data]);
+      setJammedReason(data.reason);
+      setNewReasonText('');
+      setIsAddingNewReason(false);
+    }
+  };
 
   const toggleStatusNote = (type: 'jammed' | 'client' | 'traction') => {
     if (expandedStatusNote === type) {
@@ -378,6 +434,56 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                             </option>
                           ))}
                         </select>
+
+                        {!isAddingNewReason ? (
+                          <button
+                            type="button"
+                            onClick={() => setIsAddingNewReason(true)}
+                            className="mt-2 w-full px-3 py-2 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add Custom Reason
+                          </button>
+                        ) : (
+                          <div className="mt-2 space-y-2">
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Enter new reason..."
+                              value={newReasonText}
+                              onChange={(e) => setNewReasonText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  addNewCustomReason();
+                                } else if (e.key === 'Escape') {
+                                  setIsAddingNewReason(false);
+                                  setNewReasonText('');
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={addNewCustomReason}
+                                className="flex-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                Add
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsAddingNewReason(false);
+                                  setNewReasonText('');
+                                }}
+                                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
 
                         {jammedReason === 'Other' && (
                           <textarea
