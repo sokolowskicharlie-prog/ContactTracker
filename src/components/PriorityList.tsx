@@ -10,6 +10,7 @@ interface PriorityListProps {
 }
 
 const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: string; borderColor: string }> = {
+  0: { label: 'Client', color: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
   1: { label: 'Highest Priority', color: 'text-red-700', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
   2: { label: 'High Priority', color: 'text-orange-700', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
   3: { label: 'Medium Priority', color: 'text-yellow-700', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
@@ -23,10 +24,10 @@ type FilterStatus = 'all' | 'client' | 'traction' | 'jammed' | 'none';
 export default function PriorityList({ contacts, onContactClick, onEditContact, onDeleteContact }: PriorityListProps) {
   const [sortBy, setSortBy] = useState<SortOption>('priority');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
-  const [selectedPriorities, setSelectedPriorities] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [selectedPriorities, setSelectedPriorities] = useState<number[]>([0, 1, 2, 3, 4, 5]);
   const [showFilters, setShowFilters] = useState(false);
 
-  let priorityContacts = contacts.filter(c => c.priority_rank && c.priority_rank >= 1 && c.priority_rank <= 5);
+  let priorityContacts = contacts.filter(c => c.priority_rank !== null && c.priority_rank !== undefined && c.priority_rank >= 0 && c.priority_rank <= 5);
 
   priorityContacts = priorityContacts.filter(c => selectedPriorities.includes(c.priority_rank!));
 
@@ -42,7 +43,7 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
 
   const groupedByPriority: Record<number, ContactWithActivity[]> = {};
 
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 0; i <= 5; i++) {
     let contactsInPriority = priorityContacts.filter(c => c.priority_rank === i);
 
     if (sortBy === 'name') {
@@ -181,7 +182,7 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
           <div className="pt-4 border-t border-gray-200">
             <label className="text-sm font-medium text-gray-700 mb-2 block">Show Priority Levels:</label>
             <div className="flex flex-wrap gap-2">
-              {[1, 2, 3, 4, 5].map(priority => {
+              {[0, 1, 2, 3, 4, 5].map(priority => {
                 const config = PRIORITY_LABELS[priority];
                 const isSelected = selectedPriorities.includes(priority);
                 return (
@@ -194,7 +195,7 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
                         : 'bg-gray-100 text-gray-400 border border-gray-200'
                     }`}
                   >
-                    P{priority} - {config.label.replace(' Priority', '')}
+                    {priority === 0 ? 'C - Client' : `P${priority} - ${config.label.replace(' Priority', '')}`}
                   </button>
                 );
               })}
@@ -217,7 +218,7 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
         </div>
       ) : (
         <>
-          {[1, 2, 3, 4, 5].map(priority => {
+          {[0, 1, 2, 3, 4, 5].map(priority => {
             const contactsInPriority = groupedByPriority[priority];
             if (contactsInPriority.length === 0) return null;
 
@@ -228,7 +229,7 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
             <div className={`px-4 py-3 ${priorityConfig.bgColor} border-b ${priorityConfig.borderColor}`}>
               <div className="flex items-center justify-between">
                 <h3 className={`font-semibold ${priorityConfig.color} flex items-center gap-2`}>
-                  <span className="text-lg">{priority}</span>
+                  <span className="text-lg">{priority === 0 ? 'C' : priority}</span>
                   <span>{priorityConfig.label}</span>
                 </h3>
                 <span className="text-sm text-gray-600">
