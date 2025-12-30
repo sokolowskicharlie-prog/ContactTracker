@@ -160,7 +160,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
       setStatusNoteValue(currentNote);
 
       if (type === 'jammed') {
-        if (jammedReasons.slice(0, 3).includes(currentNote)) {
+        if (jammedReasons.includes(currentNote)) {
           setJammedReason(currentNote);
         } else if (currentNote) {
           setJammedReason('Other');
@@ -169,8 +169,22 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
         }
         setJammedAdditionalNote(contact.jammed_additional_note || '');
       } else if (type === 'traction') {
+        if (tractionReasons.includes(currentNote)) {
+          setTractionReason(currentNote);
+        } else if (currentNote) {
+          setTractionReason('Other');
+        } else {
+          setTractionReason('');
+        }
         setTractionAdditionalNote(contact.traction_additional_note || '');
       } else if (type === 'client') {
+        if (clientReasons.includes(currentNote)) {
+          setClientReason(currentNote);
+        } else if (currentNote) {
+          setClientReason('Other');
+        } else {
+          setClientReason('');
+        }
         setClientAdditionalNote(contact.client_additional_note || '');
       }
     }
@@ -181,6 +195,10 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
 
     if (type === 'jammed' && jammedReason && jammedReason !== 'Other') {
       noteValue = jammedReason;
+    } else if (type === 'traction' && tractionReason && tractionReason !== 'Other') {
+      noteValue = tractionReason;
+    } else if (type === 'client' && clientReason && clientReason !== 'Other') {
+      noteValue = clientReason;
     }
 
     const updatedContact: any = {
