@@ -23,6 +23,18 @@ export default function GlobalGoalNotifications() {
   const [notificationFrequency, setNotificationFrequency] = useState(30);
   const [inAppNotifications, setInAppNotifications] = useState<GoalProgress[]>([]);
   const [completedGoals, setCompletedGoals] = useState<Set<string>>(new Set());
+  const [customMessages, setCustomMessages] = useState({
+    behindSchedule: '⚠️ Behind Schedule',
+    goalAchieved: '🎉 Goal Completed!',
+    goalMissed: "⏰ Time's Up!",
+    motivational: {
+      excellent: "Outstanding! You're crushing it!",
+      good: "Great job! You hit your target!",
+      almost: "Almost there! Push a bit harder next time.",
+      halfWay: "Good effort, but you can do better!",
+      needsWork: "Time to step it up! You've got this!"
+    }
+  });
 
   useEffect(() => {
     if (user) {
@@ -58,11 +70,19 @@ export default function GlobalGoalNotifications() {
         })
         .subscribe();
 
+      const settingsSubscription = supabase
+        .channel('goal_notification_settings_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'goal_notification_settings', filter: `user_id=eq.${user.id}` }, () => {
+          loadNotificationSettings();
+        })
+        .subscribe();
+
       return () => {
         supabase.removeChannel(callsSubscription);
         supabase.removeChannel(emailsSubscription);
         supabase.removeChannel(dealsSubscription);
         supabase.removeChannel(goalsSubscription);
+        supabase.removeChannel(settingsSubscription);
       };
     }
   }, [user]);
@@ -154,18 +174,33 @@ export default function GlobalGoalNotifications() {
     if (!user) return;
 
     const { data, error } = await supabase
-      .from('user_preferences')
-      .select('enable_goal_notifications, goal_notification_frequency')
+      .from('goal_notification_settings')
+      .select('*')
       .eq('user_id', user.id)
       .maybeSingle();
 
     if (!error && data) {
       console.log('[GlobalGoalNotifications] Loaded settings:', {
-        enabled: data.enable_goal_notifications ?? true,
-        frequency: data.goal_notification_frequency ?? 30
+        enabled: data.enable_notifications ?? true,
+        frequency: data.notification_frequency ?? 30
       });
-      setEnableNotifications(data.enable_goal_notifications ?? true);
-      setNotificationFrequency(data.goal_notification_frequency ?? 30);
+      setEnableNotifications(data.enable_notifications ?? true);
+      setNotificationFrequency(data.notification_frequency ?? 30);
+
+      if (data.behind_schedule_message || data.goal_achieved_message || data.goal_missed_message || data.motivational_messages) {
+        setCustomMessages({
+          behindSchedule: data.behind_schedule_message || '⚠️ Behind Schedule',
+          goalAchieved: data.goal_achieved_message || '🎉 Goal Completed!',
+          goalMissed: data.goal_missed_message || "⏰ Time's Up!",
+          motivational: data.motivational_messages || {
+            excellent: "Outstanding! You're crushing it!",
+            good: "Great job! You hit your target!",
+            almost: "Almost there! Push a bit harder next time.",
+            halfWay: "Good effort, but you can do better!",
+            needsWork: "Time to step it up! You've got this!"
+          }
+        });
+      }
     } else {
       console.log('[GlobalGoalNotifications] Using default settings');
       setEnableNotifications(true);
@@ -315,13 +350,13 @@ export default function GlobalGoalNotifications() {
 
           const getMotivationalMessage = () => {
             if (achieved) {
-              if (percentage >= 150) return "Outstanding! You're crushing it!";
-              if (percentage >= 120) return "Excellent work! Keep this momentum going!";
-              return "Great job! You hit your target!";
+              if (percentage >= 150) return customMessages.motivational.excellent;
+              if (percentage >= 120) return customMessages.motivational.good;
+              return customMessages.motivational.good;
             } else {
-              if (percentage >= 80) return "Almost there! Push a bit harder next time.";
-              if (percentage >= 50) return "Good effort, but you can do better!";
-              return "Time to step it up! You've got this!";
+              if (percentage >= 80) return customMessages.motivational.almost;
+              if (percentage >= 50) return customMessages.motivational.halfWay;
+              return customMessages.motivational.needsWork;
             }
           };
 
@@ -339,7 +374,7 @@ export default function GlobalGoalNotifications() {
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
                     <h4 className={`font-semibold ${achieved ? 'text-green-900' : 'text-red-900'}`}>
-                      {achieved ? '🎉 Goal Completed!' : '⏰ Time\'s Up!'}
+                      {achieved ? customMessages.goalAchieved : customMessages.goalMissed}
                     </h4>
                     <button
                       onClick={() => {
@@ -392,7 +427,7 @@ export default function GlobalGoalNotifications() {
               <div className="text-3xl">{icon}</div>
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
-                  <h4 className="font-semibold text-yellow-900">⚠️ Behind Schedule</h4>
+                  <h4 className="font-semibold text-yellow-900">{customMessages.behindSchedule}</h4>
                   <button
                     onClick={() => {
                       setInAppNotifications(prev =>
