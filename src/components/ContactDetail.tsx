@@ -44,12 +44,16 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
   const [isEditingStatusNote, setIsEditingStatusNote] = useState(false);
   const [statusNoteValue, setStatusNoteValue] = useState('');
   const [jammedReason, setJammedReason] = useState('');
+  const [tractionReason, setTractionReason] = useState('');
+  const [clientReason, setClientReason] = useState('');
   const [jammedAdditionalNote, setJammedAdditionalNote] = useState('');
   const [tractionAdditionalNote, setTractionAdditionalNote] = useState('');
   const [clientAdditionalNote, setClientAdditionalNote] = useState('');
   const [priorityRank, setPriorityRank] = useState<string>(contact.priority_rank?.toString() || '');
   const [followUpDate, setFollowUpDate] = useState(contact.follow_up_date || '');
   const [customJammedReasons, setCustomJammedReasons] = useState<CustomJammedReason[]>([]);
+  const [customTractionReasons, setCustomTractionReasons] = useState<CustomJammedReason[]>([]);
+  const [customClientReasons, setCustomClientReasons] = useState<CustomJammedReason[]>([]);
   const [isAddingNewReason, setIsAddingNewReason] = useState(false);
   const [newReasonText, setNewReasonText] = useState('');
 
@@ -60,31 +64,53 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
     'Other'
   ];
 
+  const defaultTractionReasons = [
+    'In touch with bunker buyer',
+    'Need to pay more attention',
+    'Other'
+  ];
+
+  const defaultClientReasons = [
+    'In touch with bunker buyer',
+    'Need to pay more attention',
+    'Other'
+  ];
+
   const jammedReasons = [...defaultJammedReasons, ...customJammedReasons.map(r => r.reason)];
+  const tractionReasons = [...defaultTractionReasons, ...customTractionReasons.map(r => r.reason)];
+  const clientReasons = [...defaultClientReasons, ...customClientReasons.map(r => r.reason)];
 
   useEffect(() => {
-    loadCustomJammedReasons();
+    loadCustomReasons();
   }, []);
 
-  const loadCustomJammedReasons = async () => {
+  const loadCustomReasons = async () => {
     const { data, error } = await supabase
       .from('custom_jammed_reasons')
       .select('*')
       .order('display_order', { ascending: true });
 
     if (error) {
-      console.error('Error loading custom jammed reasons:', error);
+      console.error('Error loading custom reasons:', error);
       return;
     }
 
-    setCustomJammedReasons(data || []);
+    if (data) {
+      setCustomJammedReasons(data.filter(r => r.reason_type === 'jammed'));
+      setCustomTractionReasons(data.filter(r => r.reason_type === 'traction'));
+      setCustomClientReasons(data.filter(r => r.reason_type === 'client'));
+    }
   };
 
-  const addNewCustomReason = async () => {
+  const addNewCustomReason = async (reasonType: 'jammed' | 'traction' | 'client') => {
     if (!newReasonText.trim()) return;
 
-    const maxOrder = customJammedReasons.length > 0
-      ? Math.max(...customJammedReasons.map(r => r.display_order))
+    const currentReasons = reasonType === 'jammed' ? customJammedReasons :
+                           reasonType === 'traction' ? customTractionReasons :
+                           customClientReasons;
+
+    const maxOrder = currentReasons.length > 0
+      ? Math.max(...currentReasons.map(r => r.display_order))
       : 0;
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -94,6 +120,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
       .from('custom_jammed_reasons')
       .insert({
         reason: newReasonText.trim(),
+        reason_type: reasonType,
         display_order: maxOrder + 1,
         user_id: user.id
       })
@@ -106,8 +133,16 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
     }
 
     if (data) {
-      setCustomJammedReasons([...customJammedReasons, data]);
-      setJammedReason(data.reason);
+      if (reasonType === 'jammed') {
+        setCustomJammedReasons([...customJammedReasons, data]);
+        setJammedReason(data.reason);
+      } else if (reasonType === 'traction') {
+        setCustomTractionReasons([...customTractionReasons, data]);
+        setTractionReason(data.reason);
+      } else {
+        setCustomClientReasons([...customClientReasons, data]);
+        setClientReason(data.reason);
+      }
       setNewReasonText('');
       setIsAddingNewReason(false);
     }
@@ -455,7 +490,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
-                                  addNewCustomReason();
+                                  addNewCustomReason('jammed');
                                 } else if (e.key === 'Escape') {
                                   setIsAddingNewReason(false);
                                   setNewReasonText('');
@@ -466,7 +501,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                             <div className="flex gap-2">
                               <button
                                 type="button"
-                                onClick={addNewCustomReason}
+                                onClick={() => addNewCustomReason('jammed')}
                                 className="flex-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                               >
                                 Add
@@ -508,37 +543,197 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                           </div>
                         )}
                       </>
-                    ) : (
+                    ) : expandedStatusNote === 'traction' ? (
                       <>
-                        <textarea
+                        <select
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          rows={3}
-                          placeholder={
-                            expandedStatusNote === 'traction' ? 'What traction does this contact have?' :
-                            'What makes this a client?'
-                          }
-                          value={statusNoteValue}
-                          onChange={(e) => setStatusNoteValue(e.target.value)}
-                        />
+                          value={tractionReason}
+                          onChange={(e) => {
+                            setTractionReason(e.target.value);
+                            if (e.target.value !== 'Other') {
+                              setStatusNoteValue(e.target.value);
+                            } else {
+                              setStatusNoteValue('');
+                            }
+                          }}
+                        >
+                          <option value="">Select a reason...</option>
+                          {tractionReasons.map((reason) => (
+                            <option key={reason} value={reason}>
+                              {reason}
+                            </option>
+                          ))}
+                        </select>
 
-                        <div className="mt-3">
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Additional Notes</label>
+                        {!isAddingNewReason ? (
+                          <button
+                            type="button"
+                            onClick={() => setIsAddingNewReason(true)}
+                            className="mt-2 w-full px-3 py-2 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add Custom Reason
+                          </button>
+                        ) : (
+                          <div className="mt-2 space-y-2">
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Enter new reason..."
+                              value={newReasonText}
+                              onChange={(e) => setNewReasonText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  addNewCustomReason('traction');
+                                } else if (e.key === 'Escape') {
+                                  setIsAddingNewReason(false);
+                                  setNewReasonText('');
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => addNewCustomReason('traction')}
+                                className="flex-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                Add
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsAddingNewReason(false);
+                                  setNewReasonText('');
+                                }}
+                                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {tractionReason === 'Other' && (
                           <textarea
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            rows={2}
-                            placeholder="Add any additional details..."
-                            value={expandedStatusNote === 'traction' ? tractionAdditionalNote : clientAdditionalNote}
-                            onChange={(e) => {
-                              if (expandedStatusNote === 'traction') {
-                                setTractionAdditionalNote(e.target.value);
-                              } else {
-                                setClientAdditionalNote(e.target.value);
-                              }
-                            }}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-3"
+                            rows={3}
+                            placeholder="Enter custom reason..."
+                            value={statusNoteValue}
+                            onChange={(e) => setStatusNoteValue(e.target.value)}
                           />
-                        </div>
+                        )}
+
+                        {tractionReason && (
+                          <div className="mt-3">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Additional Notes</label>
+                            <textarea
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              rows={2}
+                              placeholder="Add any additional details..."
+                              value={tractionAdditionalNote}
+                              onChange={(e) => setTractionAdditionalNote(e.target.value)}
+                            />
+                          </div>
+                        )}
                       </>
-                    )}
+                    ) : expandedStatusNote === 'client' ? (
+                      <>
+                        <select
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={clientReason}
+                          onChange={(e) => {
+                            setClientReason(e.target.value);
+                            if (e.target.value !== 'Other') {
+                              setStatusNoteValue(e.target.value);
+                            } else {
+                              setStatusNoteValue('');
+                            }
+                          }}
+                        >
+                          <option value="">Select a reason...</option>
+                          {clientReasons.map((reason) => (
+                            <option key={reason} value={reason}>
+                              {reason}
+                            </option>
+                          ))}
+                        </select>
+
+                        {!isAddingNewReason ? (
+                          <button
+                            type="button"
+                            onClick={() => setIsAddingNewReason(true)}
+                            className="mt-2 w-full px-3 py-2 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add Custom Reason
+                          </button>
+                        ) : (
+                          <div className="mt-2 space-y-2">
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Enter new reason..."
+                              value={newReasonText}
+                              onChange={(e) => setNewReasonText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  addNewCustomReason('client');
+                                } else if (e.key === 'Escape') {
+                                  setIsAddingNewReason(false);
+                                  setNewReasonText('');
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => addNewCustomReason('client')}
+                                className="flex-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                Add
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsAddingNewReason(false);
+                                  setNewReasonText('');
+                                }}
+                                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {clientReason === 'Other' && (
+                          <textarea
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-3"
+                            rows={3}
+                            placeholder="Enter custom reason..."
+                            value={statusNoteValue}
+                            onChange={(e) => setStatusNoteValue(e.target.value)}
+                          />
+                        )}
+
+                        {clientReason && (
+                          <div className="mt-3">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Additional Notes</label>
+                            <textarea
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              rows={2}
+                              placeholder="Add any additional details..."
+                              value={clientAdditionalNote}
+                              onChange={(e) => setClientAdditionalNote(e.target.value)}
+                            />
+                          </div>
+                        )}
+                      </>
+                    ) : null}
 
                     <div className="flex gap-2 mt-3">
                       <button

@@ -257,6 +257,7 @@ export type CustomJammedReason = {
   id: string;
   user_id: string;
   reason: string;
+  reason_type: 'jammed' | 'traction' | 'client';
   display_order: number;
   created_at: string;
 };
