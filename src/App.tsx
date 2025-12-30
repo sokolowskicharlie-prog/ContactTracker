@@ -99,6 +99,7 @@ function App() {
   const [filterCompanySizes, setFilterCompanySizes] = useState<string[]>([]);
   const [filterEmails, setFilterEmails] = useState<string[]>([]);
   const [filterPhones, setFilterPhones] = useState<string[]>([]);
+  const [filterPhoneTypes, setFilterPhoneTypes] = useState<string[]>([]);
   const [filterCities, setFilterCities] = useState<string[]>([]);
   const [filterPostCodes, setFilterPostCodes] = useState<string[]>([]);
   const [filterWebsites, setFilterWebsites] = useState<string[]>([]);
@@ -110,6 +111,7 @@ function App() {
     companySize: boolean;
     email: boolean;
     phone: boolean;
+    phoneType: boolean;
     city: boolean;
     postCode: boolean;
     website: boolean;
@@ -123,6 +125,7 @@ function App() {
     companySize: true,
     email: true,
     phone: true,
+    phoneType: true,
     city: true,
     postCode: true,
     website: true,
@@ -295,6 +298,29 @@ function App() {
       filtered = filtered.filter((contact) => {
         if (filterPhones.includes('[None]') && !contact.phone?.trim()) return true;
         return contact.phone && filterPhones.includes(contact.phone);
+      });
+    }
+
+    // Apply phone type filter
+    if (filterPhoneTypes.length > 0) {
+      filtered = filtered.filter((contact) => {
+        const hasNoneFilter = filterPhoneTypes.includes('[None]');
+        const contactPhoneType = contact.phone_type?.toLowerCase();
+
+        if (hasNoneFilter && !contactPhoneType && !contact.contact_persons.some(cp => cp.phone_type || cp.mobile_type)) {
+          return true;
+        }
+
+        if (contactPhoneType && filterPhoneTypes.some(ft => ft.toLowerCase() === contactPhoneType)) {
+          return true;
+        }
+
+        return contact.contact_persons.some(cp => {
+          const cpPhoneType = cp.phone_type?.toLowerCase();
+          const cpMobileType = cp.mobile_type?.toLowerCase();
+          return (cpPhoneType && filterPhoneTypes.some(ft => ft.toLowerCase() === cpPhoneType)) ||
+                 (cpMobileType && filterPhoneTypes.some(ft => ft.toLowerCase() === cpMobileType));
+        });
       });
     }
 
@@ -3077,6 +3103,31 @@ function App() {
                   selectedValues={filterPhones}
                   onChange={setFilterPhones}
                   placeholder="Select phones..."
+                />
+              )}
+
+              {visibleFilters.phoneType && (
+                <MultiSelectDropdown
+                  label="Phone Type"
+                  options={[
+                    '[None]',
+                    ...Array.from(new Set([
+                      ...contacts.map(c => c.phone_type).filter(Boolean),
+                      ...contacts.flatMap(c => c.contact_persons || []).map(cp => cp.phone_type).filter(Boolean),
+                      ...contacts.flatMap(c => c.contact_persons || []).map(cp => cp.mobile_type).filter(Boolean)
+                    ] as string[])).sort((a, b) => {
+                      const order = ['office', 'mobile', 'whatsapp', 'wechat', 'general'];
+                      const indexA = order.indexOf(a.toLowerCase());
+                      const indexB = order.indexOf(b.toLowerCase());
+                      if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                      if (indexA === -1) return 1;
+                      if (indexB === -1) return -1;
+                      return indexA - indexB;
+                    })
+                  ]}
+                  selectedValues={filterPhoneTypes}
+                  onChange={setFilterPhoneTypes}
+                  placeholder="Select phone types..."
                 />
               )}
 
