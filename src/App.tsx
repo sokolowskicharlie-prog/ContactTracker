@@ -199,15 +199,33 @@ function App() {
     // Apply search filter
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
+
+      // Priority level mapping
+      const priorityLabels: Record<number, string> = {
+        0: 'client',
+        1: 'highest',
+        2: 'high',
+        3: 'medium',
+        4: 'low',
+        5: 'lowest'
+      };
+
       filtered = filtered.filter(
-        (contact) =>
-          contact.name.toLowerCase().includes(query) ||
-          contact.company?.toLowerCase().includes(query) ||
-          contact.email?.toLowerCase().includes(query) ||
-          contact.phone?.toLowerCase().includes(query) ||
-          contact.jammed_note?.toLowerCase().includes(query) ||
-          contact.traction_note?.toLowerCase().includes(query) ||
-          contact.client_note?.toLowerCase().includes(query)
+        (contact) => {
+          const priorityMatch = contact.priority_rank !== null && contact.priority_rank !== undefined && (
+            contact.priority_rank.toString().includes(query) ||
+            priorityLabels[contact.priority_rank]?.includes(query)
+          );
+
+          return contact.name.toLowerCase().includes(query) ||
+            contact.company?.toLowerCase().includes(query) ||
+            contact.email?.toLowerCase().includes(query) ||
+            contact.phone?.toLowerCase().includes(query) ||
+            contact.jammed_note?.toLowerCase().includes(query) ||
+            contact.traction_note?.toLowerCase().includes(query) ||
+            contact.client_note?.toLowerCase().includes(query) ||
+            priorityMatch;
+        }
       );
     }
 
