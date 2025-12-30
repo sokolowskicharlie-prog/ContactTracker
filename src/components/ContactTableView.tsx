@@ -233,8 +233,12 @@ export default function ContactTableView({
       case 'companySize':
         return <div className="text-sm text-gray-600 truncate">{contact.company_size || '-'}</div>;
       case 'priority':
-        return contact.priority_rank ? (
-          <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium w-fit">
+        return (contact.priority_rank !== null && contact.priority_rank !== undefined) ? (
+          <div className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium w-fit ${
+            contact.priority_rank === 0
+              ? 'bg-green-100 text-green-700'
+              : 'bg-blue-100 text-blue-700'
+          }`}>
             <TrendingUp className="w-3 h-3" />
             P{contact.priority_rank}
           </div>
