@@ -65,7 +65,11 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
       const lowerSearchName = searchedName.toLowerCase();
       const foundContact = contacts.find(contact =>
         contact.name.toLowerCase().includes(lowerSearchName) ||
-        lowerSearchName.includes(contact.name.toLowerCase())
+        lowerSearchName.includes(contact.name.toLowerCase()) ||
+        contact.company?.toLowerCase().includes(lowerSearchName) ||
+        contact.jammed_note?.toLowerCase().includes(lowerSearchName) ||
+        contact.traction_note?.toLowerCase().includes(lowerSearchName) ||
+        contact.client_note?.toLowerCase().includes(lowerSearchName)
       );
 
       return {

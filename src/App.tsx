@@ -202,7 +202,10 @@ function App() {
           contact.name.toLowerCase().includes(query) ||
           contact.company?.toLowerCase().includes(query) ||
           contact.email?.toLowerCase().includes(query) ||
-          contact.phone?.toLowerCase().includes(query)
+          contact.phone?.toLowerCase().includes(query) ||
+          contact.jammed_note?.toLowerCase().includes(query) ||
+          contact.traction_note?.toLowerCase().includes(query) ||
+          contact.client_note?.toLowerCase().includes(query)
       );
     }
 
