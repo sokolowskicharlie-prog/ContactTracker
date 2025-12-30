@@ -15,6 +15,7 @@ export type Contact = {
   phone?: string;
   phone_type?: string;
   email?: string;
+  email_type?: string;
   company?: string;
   company_size?: string;
   company_excerpt?: string;
@@ -78,6 +79,7 @@ export type ContactPerson = {
   mobile?: string;
   mobile_type?: string;
   email?: string;
+  email_type?: string;
   is_primary: boolean;
   created_at: string;
 };

@@ -100,6 +100,7 @@ function App() {
   const [filterEmails, setFilterEmails] = useState<string[]>([]);
   const [filterPhones, setFilterPhones] = useState<string[]>([]);
   const [filterPhoneTypes, setFilterPhoneTypes] = useState<string[]>([]);
+  const [filterEmailTypes, setFilterEmailTypes] = useState<string[]>([]);
   const [filterCities, setFilterCities] = useState<string[]>([]);
   const [filterPostCodes, setFilterPostCodes] = useState<string[]>([]);
   const [filterWebsites, setFilterWebsites] = useState<string[]>([]);
@@ -110,6 +111,7 @@ function App() {
     company: boolean;
     companySize: boolean;
     email: boolean;
+    emailType: boolean;
     phone: boolean;
     phoneType: boolean;
     city: boolean;
@@ -124,6 +126,7 @@ function App() {
     company: true,
     companySize: true,
     email: true,
+    emailType: true,
     phone: true,
     phoneType: true,
     city: true,
@@ -324,6 +327,27 @@ function App() {
       });
     }
 
+    // Apply email type filter
+    if (filterEmailTypes.length > 0) {
+      filtered = filtered.filter((contact) => {
+        const hasNoneFilter = filterEmailTypes.includes('[None]');
+        const contactEmailType = contact.email_type?.toLowerCase();
+
+        if (hasNoneFilter && !contactEmailType && !contact.contact_persons.some(cp => cp.email_type)) {
+          return true;
+        }
+
+        if (contactEmailType && filterEmailTypes.some(ft => ft.toLowerCase() === contactEmailType)) {
+          return true;
+        }
+
+        return contact.contact_persons.some(cp => {
+          const cpEmailType = cp.email_type?.toLowerCase();
+          return cpEmailType && filterEmailTypes.some(ft => ft.toLowerCase() === cpEmailType);
+        });
+      });
+    }
+
     // Apply city filter
     if (filterCities.length > 0) {
       filtered = filtered.filter((contact) => {
@@ -492,6 +516,8 @@ function App() {
           return (a.country || '').localeCompare(b.country || '');
         case 'timezone':
           return (a.timezone || '').localeCompare(b.timezone || '');
+        case 'email_type':
+          return (a.email_type || '').localeCompare(b.email_type || '');
         case 'priority': {
           const aPriority = a.priority_rank !== null && a.priority_rank !== undefined ? a.priority_rank : 999;
           const bPriority = b.priority_rank !== null && b.priority_rank !== undefined ? b.priority_rank : 999;
@@ -511,7 +537,7 @@ function App() {
     });
 
     setFilteredContacts(filtered);
-  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterCities, filterPostCodes, filterWebsites, filterAddresses, filterPriorities, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter]);
+  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterPhoneTypes, filterEmailTypes, filterCities, filterPostCodes, filterWebsites, filterAddresses, filterPriorities, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter]);
 
   useEffect(() => {
     let filtered = [...suppliers];
@@ -2784,7 +2810,9 @@ function App() {
                     company: 'Company',
                     companySize: 'Company Size',
                     email: 'Email',
+                    emailType: 'Email Type',
                     phone: 'Phone',
+                    phoneType: 'Phone Type',
                     city: 'City',
                     postCode: 'Post Code',
                     website: 'Website',
@@ -3096,6 +3124,30 @@ function App() {
                 />
               )}
 
+              {visibleFilters.emailType && (
+                <MultiSelectDropdown
+                  label="Email Type"
+                  options={[
+                    '[None]',
+                    ...Array.from(new Set([
+                      ...contacts.map(c => c.email_type).filter(Boolean),
+                      ...contacts.flatMap(c => c.contact_persons || []).map(cp => cp.email_type).filter(Boolean)
+                    ] as string[])).sort((a, b) => {
+                      const order = ['personal', 'general'];
+                      const indexA = order.indexOf(a.toLowerCase());
+                      const indexB = order.indexOf(b.toLowerCase());
+                      if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                      if (indexA === -1) return 1;
+                      if (indexB === -1) return -1;
+                      return indexA - indexB;
+                    })
+                  ]}
+                  selectedValues={filterEmailTypes}
+                  onChange={setFilterEmailTypes}
+                  placeholder="Select email types..."
+                />
+              )}
+
               {visibleFilters.phone && (
                 <MultiSelectDropdown
                   label="Phone"
@@ -3241,6 +3293,7 @@ function App() {
                   <option value="company">Company</option>
                   <option value="country">Country</option>
                   <option value="timezone">Timezone</option>
+                  <option value="email_type">Email Type</option>
                   <option value="priority">Priority</option>
                   <option value="recent-activity">Most Recent Activity</option>
                 </select>
