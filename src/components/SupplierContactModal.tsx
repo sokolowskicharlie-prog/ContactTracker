@@ -1,6 +1,14 @@
 import { X, User, Mail, Phone, Smartphone, Briefcase, FileText, Star } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { SupplierContact } from '../lib/supabase';
+import { SupplierContact, supabase } from '../lib/supabase';
+
+interface PhoneType {
+  id: string;
+  label: string;
+  value: string;
+  is_default: boolean;
+  display_order: number;
+}
 
 interface SupplierContactModalProps {
   contact?: SupplierContact;
@@ -19,6 +27,22 @@ export default function SupplierContactModal({ contact, supplierName, onClose, o
   const [mobileType, setMobileType] = useState('general');
   const [notes, setNotes] = useState('');
   const [isPrimary, setIsPrimary] = useState(false);
+  const [phoneTypes, setPhoneTypes] = useState<PhoneType[]>([]);
+
+  useEffect(() => {
+    const fetchPhoneTypes = async () => {
+      const { data, error } = await supabase
+        .from('custom_phone_types')
+        .select('*')
+        .order('display_order');
+
+      if (!error && data) {
+        setPhoneTypes(data);
+      }
+    };
+
+    fetchPhoneTypes();
+  }, []);
 
   useEffect(() => {
     if (contact) {
@@ -144,9 +168,11 @@ export default function SupplierContactModal({ contact, supplierName, onClose, o
                   disabled={!phone.trim()}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:text-gray-500"
                 >
-                  <option value="office">Office</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="general">General</option>
+                  {phoneTypes.map((type) => (
+                    <option key={type.id} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -172,8 +198,11 @@ export default function SupplierContactModal({ contact, supplierName, onClose, o
                   disabled={!mobile.trim()}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:text-gray-500"
                 >
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="general">General</option>
+                  {phoneTypes.map((type) => (
+                    <option key={type.id} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
