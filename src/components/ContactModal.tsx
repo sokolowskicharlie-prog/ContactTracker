@@ -11,6 +11,14 @@ interface PhoneType {
   display_order: number;
 }
 
+interface EmailType {
+  id: string;
+  label: string;
+  value: string;
+  is_default: boolean;
+  display_order: number;
+}
+
 interface ContactModalProps {
   contact?: ContactWithActivity;
   onClose: () => void;
@@ -22,6 +30,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
   const [phone, setPhone] = useState('');
   const [phoneType, setPhoneType] = useState('general');
   const [email, setEmail] = useState('');
+  const [emailType, setEmailType] = useState('general');
   const [company, setCompany] = useState('');
   const [companySize, setCompanySize] = useState('');
   const [companyExcerpt, setCompanyExcerpt] = useState('');
@@ -36,6 +45,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
   const [notes, setNotes] = useState('');
   const [contactPersons, setContactPersons] = useState<Partial<ContactPerson>[]>([]);
   const [phoneTypes, setPhoneTypes] = useState<PhoneType[]>([]);
+  const [emailTypes, setEmailTypes] = useState<EmailType[]>([]);
 
   useEffect(() => {
     const fetchPhoneTypes = async () => {
@@ -49,7 +59,19 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       }
     };
 
+    const fetchEmailTypes = async () => {
+      const { data, error } = await supabase
+        .from('custom_email_types')
+        .select('*')
+        .order('display_order');
+
+      if (!error && data) {
+        setEmailTypes(data);
+      }
+    };
+
     fetchPhoneTypes();
+    fetchEmailTypes();
   }, []);
 
   useEffect(() => {
@@ -60,6 +82,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       setPhone(contact.phone || '');
       setPhoneType(contact.phone_type || 'general');
       setEmail(contact.email || '');
+      setEmailType(contact.email_type || 'general');
       setCompany(contact.company || '');
       setCompanySize(contact.company_size || '');
       setCompanyExcerpt(contact.company_excerpt || '');
@@ -80,6 +103,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       setPhone('');
       setPhoneType('general');
       setEmail('');
+      setEmailType('general');
       setCompany('');
       setCompanySize('');
       setCompanyExcerpt('');
@@ -97,7 +121,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
   }, [contact]);
 
   const addContactPerson = () => {
-    setContactPersons([...contactPersons, { name: '', job_title: '', phone: '', phone_type: 'general', mobile: '', mobile_type: 'general', email: '', is_primary: contactPersons.length === 0 }]);
+    setContactPersons([...contactPersons, { name: '', job_title: '', phone: '', phone_type: 'general', mobile: '', mobile_type: 'general', email: '', email_type: 'general', is_primary: contactPersons.length === 0 }]);
   };
 
   const removeContactPerson = (index: number) => {
@@ -134,6 +158,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
         mobile: p.mobile?.trim() || null,
         mobile_type: p.mobile?.trim() ? (p.mobile_type || 'general') : null,
         email: p.email?.trim() || null,
+        email_type: p.email?.trim() ? (p.email_type || 'general') : null,
       }));
 
     console.log('Submitting contact with', validContactPersons.length, 'valid PICs');
@@ -145,6 +170,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       phone: phone.trim() || null,
       phone_type: phone.trim() ? phoneType : null,
       email: email.trim() || null,
+      email_type: email.trim() ? emailType : null,
       company: company.trim() || null,
       company_size: companySize || null,
       company_excerpt: companyExcerpt.trim() || null,
@@ -233,17 +259,33 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
             </div>
           </div>
 
-          <div>
+          <div className="col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email
             </label>
-            <input
-              type="text"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="john@example.com (use ; to separate multiple emails)"
-            />
+            <div className="grid grid-cols-3 gap-2">
+              <div className="col-span-2">
+                <input
+                  type="text"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="john@example.com (use ; to separate multiple emails)"
+                />
+              </div>
+              <select
+                value={emailType}
+                onChange={(e) => setEmailType(e.target.value)}
+                disabled={!email.trim()}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:text-gray-500"
+              >
+                {emailTypes.map((type) => (
+                  <option key={type.id} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div>
@@ -471,13 +513,27 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
                         placeholder="Job title (e.g., Operations Manager)"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                       />
-                      <input
-                        type="text"
-                        value={person.email || ''}
-                        onChange={(e) => updateContactPerson(index, 'email', e.target.value)}
-                        placeholder="Email (use ; to separate multiple emails)"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      />
+                      <div className="grid grid-cols-3 gap-2">
+                        <input
+                          type="text"
+                          value={person.email || ''}
+                          onChange={(e) => updateContactPerson(index, 'email', e.target.value)}
+                          placeholder="Email (use ; to separate multiple emails)"
+                          className="col-span-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                        <select
+                          value={person.email_type || 'general'}
+                          onChange={(e) => updateContactPerson(index, 'email_type', e.target.value)}
+                          disabled={!person.email?.trim()}
+                          className="px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs disabled:bg-gray-100 disabled:text-gray-500"
+                        >
+                          {emailTypes.map((type) => (
+                            <option key={type.id} value={type.value}>
+                              {type.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       <div className="grid grid-cols-3 gap-2">
                         <input
                           type="tel"

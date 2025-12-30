@@ -10,6 +10,14 @@ interface PhoneType {
   display_order: number;
 }
 
+interface EmailType {
+  id: string;
+  label: string;
+  value: string;
+  is_default: boolean;
+  display_order: number;
+}
+
 interface NotificationSettings {
   id?: string;
   user_email: string;
@@ -33,6 +41,9 @@ export default function SettingsModal({ onClose, onSave, currentSettings, panelS
   const [phoneTypes, setPhoneTypes] = useState<PhoneType[]>([]);
   const [newPhoneTypeLabel, setNewPhoneTypeLabel] = useState('');
   const [isAddingPhoneType, setIsAddingPhoneType] = useState(false);
+  const [emailTypes, setEmailTypes] = useState<EmailType[]>([]);
+  const [newEmailTypeLabel, setNewEmailTypeLabel] = useState('');
+  const [isAddingEmailType, setIsAddingEmailType] = useState(false);
 
   useEffect(() => {
     if (currentSettings) {
@@ -48,6 +59,7 @@ export default function SettingsModal({ onClose, onSave, currentSettings, panelS
 
   useEffect(() => {
     fetchPhoneTypes();
+    fetchEmailTypes();
   }, []);
 
   const fetchPhoneTypes = async () => {
@@ -93,6 +105,52 @@ export default function SettingsModal({ onClose, onSave, currentSettings, panelS
 
     if (!error) {
       setPhoneTypes(phoneTypes.filter(t => t.id !== id));
+    }
+  };
+
+  const fetchEmailTypes = async () => {
+    const { data, error } = await supabase
+      .from('custom_email_types')
+      .select('*')
+      .order('display_order');
+
+    if (!error && data) {
+      setEmailTypes(data);
+    }
+  };
+
+  const handleAddEmailType = async () => {
+    if (!newEmailTypeLabel.trim()) return;
+
+    const value = newEmailTypeLabel.toLowerCase().replace(/\s+/g, '_');
+    const maxOrder = Math.max(...emailTypes.map(t => t.display_order), 0);
+
+    const { data, error } = await supabase
+      .from('custom_email_types')
+      .insert({
+        label: newEmailTypeLabel.trim(),
+        value: value,
+        is_default: false,
+        display_order: maxOrder + 1,
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setEmailTypes([...emailTypes, data]);
+      setNewEmailTypeLabel('');
+      setIsAddingEmailType(false);
+    }
+  };
+
+  const handleDeleteEmailType = async (id: string) => {
+    const { error } = await supabase
+      .from('custom_email_types')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      setEmailTypes(emailTypes.filter(t => t.id !== id));
     }
   };
 
@@ -294,6 +352,81 @@ export default function SettingsModal({ onClose, onSave, currentSettings, panelS
             )}
             <p className="text-xs text-gray-500 mt-2">
               Add custom phone type options that will appear in dropdowns throughout the app. Default options cannot be removed.
+            </p>
+          </div>
+
+          <div className="border-t border-gray-200 pt-5">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Email Type Options
+            </label>
+            <div className="space-y-2 max-h-64 overflow-y-auto mb-3">
+              {emailTypes.map((type) => (
+                <div key={type.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg group">
+                  <GripVertical className="w-4 h-4 text-gray-400" />
+                  <span className="flex-1 text-sm text-gray-700">{type.label}</span>
+                  {!type.is_default && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteEmailType(type.id)}
+                      className="p-1 text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {isAddingEmailType ? (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newEmailTypeLabel}
+                  onChange={(e) => setNewEmailTypeLabel(e.target.value)}
+                  placeholder="e.g., Work, Business"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddEmailType();
+                    } else if (e.key === 'Escape') {
+                      setIsAddingEmailType(false);
+                      setNewEmailTypeLabel('');
+                    }
+                  }}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleAddEmailType}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingEmailType(false);
+                    setNewEmailTypeLabel('');
+                  }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsAddingEmailType(true)}
+                className="w-full px-3 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2 text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Add Custom Email Type
+              </button>
+            )}
+            <p className="text-xs text-gray-500 mt-2">
+              Add custom email type options that will appear in dropdowns throughout the app. Default options cannot be removed.
             </p>
           </div>
 
