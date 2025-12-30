@@ -213,6 +213,9 @@ function App() {
         5: 'lowest'
       };
 
+      // Check if searching for "none" variations
+      const isNoneSearch = ['none', 'no ', 'empty', 'blank', 'null', 'missing'].some(keyword => query.includes(keyword));
+
       filtered = filtered.filter(
         (contact) => {
           const priorityMatch = contact.priority_rank !== null && contact.priority_rank !== undefined && (
@@ -220,10 +223,31 @@ function App() {
             priorityLabels[contact.priority_rank]?.includes(query)
           );
 
+          // Check for "none" searches across all fields
+          if (isNoneSearch) {
+            return (!contact.name?.trim() && query.includes('name')) ||
+                   (!contact.company?.trim() && query.includes('company')) ||
+                   (!contact.email?.trim() && query.includes('email')) ||
+                   (!contact.phone?.trim() && query.includes('phone')) ||
+                   (!contact.city?.trim() && query.includes('city')) ||
+                   (!contact.post_code?.trim() && (query.includes('post') || query.includes('code'))) ||
+                   (!contact.website?.trim() && query.includes('website')) ||
+                   (!contact.address?.trim() && query.includes('address')) ||
+                   (!contact.country?.trim() && query.includes('country')) ||
+                   (!contact.timezone?.trim() && query.includes('timezone')) ||
+                   ((contact.priority_rank === null || contact.priority_rank === undefined) && query.includes('priority'));
+          }
+
           return contact.name.toLowerCase().includes(query) ||
             contact.company?.toLowerCase().includes(query) ||
             contact.email?.toLowerCase().includes(query) ||
             contact.phone?.toLowerCase().includes(query) ||
+            contact.city?.toLowerCase().includes(query) ||
+            contact.post_code?.toLowerCase().includes(query) ||
+            contact.website?.toLowerCase().includes(query) ||
+            contact.address?.toLowerCase().includes(query) ||
+            contact.country?.toLowerCase().includes(query) ||
+            contact.timezone?.toLowerCase().includes(query) ||
             contact.jammed_note?.toLowerCase().includes(query) ||
             contact.traction_note?.toLowerCase().includes(query) ||
             contact.client_note?.toLowerCase().includes(query) ||
@@ -234,62 +258,96 @@ function App() {
 
     // Apply name filter
     if (filterNames.length > 0) {
-      filtered = filtered.filter((contact) => filterNames.includes(contact.name));
+      filtered = filtered.filter((contact) => {
+        if (filterNames.includes('[None]') && !contact.name?.trim()) return true;
+        return filterNames.includes(contact.name);
+      });
     }
 
     // Apply company filter
     if (filterCompanies.length > 0) {
-      filtered = filtered.filter((contact) => contact.company && filterCompanies.includes(contact.company));
+      filtered = filtered.filter((contact) => {
+        if (filterCompanies.includes('[None]') && !contact.company?.trim()) return true;
+        return contact.company && filterCompanies.includes(contact.company);
+      });
     }
 
     // Apply company size filter
     if (filterCompanySizes.length > 0) {
-      filtered = filtered.filter((contact) => contact.company_size && filterCompanySizes.includes(contact.company_size));
+      filtered = filtered.filter((contact) => {
+        if (filterCompanySizes.includes('[None]') && !contact.company_size?.trim()) return true;
+        return contact.company_size && filterCompanySizes.includes(contact.company_size);
+      });
     }
 
     // Apply email filter
     if (filterEmails.length > 0) {
-      filtered = filtered.filter((contact) => contact.email && filterEmails.includes(contact.email));
+      filtered = filtered.filter((contact) => {
+        if (filterEmails.includes('[None]') && !contact.email?.trim()) return true;
+        return contact.email && filterEmails.includes(contact.email);
+      });
     }
 
     // Apply phone filter
     if (filterPhones.length > 0) {
-      filtered = filtered.filter((contact) => contact.phone && filterPhones.includes(contact.phone));
+      filtered = filtered.filter((contact) => {
+        if (filterPhones.includes('[None]') && !contact.phone?.trim()) return true;
+        return contact.phone && filterPhones.includes(contact.phone);
+      });
     }
 
     // Apply city filter
     if (filterCities.length > 0) {
-      filtered = filtered.filter((contact) => contact.city && filterCities.includes(contact.city));
+      filtered = filtered.filter((contact) => {
+        if (filterCities.includes('[None]') && !contact.city?.trim()) return true;
+        return contact.city && filterCities.includes(contact.city);
+      });
     }
 
     // Apply post code filter
     if (filterPostCodes.length > 0) {
-      filtered = filtered.filter((contact) => contact.post_code && filterPostCodes.includes(contact.post_code));
+      filtered = filtered.filter((contact) => {
+        if (filterPostCodes.includes('[None]') && !contact.post_code?.trim()) return true;
+        return contact.post_code && filterPostCodes.includes(contact.post_code);
+      });
     }
 
     // Apply website filter
     if (filterWebsites.length > 0) {
-      filtered = filtered.filter((contact) => contact.website && filterWebsites.includes(contact.website));
+      filtered = filtered.filter((contact) => {
+        if (filterWebsites.includes('[None]') && !contact.website?.trim()) return true;
+        return contact.website && filterWebsites.includes(contact.website);
+      });
     }
 
     // Apply address filter
     if (filterAddresses.length > 0) {
-      filtered = filtered.filter((contact) => contact.address && filterAddresses.includes(contact.address));
+      filtered = filtered.filter((contact) => {
+        if (filterAddresses.includes('[None]') && !contact.address?.trim()) return true;
+        return contact.address && filterAddresses.includes(contact.address);
+      });
     }
 
     // Apply country filter
     if (filterCountries.length > 0) {
-      filtered = filtered.filter((contact) => contact.country && filterCountries.includes(contact.country));
+      filtered = filtered.filter((contact) => {
+        if (filterCountries.includes('[None]') && !contact.country?.trim()) return true;
+        return contact.country && filterCountries.includes(contact.country);
+      });
     }
 
     // Apply timezone filter
     if (filterTimezones.length > 0) {
-      filtered = filtered.filter((contact) => contact.timezone && filterTimezones.includes(contact.timezone));
+      filtered = filtered.filter((contact) => {
+        if (filterTimezones.includes('[None]') && !contact.timezone?.trim()) return true;
+        return contact.timezone && filterTimezones.includes(contact.timezone);
+      });
     }
 
     // Apply priority filter
     if (filterPriorities.length > 0) {
       filtered = filtered.filter((contact) => {
+        if (filterPriorities.includes('[None]') && (contact.priority_rank === null || contact.priority_rank === undefined)) return true;
         if (contact.priority_rank === null || contact.priority_rank === undefined) return false;
         return filterPriorities.includes(contact.priority_rank.toString());
       });
@@ -2982,7 +3040,7 @@ function App() {
               {visibleFilters.name && (
                 <MultiSelectDropdown
                   label="Name"
-                  options={Array.from(new Set(contacts.map((c) => c.name).filter(Boolean))).sort()}
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.name).filter(Boolean))).sort()]}
                   selectedValues={filterNames}
                   onChange={setFilterNames}
                   placeholder="Select names..."
@@ -2992,7 +3050,7 @@ function App() {
               {visibleFilters.company && (
                 <MultiSelectDropdown
                   label="Company"
-                  options={Array.from(new Set(contacts.map((c) => c.company).filter(Boolean) as string[])).sort()}
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.company).filter(Boolean) as string[])).sort()]}
                   selectedValues={filterCompanies}
                   onChange={setFilterCompanies}
                   placeholder="Select companies..."
@@ -3002,7 +3060,7 @@ function App() {
               {visibleFilters.companySize && (
                 <MultiSelectDropdown
                   label="Company Size"
-                  options={Array.from(new Set(contacts.map((c) => c.company_size).filter(Boolean) as string[])).sort()}
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.company_size).filter(Boolean) as string[])).sort()]}
                   selectedValues={filterCompanySizes}
                   onChange={setFilterCompanySizes}
                   placeholder="Select company sizes..."
@@ -3012,7 +3070,7 @@ function App() {
               {visibleFilters.email && (
                 <MultiSelectDropdown
                   label="Email"
-                  options={Array.from(new Set(contacts.map((c) => c.email).filter(Boolean) as string[])).sort()}
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.email).filter(Boolean) as string[])).sort()]}
                   selectedValues={filterEmails}
                   onChange={setFilterEmails}
                   placeholder="Select emails..."
@@ -3022,7 +3080,7 @@ function App() {
               {visibleFilters.phone && (
                 <MultiSelectDropdown
                   label="Phone"
-                  options={Array.from(new Set(contacts.map((c) => c.phone).filter(Boolean) as string[])).sort()}
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.phone).filter(Boolean) as string[])).sort()]}
                   selectedValues={filterPhones}
                   onChange={setFilterPhones}
                   placeholder="Select phones..."
@@ -3032,7 +3090,7 @@ function App() {
               {visibleFilters.city && (
                 <MultiSelectDropdown
                   label="City"
-                  options={Array.from(new Set(contacts.map((c) => c.city).filter(Boolean) as string[])).sort()}
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.city).filter(Boolean) as string[])).sort()]}
                   selectedValues={filterCities}
                   onChange={setFilterCities}
                   placeholder="Select cities..."
@@ -3042,7 +3100,7 @@ function App() {
               {visibleFilters.postCode && (
                 <MultiSelectDropdown
                   label="Post Code"
-                  options={Array.from(new Set(contacts.map((c) => c.post_code).filter(Boolean) as string[])).sort()}
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.post_code).filter(Boolean) as string[])).sort()]}
                   selectedValues={filterPostCodes}
                   onChange={setFilterPostCodes}
                   placeholder="Select post codes..."
@@ -3052,7 +3110,7 @@ function App() {
               {visibleFilters.website && (
                 <MultiSelectDropdown
                   label="Website"
-                  options={Array.from(new Set(contacts.map((c) => c.website).filter(Boolean) as string[])).sort()}
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.website).filter(Boolean) as string[])).sort()]}
                   selectedValues={filterWebsites}
                   onChange={setFilterWebsites}
                   placeholder="Select websites..."
@@ -3062,7 +3120,7 @@ function App() {
               {visibleFilters.address && (
                 <MultiSelectDropdown
                   label="Address"
-                  options={Array.from(new Set(contacts.map((c) => c.address).filter(Boolean) as string[])).sort()}
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.address).filter(Boolean) as string[])).sort()]}
                   selectedValues={filterAddresses}
                   onChange={setFilterAddresses}
                   placeholder="Select addresses..."
@@ -3072,7 +3130,7 @@ function App() {
               {visibleFilters.country && (
                 <MultiSelectDropdown
                   label="Country"
-                  options={Array.from(new Set(contacts.map((c) => c.country).filter(Boolean) as string[])).sort()}
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.country).filter(Boolean) as string[])).sort()]}
                   selectedValues={filterCountries}
                   onChange={setFilterCountries}
                   placeholder="Select countries..."
@@ -3082,7 +3140,7 @@ function App() {
               {visibleFilters.timezone && (
                 <MultiSelectDropdown
                   label="Timezone"
-                  options={Array.from(new Set(contacts.map((c) => c.timezone).filter(Boolean) as string[])).sort()}
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.timezone).filter(Boolean) as string[])).sort()]}
                   selectedValues={filterTimezones}
                   onChange={setFilterTimezones}
                   placeholder="Select timezones..."
@@ -3093,14 +3151,16 @@ function App() {
                 <MultiSelectDropdown
                   label="Priority"
                   options={[
-                    { value: '0', label: '0 - Client' },
-                    { value: '1', label: '1 - Highest' },
-                    { value: '2', label: '2 - High' },
-                    { value: '3', label: '3 - Medium' },
-                    { value: '4', label: '4 - Low' },
-                    { value: '5', label: '5 - Lowest' }
-                  ].map(p => p.label)}
+                    '[None]',
+                    '0 - Client',
+                    '1 - Highest',
+                    '2 - High',
+                    '3 - Medium',
+                    '4 - Low',
+                    '5 - Lowest'
+                  ]}
                   selectedValues={filterPriorities.map(p => {
+                    if (p === '[None]') return '[None]';
                     const labels = {
                       '0': '0 - Client',
                       '1': '1 - Highest',
@@ -3112,7 +3172,10 @@ function App() {
                     return labels[p as keyof typeof labels] || p;
                   })}
                   onChange={(selected) => {
-                    const values = selected.map(s => s.split(' ')[0]);
+                    const values = selected.map(s => {
+                      if (s === '[None]') return '[None]';
+                      return s.split(' ')[0];
+                    });
                     setFilterPriorities(values);
                   }}
                   placeholder="Select priorities..."
