@@ -1126,12 +1126,9 @@ function App() {
 
       if (error) throw error;
 
-      await loadContacts();
+      setSelectedContact(contact);
 
-      const updatedContact = contacts.find(c => c.id === contact.id);
-      if (updatedContact) {
-        setSelectedContact(updatedContact);
-      }
+      await loadContacts();
     } catch (error) {
       console.error('Error updating contact:', error);
     }
