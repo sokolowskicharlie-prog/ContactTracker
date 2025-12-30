@@ -102,6 +102,7 @@ function App() {
   const [filterPostCodes, setFilterPostCodes] = useState<string[]>([]);
   const [filterWebsites, setFilterWebsites] = useState<string[]>([]);
   const [filterAddresses, setFilterAddresses] = useState<string[]>([]);
+  const [filterPriorities, setFilterPriorities] = useState<string[]>([]);
   const [visibleFilters, setVisibleFilters] = useState<{
     name: boolean;
     company: boolean;
@@ -114,6 +115,7 @@ function App() {
     address: boolean;
     country: boolean;
     timezone: boolean;
+    priority: boolean;
   }>({
     name: true,
     company: true,
@@ -126,6 +128,7 @@ function App() {
     address: true,
     country: true,
     timezone: true,
+    priority: true,
   });
   const [showFilterSettings, setShowFilterSettings] = useState(false);
   const [sortBy, setSortBy] = useState<string>('name');
@@ -284,6 +287,14 @@ function App() {
       filtered = filtered.filter((contact) => contact.timezone && filterTimezones.includes(contact.timezone));
     }
 
+    // Apply priority filter
+    if (filterPriorities.length > 0) {
+      filtered = filtered.filter((contact) => {
+        if (contact.priority_rank === null || contact.priority_rank === undefined) return false;
+        return filterPriorities.includes(contact.priority_rank.toString());
+      });
+    }
+
     // Apply status filters (OR logic - show contacts matching ANY selected status)
     const hasActiveStatusFilter = statusFilters.hasTraction || statusFilters.isClient || statusFilters.isJammed || statusFilters.none;
     if (hasActiveStatusFilter) {
@@ -395,6 +406,11 @@ function App() {
           return (a.country || '').localeCompare(b.country || '');
         case 'timezone':
           return (a.timezone || '').localeCompare(b.timezone || '');
+        case 'priority': {
+          const aPriority = a.priority_rank !== null && a.priority_rank !== undefined ? a.priority_rank : 999;
+          const bPriority = b.priority_rank !== null && b.priority_rank !== undefined ? b.priority_rank : 999;
+          return aPriority - bPriority;
+        }
         case 'recent-activity': {
           const getLastActivity = (contact: ContactWithActivity) => {
             const lastCallDate = contact.last_call_date ? new Date(contact.last_call_date).getTime() : 0;
@@ -409,7 +425,7 @@ function App() {
     });
 
     setFilteredContacts(filtered);
-  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterCities, filterPostCodes, filterWebsites, filterAddresses, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter]);
+  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterCities, filterPostCodes, filterWebsites, filterAddresses, filterPriorities, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter]);
 
   useEffect(() => {
     let filtered = [...suppliers];
@@ -2697,7 +2713,8 @@ function App() {
                     website: 'Website',
                     address: 'Address',
                     country: 'Country',
-                    timezone: 'Timezone'
+                    timezone: 'Timezone',
+                    priority: 'Priority'
                   }).map(([key, label]) => (
                     <label key={key} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900">
                       <input
@@ -3071,6 +3088,36 @@ function App() {
                   placeholder="Select timezones..."
                 />
               )}
+
+              {visibleFilters.priority && (
+                <MultiSelectDropdown
+                  label="Priority"
+                  options={[
+                    { value: '0', label: '0 - Client' },
+                    { value: '1', label: '1 - Highest' },
+                    { value: '2', label: '2 - High' },
+                    { value: '3', label: '3 - Medium' },
+                    { value: '4', label: '4 - Low' },
+                    { value: '5', label: '5 - Lowest' }
+                  ].map(p => p.label)}
+                  selectedValues={filterPriorities.map(p => {
+                    const labels = {
+                      '0': '0 - Client',
+                      '1': '1 - Highest',
+                      '2': '2 - High',
+                      '3': '3 - Medium',
+                      '4': '4 - Low',
+                      '5': '5 - Lowest'
+                    };
+                    return labels[p as keyof typeof labels] || p;
+                  })}
+                  onChange={(selected) => {
+                    const values = selected.map(s => s.split(' ')[0]);
+                    setFilterPriorities(values);
+                  }}
+                  placeholder="Select priorities..."
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -3087,6 +3134,7 @@ function App() {
                   <option value="company">Company</option>
                   <option value="country">Country</option>
                   <option value="timezone">Timezone</option>
+                  <option value="priority">Priority</option>
                   <option value="recent-activity">Most Recent Activity</option>
                 </select>
               </div>
