@@ -306,6 +306,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                 className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">No Priority</option>
+                <option value="0">0 - Client</option>
                 <option value="1">1 - Highest</option>
                 <option value="2">2 - High</option>
                 <option value="3">3 - Medium</option>
