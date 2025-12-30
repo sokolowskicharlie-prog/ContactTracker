@@ -139,7 +139,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   }, [user, settings, goals, calls, emails, deals]);
 
   useEffect(() => {
-    if (!goals.length) return;
+    if (!goals.length || !settings?.enable_notifications) return;
 
     goals.forEach(goal => {
       const today = new Date().toISOString().split('T')[0];
@@ -758,6 +758,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   };
 
   const showMotivationalMessage = (goalId: string, progress: GoalProgress) => {
+    if (!settings?.enable_notifications) return;
+
     let message = '';
     let type: 'success' | 'warning' | 'info' = 'info';
 
@@ -935,6 +937,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   };
 
   const showNotification = async (progress: GoalProgress) => {
+    if (!settings?.enable_notifications) return;
+
     const isDuplicate = inAppNotifications.some(
       n => n.type === progress.type && n.targetTime === progress.targetTime && 'isCompletion' in n === false
     );
@@ -951,6 +955,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   };
 
   const showCompletionNotification = (goal: DailyGoal, progress: GoalProgress) => {
+    if (!settings?.enable_notifications) return;
+
     const completionData = {
       ...progress,
       isCompletion: true,
