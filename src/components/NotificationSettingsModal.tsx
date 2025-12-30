@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Save, Bell } from 'lucide-react';
+import { X, Save, Bell, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
@@ -16,6 +16,13 @@ interface NotificationSettings {
     halfWay: string;
     needsWork: string;
   };
+}
+
+interface EmailReminderSettings {
+  id?: string;
+  user_email: string;
+  days_before_reminder: number;
+  enabled: boolean;
 }
 
 interface NotificationSettingsModalProps {
@@ -39,11 +46,17 @@ export default function NotificationSettingsModal({ isOpen, onClose }: Notificat
       needsWork: "Time to step it up! You've got this!"
     }
   });
+  const [emailSettings, setEmailSettings] = useState<EmailReminderSettings>({
+    user_email: '',
+    days_before_reminder: 1,
+    enabled: true
+  });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen && user) {
       loadSettings();
+      loadEmailReminderSettings();
     }
   }, [isOpen, user]);
 
@@ -64,6 +77,25 @@ export default function NotificationSettingsModal({ isOpen, onClose }: Notificat
         goal_achieved_message: data.goal_achieved_message,
         goal_missed_message: data.goal_missed_message,
         motivational_messages: data.motivational_messages
+      });
+    }
+  };
+
+  const loadEmailReminderSettings = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('notification_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!error && data) {
+      setEmailSettings({
+        id: data.id,
+        user_email: data.user_email,
+        days_before_reminder: data.days_before_reminder,
+        enabled: data.enabled
       });
     }
   };
@@ -110,6 +142,36 @@ export default function NotificationSettingsModal({ isOpen, onClose }: Notificat
         if (error) throw error;
       }
 
+      const { data: existingEmail } = await supabase
+        .from('notification_settings')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingEmail) {
+        const { error } = await supabase
+          .from('notification_settings')
+          .update({
+            user_email: emailSettings.user_email,
+            days_before_reminder: emailSettings.days_before_reminder,
+            enabled: emailSettings.enabled
+          })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('notification_settings')
+          .insert([{
+            user_id: user.id,
+            user_email: emailSettings.user_email,
+            days_before_reminder: emailSettings.days_before_reminder,
+            enabled: emailSettings.enabled
+          }]);
+
+        if (error) throw error;
+      }
+
       onClose();
     } catch (error) {
       console.error('Error saving notification settings:', error);
@@ -138,6 +200,88 @@ export default function NotificationSettingsModal({ isOpen, onClose }: Notificat
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="border-b border-gray-200 pb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Automatic Email Reminders</h3>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div className="flex items-start gap-3">
+                <Mail className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm text-blue-800">
+                    Receive email notifications before your scheduled calls are due. The system checks daily and sends reminders based on your settings.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="flex items-center gap-2 mb-4">
+                  <input
+                    type="checkbox"
+                    checked={emailSettings.enabled}
+                    onChange={(e) => setEmailSettings({ ...emailSettings, enabled: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Enable email reminders
+                  </span>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Your Email Address *
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="email"
+                    value={emailSettings.user_email}
+                    onChange={(e) => setEmailSettings({ ...emailSettings, user_email: e.target.value })}
+                    disabled={!emailSettings.enabled}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    placeholder="your.email@example.com"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Reminders will be sent to this email address
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Send Reminder
+                </label>
+                <select
+                  value={emailSettings.days_before_reminder}
+                  onChange={(e) => setEmailSettings({ ...emailSettings, days_before_reminder: parseInt(e.target.value) })}
+                  disabled={!emailSettings.enabled}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="0">On the day the call is due</option>
+                  <option value="1">1 day before</option>
+                  <option value="2">2 days before</option>
+                  <option value="3">3 days before</option>
+                  <option value="5">5 days before</option>
+                  <option value="7">1 week before</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  When to send the reminder before a call is due
+                </p>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <h4 className="text-sm font-medium text-gray-900 mb-2">How it works:</h4>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• The system checks daily for upcoming calls</li>
+                  <li>• You'll receive one email per day with all reminders</li>
+                  <li>• Only contacts with call reminders enabled will be included</li>
+                  <li>• Reminders are sent based on the last call date + reminder interval</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
@@ -147,7 +291,7 @@ export default function NotificationSettingsModal({ isOpen, onClose }: Notificat
                 className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
               />
               <div>
-                <div className="font-semibold text-gray-900">Enable Notifications</div>
+                <div className="font-semibold text-gray-900">Enable Goal Progress Notifications</div>
                 <div className="text-sm text-gray-600">Show goal progress alerts and reminders</div>
               </div>
             </label>

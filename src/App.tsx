@@ -3735,8 +3735,6 @@ function App() {
       {showSettingsModal && (
         <SettingsModal
           onClose={() => setShowSettingsModal(false)}
-          onSave={handleSaveNotificationSettings}
-          currentSettings={notificationSettings}
           panelSpacing={panelSpacing}
           onSavePanelSpacing={handleSavePanelSpacing}
         />
