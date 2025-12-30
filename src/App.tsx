@@ -182,7 +182,7 @@ function App() {
   const [hasGoals, setHasGoals] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [noteId, setNoteId] = useState<string | undefined>();
-  const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact']);
+  const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact', 'alerts']);
   const [panelOrder, setPanelOrder] = useState<string[]>(['notes', 'goals', 'priority']);
   const [panelSpacing, setPanelSpacing] = useState<number>(8);
   const { user, loading: authLoading, signOut } = useAuth();
@@ -2415,6 +2415,16 @@ function App() {
           Add Contact
         </button>
       ),
+      'alerts': (
+        <button
+          key="alerts"
+          onClick={() => setShowNotificationSettings(true)}
+          className="px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+        >
+          <Bell className="w-5 h-5" />
+          Alerts
+        </button>
+      ),
     };
 
     return (
@@ -2513,14 +2523,6 @@ function App() {
               >
                 <Target className="w-5 h-5" />
                 <span className="hidden sm:inline">Goals</span>
-              </button>
-              <button
-                onClick={() => setShowNotificationSettings(true)}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg transition-colors"
-                title="Notification Settings"
-              >
-                <Bell className="w-5 h-5" />
-                <span className="hidden sm:inline">Alerts</span>
               </button>
               <button
                 onClick={() => setShowPriorityPanel(!showPriorityPanel)}

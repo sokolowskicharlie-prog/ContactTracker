@@ -18,9 +18,12 @@ const DEFAULT_BUTTONS = [
   { id: 'export', label: 'Export Excel' },
   { id: 'history', label: 'History' },
   { id: 'delete-all', label: 'Delete All' },
+  { id: 'duplicates', label: 'Duplicates' },
   { id: 'settings', label: 'Settings' },
   { id: 'import', label: 'Import Excel' },
+  { id: 'bulk-search', label: 'Bulk Search' },
   { id: 'add-contact', label: 'Add Contact' },
+  { id: 'alerts', label: 'Alerts' },
 ];
 
 export default function ButtonOrderSettings({ onClose, onSave, currentOrder }: ButtonOrderSettingsProps) {
