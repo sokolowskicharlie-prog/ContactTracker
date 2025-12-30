@@ -19,6 +19,7 @@ interface PriorityPanelProps {
 }
 
 const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: string; borderColor: string }> = {
+  0: { label: 'Client', color: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
   1: { label: 'Highest', color: 'text-red-700', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
   2: { label: 'High', color: 'text-orange-700', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
   3: { label: 'Medium', color: 'text-yellow-700', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
@@ -32,10 +33,10 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
 
   if (!isOpen) return null;
 
-  const priorityContacts = contacts.filter(c => c.priority_rank && c.priority_rank >= 1 && c.priority_rank <= 5);
+  const priorityContacts = contacts.filter(c => c.priority_rank !== null && c.priority_rank !== undefined && c.priority_rank >= 0 && c.priority_rank <= 5);
 
   const groupedByPriority: Record<number, ContactWithActivity[]> = {};
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 0; i <= 5; i++) {
     groupedByPriority[i] = priorityContacts
       .filter(c => c.priority_rank === i)
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -158,7 +159,7 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
               </div>
             ) : (
               <div className="divide-y divide-gray-200">
-                {[1, 2, 3, 4, 5].map(priority => {
+                {[0, 1, 2, 3, 4, 5].map(priority => {
                   const contactsInPriority = groupedByPriority[priority];
                   if (contactsInPriority.length === 0) return null;
 
