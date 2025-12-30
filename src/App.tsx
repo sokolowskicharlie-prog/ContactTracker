@@ -278,6 +278,13 @@ function App() {
       const searchLower = jammedReasonFilter.toLowerCase();
       filtered = filtered.filter((contact) => {
         if (!contact.is_jammed) return false;
+
+        // Check for "no reason" variations
+        const noReasonKeywords = ['[no reason]', 'no reason', 'nothing', 'none', 'empty', 'blank'];
+        if (noReasonKeywords.some(keyword => searchLower.includes(keyword))) {
+          return !contact.jammed_note?.trim() && !contact.jammed_additional_note?.trim();
+        }
+
         const jammedNote = contact.jammed_note?.toLowerCase() || '';
         const jammedAdditionalNote = contact.jammed_additional_note?.toLowerCase() || '';
         return jammedNote.includes(searchLower) || jammedAdditionalNote.includes(searchLower);
