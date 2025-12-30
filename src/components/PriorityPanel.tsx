@@ -26,26 +26,13 @@ const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: s
   5: { label: 'Lowest', color: 'text-gray-700', bgColor: 'bg-gray-50', borderColor: 'border-gray-200' },
 };
 
-type StatusFilter = 'all' | 'client' | 'traction' | 'jammed' | 'none';
-
 export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad, panelOrder = ['notes', 'goals', 'priority'], showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, panelSpacing = 8 }: PriorityPanelProps) {
   const [isExpanded, setIsExpanded] = useState(priorityExpanded);
   const [selectedPriority, setSelectedPriority] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   if (!isOpen) return null;
 
-  let priorityContacts = contacts.filter(c => c.priority_rank && c.priority_rank >= 1 && c.priority_rank <= 5);
-
-  if (statusFilter !== 'all') {
-    priorityContacts = priorityContacts.filter(c => {
-      if (statusFilter === 'client') return c.is_client;
-      if (statusFilter === 'traction') return c.has_traction && !c.is_client;
-      if (statusFilter === 'jammed') return c.is_jammed;
-      if (statusFilter === 'none') return !c.is_client && !c.has_traction && !c.is_jammed;
-      return true;
-    });
-  }
+  const priorityContacts = contacts.filter(c => c.priority_rank && c.priority_rank >= 1 && c.priority_rank <= 5);
 
   const groupedByPriority: Record<number, ContactWithActivity[]> = {};
   for (let i = 1; i <= 5; i++) {
@@ -163,71 +150,13 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
         </div>
 
         {isExpanded && (
-          <>
-            <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0">
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  onClick={() => setStatusFilter('all')}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                    statusFilter === 'all'
-                      ? 'bg-purple-100 text-purple-700 border border-purple-300'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setStatusFilter('client')}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
-                    statusFilter === 'client'
-                      ? 'bg-green-100 text-green-700 border border-green-300'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <Check className="w-3 h-3" />
-                  Client
-                </button>
-                <button
-                  onClick={() => setStatusFilter('traction')}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
-                    statusFilter === 'traction'
-                      ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <Star className="w-3 h-3" />
-                  Traction
-                </button>
-                <button
-                  onClick={() => setStatusFilter('jammed')}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
-                    statusFilter === 'jammed'
-                      ? 'bg-red-100 text-red-700 border border-red-300'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <AlertTriangle className="w-3 h-3" />
-                  Jammed
-                </button>
-                <button
-                  onClick={() => setStatusFilter('none')}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                    statusFilter === 'none'
-                      ? 'bg-gray-200 text-gray-800 border border-gray-400'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  None
-                </button>
+          <div className="overflow-y-auto flex-1">
+            {priorityContacts.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                <p className="text-sm">No priority contacts yet.</p>
               </div>
-            </div>
-            <div className="overflow-y-auto flex-1">
-              {priorityContacts.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p className="text-sm">No priority contacts{statusFilter !== 'all' ? ' match this filter' : ' yet'}.</p>
-                </div>
-              ) : (
+            ) : (
               <div className="divide-y divide-gray-200">
                 {[1, 2, 3, 4, 5].map(priority => {
                   const contactsInPriority = groupedByPriority[priority];
@@ -312,8 +241,7 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
                 })}
               </div>
             )}
-            </div>
-          </>
+          </div>
         )}
       </div>
     </div>
