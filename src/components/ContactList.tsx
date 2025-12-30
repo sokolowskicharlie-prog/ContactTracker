@@ -196,12 +196,8 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-lg font-semibold text-gray-900">{contact.name}</h3>
-                    {(contact.priority_rank !== null && contact.priority_rank !== undefined) && (
-                      <div className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
-                        contact.priority_rank === 0
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
+                    {contact.priority_rank && (
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
                         <TrendingUp className="w-3 h-3" />
                         P{contact.priority_rank}
                       </div>
