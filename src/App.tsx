@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X } from 'lucide-react';
+import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell, BellOff } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import AuthForm from './components/AuthForm';
 import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, Task, TaskWithRelated, Contact, DailyGoal } from './lib/supabase';
@@ -172,6 +172,7 @@ function App() {
     const saved = localStorage.getItem('goalProgressBoxVisible');
     return saved !== null ? saved === 'true' : true;
   });
+  const [goalNotificationsEnabled, setGoalNotificationsEnabled] = useState(true);
   const [showNotepad, setShowNotepad] = useState(false);
   const [showPriorityPanel, setShowPriorityPanel] = useState(false);
   const [notepadExpanded, setNotepadExpanded] = useState(true);
@@ -190,6 +191,7 @@ function App() {
     loadContacts();
     loadSuppliers();
     loadNotificationSettings();
+    loadGoalNotificationSettings();
     loadTasks();
     loadButtonOrder();
     loadNotes();
@@ -1175,6 +1177,62 @@ function App() {
       await loadNotificationSettings();
     } catch (error) {
       console.error('Error saving notification settings:', error);
+    }
+  };
+
+  const loadGoalNotificationSettings = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('goal_notification_settings')
+        .select('*')
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data) {
+        setGoalNotificationsEnabled(data.enable_notifications);
+      }
+    } catch (error) {
+      console.error('Error loading goal notification settings:', error);
+    }
+  };
+
+  const toggleGoalNotifications = async () => {
+    if (!user) return;
+
+    const newValue = !goalNotificationsEnabled;
+    setGoalNotificationsEnabled(newValue);
+
+    try {
+      const { data: existing } = await supabase
+        .from('goal_notification_settings')
+        .select('*')
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('goal_notification_settings')
+          .update({
+            enable_notifications: newValue,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('goal_notification_settings')
+          .insert([{
+            user_id: user.id,
+            enable_notifications: newValue,
+            notification_frequency: 30
+          }]);
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error toggling goal notifications:', error);
+      setGoalNotificationsEnabled(!newValue);
     }
   };
 
@@ -2511,6 +2569,18 @@ function App() {
               >
                 <Target className="w-5 h-5" />
                 <span className="hidden sm:inline">Goals</span>
+              </button>
+              <button
+                onClick={toggleGoalNotifications}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  goalNotificationsEnabled
+                    ? 'text-green-600 bg-green-50 hover:bg-green-100'
+                    : 'text-gray-400 bg-gray-50 hover:bg-gray-100'
+                }`}
+                title={goalNotificationsEnabled ? 'Notifications On' : 'Notifications Off'}
+              >
+                {goalNotificationsEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+                <span className="hidden sm:inline">Alerts</span>
               </button>
               <button
                 onClick={() => setShowPriorityPanel(!showPriorityPanel)}
