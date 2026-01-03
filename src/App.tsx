@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell, ChevronDown, FolderOpen } from 'lucide-react';
+import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell, ChevronDown, FolderOpen, PieChart } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import { Workspace, getWorkspaces, getOrCreateDefaultWorkspace } from './lib/workspaces';
 import AuthForm from './components/AuthForm';
@@ -42,6 +42,7 @@ import PriorityList from './components/PriorityList';
 import PriorityPanel from './components/PriorityPanel';
 import NotificationSettingsModal from './components/NotificationSettingsModal';
 import WorkspaceModal from './components/WorkspaceModal';
+import StatsModal from './components/StatsModal';
 
 interface NotificationSettings {
   id?: string;
@@ -186,6 +187,7 @@ function App() {
     return saved !== null ? saved === 'true' : true;
   });
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [showStatsModal, setShowStatsModal] = useState(false);
   const [showNotepad, setShowNotepad] = useState(true);
   const [showPriorityPanel, setShowPriorityPanel] = useState(true);
   const [notepadExpanded, setNotepadExpanded] = useState(true);
@@ -194,7 +196,7 @@ function App() {
   const [hasGoals, setHasGoals] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [noteId, setNoteId] = useState<string | undefined>();
-  const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact', 'alerts']);
+  const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact', 'alerts', 'stats']);
   const [panelOrder, setPanelOrder] = useState<string[]>(['notes', 'goals', 'priority']);
   const [panelSpacing, setPanelSpacing] = useState<number>(2);
   const { user, loading: authLoading, signOut } = useAuth();
@@ -2529,6 +2531,16 @@ function App() {
           Alerts
         </button>
       ),
+      'stats': (
+        <button
+          key="stats"
+          onClick={() => setShowStatsModal(true)}
+          className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+        >
+          <PieChart className="w-5 h-5" />
+          Statistics
+        </button>
+      ),
     };
 
     return (
@@ -4016,6 +4028,12 @@ function App() {
       <NotificationSettingsModal
         isOpen={showNotificationSettings}
         onClose={() => setShowNotificationSettings(false)}
+      />
+
+      <StatsModal
+        isOpen={showStatsModal}
+        onClose={() => setShowStatsModal(false)}
+        contacts={contacts}
       />
 
       <WorkspaceModal
