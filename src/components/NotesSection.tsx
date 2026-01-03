@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, StickyNote, User, Calendar, ArrowUpDown } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
+import { formatNoteContent } from '../lib/noteFormatter';
 
 interface SavedNote {
   id: string;
@@ -141,9 +142,10 @@ export default function NotesSection({
                       className="w-full px-4 py-3 text-left hover:bg-amber-50 border-b border-gray-100 last:border-b-0 transition-colors"
                     >
                       <div className="font-medium text-gray-900">{note.title}</div>
-                      <div className="text-sm text-gray-600 mt-1 line-clamp-2">
-                        {note.content}
-                      </div>
+                      <div
+                        className="text-sm text-gray-600 mt-1 line-clamp-2"
+                        dangerouslySetInnerHTML={{ __html: formatNoteContent(note.content) }}
+                      />
                       <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
                         {note.contact_id && (
                           <span className="flex items-center gap-1 text-amber-600">
@@ -273,9 +275,10 @@ export default function NotesSection({
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-600 line-clamp-4">
-                  {note.content || 'No content'}
-                </p>
+                <div
+                  className="text-sm text-gray-600 line-clamp-4"
+                  dangerouslySetInnerHTML={{ __html: note.content ? formatNoteContent(note.content) : 'No content' }}
+                />
 
                 <div className="pt-3 border-t border-gray-100 space-y-2 text-xs text-gray-500">
                   {note.contact_id && (

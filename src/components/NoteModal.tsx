@@ -113,10 +113,13 @@ export default function NoteModal({ isOpen, onClose, onSave, note, contacts }: N
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Start typing your note..."
+              placeholder="Start typing your note...&#10;&#10;Tip: Use - or * at the start of a line for bullet points"
               rows={12}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
             />
+            <p className="mt-1 text-xs text-gray-500">
+              Tip: Start lines with <span className="font-mono bg-gray-100 px-1 rounded">-</span> or <span className="font-mono bg-gray-100 px-1 rounded">*</span> to create bullet points
+            </p>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
