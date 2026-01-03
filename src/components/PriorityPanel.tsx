@@ -98,7 +98,7 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
       notesCollapsed: 52,
       goalsExpanded: 180,
       goalsCollapsed: 52,
-      priorityExpanded: 600,
+      priorityExpanded: 300,
       priorityCollapsed: 52
     };
 
@@ -155,7 +155,7 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
         </div>
 
         {isExpanded && (
-          <div className="overflow-y-auto" style={{ maxHeight: '550px' }}>
+          <div className="overflow-y-auto" style={{ maxHeight: '248px' }}>
             {priorityContacts.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
                 <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-20" />
