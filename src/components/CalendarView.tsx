@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Phone, Mail, Target, CheckSquare, Circle, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Phone, Mail, Target, CheckSquare, Circle, CheckCircle2, X } from 'lucide-react';
 import { TaskWithRelated } from '../lib/supabase';
 
 interface DailyGoal {
@@ -39,6 +39,8 @@ interface CalendarEvent {
 
 export default function CalendarView({ tasks, goals, communications, onTaskClick, onDateClick }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDayModal, setShowDayModal] = useState(false);
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -102,6 +104,18 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
     });
 
     return events;
+  };
+
+  const getCommCounts = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    const calls = communications.filter(c => c.type === 'call' && c.date.startsWith(dateStr)).length;
+    const emails = communications.filter(c => c.type === 'email' && c.date.startsWith(dateStr)).length;
+    return { calls, emails };
+  };
+
+  const handleDayClick = (date: Date) => {
+    setSelectedDate(date);
+    setShowDayModal(true);
   };
 
   const isToday = (date: Date) => {
@@ -232,23 +246,40 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
           const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
           const events = getEventsForDate(date);
           const today = isToday(date);
+          const { calls, emails } = getCommCounts(date);
 
           return (
             <div
               key={day}
-              onClick={() => onDateClick?.(date)}
-              className={`border rounded-lg min-h-[100px] p-1 transition-colors ${
+              onClick={() => handleDayClick(date)}
+              className={`border rounded-lg min-h-[100px] p-1 transition-colors cursor-pointer ${
                 today ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-              } ${onDateClick ? 'cursor-pointer' : ''}`}
+              }`}
             >
-              <div className={`text-sm font-semibold mb-1 ${today ? 'text-blue-700' : 'text-gray-700'}`}>
-                {day}
+              <div className="flex items-start justify-between mb-1">
+                <div className={`text-sm font-semibold ${today ? 'text-blue-700' : 'text-gray-700'}`}>
+                  {day}
+                </div>
+                <div className="flex gap-1">
+                  {calls > 0 && (
+                    <div className="flex items-center gap-0.5 bg-teal-100 text-teal-700 text-xs px-1 rounded" title={`${calls} call${calls > 1 ? 's' : ''}`}>
+                      <Phone className="w-2.5 h-2.5" />
+                      <span className="font-medium">{calls}</span>
+                    </div>
+                  )}
+                  {emails > 0 && (
+                    <div className="flex items-center gap-0.5 bg-orange-100 text-orange-700 text-xs px-1 rounded" title={`${emails} email${emails > 1 ? 's' : ''}`}>
+                      <Mail className="w-2.5 h-2.5" />
+                      <span className="font-medium">{emails}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="space-y-0.5 overflow-y-auto max-h-[70px]">
-                {events.slice(0, 3).map(renderEvent)}
-                {events.length > 3 && (
+              <div className="space-y-0.5 overflow-y-auto max-h-[60px]">
+                {events.slice(0, 2).map(renderEvent)}
+                {events.length > 2 && (
                   <div className="text-xs text-gray-500 font-medium px-1">
-                    +{events.length - 3} more
+                    +{events.length - 2} more
                   </div>
                 )}
               </div>
@@ -256,6 +287,208 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
           );
         })}
       </div>
+
+      {showDayModal && selectedDate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {selectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </h2>
+                {isToday(selectedDate) && (
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                    Today
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setShowDayModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {(() => {
+                const events = getEventsForDate(selectedDate);
+                const dayTasks = events.filter(e => e.type === 'task');
+                const dayGoals = events.filter(e => e.type === 'goal');
+                const dayCalls = events.filter(e => e.type === 'call');
+                const dayEmails = events.filter(e => e.type === 'email');
+                const hasAnyEvents = events.length > 0;
+
+                return (
+                  <>
+                    {!hasAnyEvents && (
+                      <div className="text-center py-12 text-gray-500">
+                        <Calendar className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                        <p className="text-lg">No events scheduled for this day</p>
+                      </div>
+                    )}
+
+                    {dayGoals.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <Target className="w-5 h-5 text-purple-600" />
+                          Goals ({dayGoals.length})
+                        </h3>
+                        <div className="space-y-2">
+                          {dayGoals.map(event => (
+                            <div
+                              key={event.id}
+                              className={`p-3 rounded-lg border ${
+                                event.completed
+                                  ? 'bg-green-50 border-green-200'
+                                  : 'bg-purple-50 border-purple-200'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className={`font-medium ${
+                                  event.completed ? 'text-green-900' : 'text-purple-900'
+                                }`}>
+                                  {event.title}
+                                </span>
+                                {event.completed && (
+                                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                )}
+                              </div>
+                              {event.time && (
+                                <p className="text-sm text-gray-600 mt-1">Time: {event.time}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {dayTasks.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <CheckSquare className="w-5 h-5 text-blue-600" />
+                          Tasks ({dayTasks.length})
+                        </h3>
+                        <div className="space-y-2">
+                          {dayTasks.map(event => (
+                            <div
+                              key={event.id}
+                              onClick={() => {
+                                if (onTaskClick) {
+                                  onTaskClick(event.data);
+                                  setShowDayModal(false);
+                                }
+                              }}
+                              className={`p-3 rounded-lg border ${
+                                event.completed
+                                  ? 'bg-gray-50 border-gray-200'
+                                  : 'bg-blue-50 border-blue-200'
+                              } ${onTaskClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+                            >
+                              <div className="flex items-start gap-2">
+                                {event.completed ? (
+                                  <CheckCircle2 className="w-5 h-5 text-gray-600 mt-0.5" />
+                                ) : (
+                                  <Circle className="w-5 h-5 text-blue-600 mt-0.5" />
+                                )}
+                                <div className="flex-1">
+                                  <p className={`font-medium ${
+                                    event.completed ? 'text-gray-600 line-through' : 'text-blue-900'
+                                  }`}>
+                                    {event.title}
+                                  </p>
+                                  {event.data.description && (
+                                    <p className="text-sm text-gray-600 mt-1">{event.data.description}</p>
+                                  )}
+                                  {event.data.related_contact_name && (
+                                    <p className="text-sm text-gray-500 mt-1">
+                                      Contact: {event.data.related_contact_name}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {dayCalls.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <Phone className="w-5 h-5 text-teal-600" />
+                          Calls ({dayCalls.length})
+                        </h3>
+                        <div className="space-y-2">
+                          {dayCalls.map(event => (
+                            <div
+                              key={event.id}
+                              className="p-3 rounded-lg border bg-teal-50 border-teal-200"
+                            >
+                              <div className="flex items-center gap-2 mb-1">
+                                <Phone className="w-4 h-4 text-teal-600" />
+                                <span className="font-medium text-teal-900">{event.title}</span>
+                              </div>
+                              {event.data.notes && (
+                                <p className="text-sm text-gray-600 mt-2">{event.data.notes}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {dayEmails.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <Mail className="w-5 h-5 text-orange-600" />
+                          Emails ({dayEmails.length})
+                        </h3>
+                        <div className="space-y-2">
+                          {dayEmails.map(event => (
+                            <div
+                              key={event.id}
+                              className="p-3 rounded-lg border bg-orange-50 border-orange-200"
+                            >
+                              <div className="flex items-center gap-2 mb-1">
+                                <Mail className="w-4 h-4 text-orange-600" />
+                                <span className="font-medium text-orange-900">{event.title}</span>
+                              </div>
+                              {event.data.notes && (
+                                <p className="text-sm text-gray-600 mt-2">{event.data.notes}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-2">
+              {onDateClick && (
+                <button
+                  onClick={() => {
+                    onDateClick(selectedDate);
+                    setShowDayModal(false);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Add Task for This Day
+                </button>
+              )}
+              <button
+                onClick={() => setShowDayModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
