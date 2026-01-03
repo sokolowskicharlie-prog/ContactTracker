@@ -234,7 +234,7 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
         </div>
 
         {isExpanded && (
-          <div className="p-4">
+          <div className="p-3">
             {loadedNote && (
               <div className="mb-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <div className="flex items-start justify-between gap-2">

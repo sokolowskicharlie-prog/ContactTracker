@@ -124,7 +124,7 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
       className="fixed right-4 z-40 w-80"
       style={{ top: `${calculateTopPosition()}px` }}
     >
-      <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden max-h-[600px] flex flex-col">
+      <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden flex flex-col">
         <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
@@ -155,9 +155,9 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
         </div>
 
         {isExpanded && (
-          <div className="overflow-y-auto flex-1">
+          <div className="overflow-y-auto max-h-[550px]">
             {priorityContacts.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
+              <div className="p-6 text-center text-gray-500">
                 <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-20" />
                 <p className="text-sm">No priority contacts yet.</p>
               </div>

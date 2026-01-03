@@ -771,11 +771,11 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
         </div>
 
         {isExpanded && (
-          <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+          <div className="p-3 space-y-2 max-h-96 overflow-y-auto">
             {goals.length === 0 ? (
-              <div className="text-center py-6 px-4">
-                <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-600 text-sm mb-2 font-medium">No goals set for today</p>
+              <div className="text-center py-4 px-3">
+                <Target className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-600 text-sm mb-1 font-medium">No goals set for today</p>
                 <p className="text-gray-500 text-xs">Go to the Tasks page to create your daily goals</p>
               </div>
             ) : (
