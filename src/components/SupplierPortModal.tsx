@@ -1,4 +1,4 @@
-import { X, Anchor, Truck, Ship, FileText, Fuel, Plus, Edit2, Check } from 'lucide-react';
+import { X, Anchor, Truck, Ship, FileText, Fuel, Plus, Edit2, Check, XCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { SupplierPort, CustomFuelType, CustomDeliveryMethod, supabase } from '../lib/supabase';
 
@@ -29,9 +29,16 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
   const [editingFuelTypeName, setEditingFuelTypeName] = useState('');
   const [editingDeliveryMethodId, setEditingDeliveryMethodId] = useState<string | null>(null);
   const [editingDeliveryMethodName, setEditingDeliveryMethodName] = useState('');
+  const [vlsfoName, setVlsfoName] = useState('VLSFO');
+  const [lsmgoName, setLsmgoName] = useState('LSMGO');
+  const [editingVlsfo, setEditingVlsfo] = useState(false);
+  const [editingLsmgo, setEditingLsmgo] = useState(false);
+  const [editVlsfoValue, setEditVlsfoValue] = useState('');
+  const [editLsmgoValue, setEditLsmgoValue] = useState('');
 
   useEffect(() => {
     loadCustomTypes();
+    loadFuelNames();
   }, []);
 
   useEffect(() => {
@@ -65,6 +72,90 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
     } catch (error) {
       console.error('Error loading custom types:', error);
     }
+  };
+
+  const loadFuelNames = async () => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { data: prefs } = await supabase
+        .from('user_preferences')
+        .select('vlsfo_name, lsmgo_name')
+        .eq('user_id', user.user.id)
+        .maybeSingle();
+
+      if (prefs) {
+        setVlsfoName(prefs.vlsfo_name || 'VLSFO');
+        setLsmgoName(prefs.lsmgo_name || 'LSMGO');
+      }
+    } catch (error) {
+      console.error('Error loading fuel names:', error);
+    }
+  };
+
+  const startEditingVlsfo = () => {
+    setEditingVlsfo(true);
+    setEditVlsfoValue(vlsfoName);
+  };
+
+  const startEditingLsmgo = () => {
+    setEditingLsmgo(true);
+    setEditLsmgoValue(lsmgoName);
+  };
+
+  const saveVlsfoName = async () => {
+    if (!editVlsfoValue.trim()) return;
+
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({ vlsfo_name: editVlsfoValue.trim() })
+        .eq('user_id', user.user.id);
+
+      if (error) throw error;
+
+      setVlsfoName(editVlsfoValue.trim());
+      setEditingVlsfo(false);
+      setEditVlsfoValue('');
+    } catch (error) {
+      console.error('Error updating VLSFO name:', error);
+    }
+  };
+
+  const saveLsmgoName = async () => {
+    if (!editLsmgoValue.trim()) return;
+
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({ lsmgo_name: editLsmgoValue.trim() })
+        .eq('user_id', user.user.id);
+
+      if (error) throw error;
+
+      setLsmgoName(editLsmgoValue.trim());
+      setEditingLsmgo(false);
+      setEditLsmgoValue('');
+    } catch (error) {
+      console.error('Error updating LSMGO name:', error);
+    }
+  };
+
+  const cancelEditingVlsfo = () => {
+    setEditingVlsfo(false);
+    setEditVlsfoValue('');
+  };
+
+  const cancelEditingLsmgo = () => {
+    setEditingLsmgo(false);
+    setEditLsmgoValue('');
   };
 
   const handleAddFuelType = async () => {
@@ -476,27 +567,117 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
               )}
             </div>
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hasVlsfo}
-                  onChange={(e) => setHasVlsfo(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <Fuel className="w-5 h-5 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">VLSFO</span>
-              </label>
+              <div className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                {editingVlsfo ? (
+                  <>
+                    <input
+                      type="text"
+                      value={editVlsfoValue}
+                      onChange={(e) => setEditVlsfoValue(e.target.value)}
+                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          saveVlsfoName();
+                        } else if (e.key === 'Escape') {
+                          cancelEditingVlsfo();
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={saveVlsfoName}
+                      className="p-1 text-green-600 hover:bg-green-100 rounded"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEditingVlsfo}
+                      className="p-1 text-red-600 hover:bg-red-100 rounded"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <label className="flex items-center gap-3 flex-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hasVlsfo}
+                        onChange={(e) => setHasVlsfo(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <Fuel className="w-5 h-5 text-gray-600" />
+                      <span className="text-sm font-medium text-gray-700">{vlsfoName}</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={startEditingVlsfo}
+                      className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
+              </div>
 
-              <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hasLsmgo}
-                  onChange={(e) => setHasLsmgo(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <Fuel className="w-5 h-5 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">LSMGO</span>
-              </label>
+              <div className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                {editingLsmgo ? (
+                  <>
+                    <input
+                      type="text"
+                      value={editLsmgoValue}
+                      onChange={(e) => setEditLsmgoValue(e.target.value)}
+                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          saveLsmgoName();
+                        } else if (e.key === 'Escape') {
+                          cancelEditingLsmgo();
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={saveLsmgoName}
+                      className="p-1 text-green-600 hover:bg-green-100 rounded"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEditingLsmgo}
+                      className="p-1 text-red-600 hover:bg-red-100 rounded"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <label className="flex items-center gap-3 flex-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hasLsmgo}
+                        onChange={(e) => setHasLsmgo(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <Fuel className="w-5 h-5 text-gray-600" />
+                      <span className="text-sm font-medium text-gray-700">{lsmgoName}</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={startEditingLsmgo}
+                      className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
+              </div>
 
               {customFuelTypes.map((fuelType) => (
                 <div
