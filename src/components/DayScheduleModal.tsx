@@ -10,9 +10,10 @@ interface DayScheduleModalProps {
   onClose: () => void;
   onTaskClick: (task: TaskWithRelated) => void;
   onCreateTask: () => void;
+  onToggleTask: (taskId: string, completed: boolean) => void;
 }
 
-export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals, onClose, onTaskClick, onCreateTask }: DayScheduleModalProps) {
+export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals, onClose, onTaskClick, onCreateTask, onToggleTask }: DayScheduleModalProps) {
   const dateStr = date.toISOString().split('T')[0];
   const dayTasks = tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr));
   const dueTasks = dayTasks.filter(task => !task.completed);
@@ -112,15 +113,25 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
                     {sortedDueTasks.map((task) => (
                       <div
                         key={task.id}
-                        onClick={() => {
-                          onTaskClick(task);
-                          onClose();
-                        }}
-                        className="p-3 rounded-lg border bg-white hover:border-blue-300 cursor-pointer transition-all"
+                        className="p-3 rounded-lg border bg-white hover:border-blue-300 transition-all"
                       >
                         <div className="flex items-start gap-3">
-                          <Circle className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                          <div className="flex-1 min-w-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleTask(task.id, true);
+                            }}
+                            className="flex-shrink-0 mt-0.5 hover:scale-110 transition-transform"
+                          >
+                            <Circle className="w-5 h-5 text-gray-400 hover:text-green-600" />
+                          </button>
+                          <div
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => {
+                              onTaskClick(task);
+                              onClose();
+                            }}
+                          >
                             <div className="flex items-center gap-2 mb-1">
                               {task.due_date && (
                                 <span className="text-xs text-gray-600">{formatTime(task.due_date)}</span>
@@ -153,15 +164,25 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
                     {sortedCompletedTasks.map((task) => (
                       <div
                         key={task.id}
-                        onClick={() => {
-                          onTaskClick(task);
-                          onClose();
-                        }}
-                        className="p-3 rounded-lg border bg-gray-50 hover:border-green-300 cursor-pointer transition-all opacity-75"
+                        className="p-3 rounded-lg border bg-gray-50 hover:border-green-300 transition-all opacity-75"
                       >
                         <div className="flex items-start gap-3">
-                          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                          <div className="flex-1 min-w-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleTask(task.id, false);
+                            }}
+                            className="flex-shrink-0 mt-0.5 hover:scale-110 transition-transform"
+                          >
+                            <CheckCircle2 className="w-5 h-5 text-green-600 hover:text-gray-400" />
+                          </button>
+                          <div
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => {
+                              onTaskClick(task);
+                              onClose();
+                            }}
+                          >
                             <div className="flex items-center gap-2 mb-1">
                               {task.due_date && (
                                 <span className="text-xs text-gray-600">{formatTime(task.due_date)}</span>

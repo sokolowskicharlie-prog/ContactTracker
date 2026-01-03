@@ -4038,6 +4038,7 @@ function App() {
             setEditingTask(undefined);
             setShowTaskModal(true);
           }}
+          onToggleTask={handleToggleTaskComplete}
         />
       )}
 
