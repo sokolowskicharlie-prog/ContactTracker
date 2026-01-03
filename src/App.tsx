@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell } from 'lucide-react';
+import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell, ChevronDown, FolderOpen } from 'lucide-react';
 import { useAuth } from './lib/auth';
+import { Workspace, getWorkspaces, getOrCreateDefaultWorkspace } from './lib/workspaces';
 import AuthForm from './components/AuthForm';
 import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, Task, TaskWithRelated, Contact, DailyGoal } from './lib/supabase';
 import { getTimezoneForCountry } from './lib/timezones';
@@ -40,6 +41,7 @@ import NoteModal from './components/NoteModal';
 import PriorityList from './components/PriorityList';
 import PriorityPanel from './components/PriorityPanel';
 import NotificationSettingsModal from './components/NotificationSettingsModal';
+import WorkspaceModal from './components/WorkspaceModal';
 
 interface NotificationSettings {
   id?: string;
@@ -63,6 +65,10 @@ function App() {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [contacts, setContacts] = useState<ContactWithActivity[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<ContactWithActivity[]>([]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
+  const [showWorkspaceDropdown, setShowWorkspaceDropdown] = useState(false);
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
   const [suppliers, setSuppliers] = useState<SupplierWithOrders[]>([]);
   const [filteredSuppliers, setFilteredSuppliers] = useState<SupplierWithOrders[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -195,14 +201,19 @@ function App() {
 
   useEffect(() => {
     if (!user) return;
-    loadContacts();
-    loadSuppliers();
+    loadWorkspaces();
     loadNotificationSettings();
     loadTasks();
     loadButtonOrder();
     loadNotes();
     loadSavedNotes();
   }, [user]);
+
+  useEffect(() => {
+    if (!user || !currentWorkspace) return;
+    loadContacts();
+    loadSuppliers();
+  }, [user, currentWorkspace]);
 
   useEffect(() => {
     let filtered = [...contacts];
@@ -609,12 +620,37 @@ function App() {
     setFilteredTasks(filtered);
   }, [tasks, searchQuery, taskFilter]);
 
-  const loadContacts = async () => {
+  const loadWorkspaces = async () => {
+    if (!user) return;
     try {
-      const { data: contactsData, error: contactsError } = await supabase
+      const workspacesData = await getWorkspaces(user.id);
+      if (workspacesData.length === 0) {
+        const defaultWorkspace = await getOrCreateDefaultWorkspace(user.id);
+        setWorkspaces([defaultWorkspace]);
+        setCurrentWorkspace(defaultWorkspace);
+      } else {
+        setWorkspaces(workspacesData);
+        const defaultWs = workspacesData.find(w => w.is_default) || workspacesData[0];
+        setCurrentWorkspace(defaultWs);
+      }
+    } catch (error) {
+      console.error('Error loading workspaces:', error);
+    }
+  };
+
+  const loadContacts = async () => {
+    if (!currentWorkspace) return;
+    try {
+      let query = supabase
         .from('contacts')
         .select('*')
         .order('name');
+
+      if (currentWorkspace) {
+        query = query.or(`workspace_id.eq.${currentWorkspace.id},workspace_id.is.null`);
+      }
+
+      const { data: contactsData, error: contactsError } = await query;
 
       if (contactsError) throw contactsError;
 
@@ -790,6 +826,7 @@ function App() {
         const insertData = {
           ...contactData,
           user_id: user?.id,
+          workspace_id: currentWorkspace?.id,
         };
 
         const { data, error } = await supabase
@@ -1107,11 +1144,18 @@ function App() {
   };
 
   const loadSuppliers = async () => {
+    if (!currentWorkspace) return;
     try {
-      const { data: suppliersData, error: suppliersError } = await supabase
+      let query = supabase
         .from('suppliers')
         .select('*')
         .order('company_name');
+
+      if (currentWorkspace) {
+        query = query.or(`workspace_id.eq.${currentWorkspace.id},workspace_id.is.null`);
+      }
+
+      const { data: suppliersData, error: suppliersError } = await query;
 
       if (suppliersError) throw suppliersError;
 
@@ -1830,6 +1874,7 @@ function App() {
       } else {
         const { error } = await supabase.from('suppliers').insert([{
           user_id: user.id,
+          workspace_id: currentWorkspace?.id,
           ...supplierData
         }]);
 
@@ -2539,13 +2584,67 @@ function App() {
                   <CheckSquare className="w-8 h-8 text-white" />
                 )}
               </div>
-              <h1 className="text-4xl font-bold text-gray-900">
-                {currentPage === 'contacts' ? 'Contact Tracker' :
-                 currentPage === 'suppliers' ? 'Supplier Tracker' :
-                 currentPage === 'priority' ? 'Priority List' :
-                 currentPage === 'notes' ? 'Notes' :
-                 'Task Manager'}
-              </h1>
+              <div className="flex flex-col gap-1">
+                <h1 className="text-4xl font-bold text-gray-900">
+                  {currentPage === 'contacts' ? 'Contact Tracker' :
+                   currentPage === 'suppliers' ? 'Supplier Tracker' :
+                   currentPage === 'priority' ? 'Priority List' :
+                   currentPage === 'notes' ? 'Notes' :
+                   'Task Manager'}
+                </h1>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowWorkspaceDropdown(!showWorkspaceDropdown)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200 text-sm"
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: currentWorkspace?.color || '#3B82F6' }}
+                    />
+                    <span className="text-gray-700 font-medium">
+                      {currentWorkspace?.name || 'Loading...'}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                  </button>
+                  {showWorkspaceDropdown && (
+                    <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[200px] z-50">
+                      {workspaces.map((workspace) => (
+                        <button
+                          key={workspace.id}
+                          onClick={() => {
+                            setCurrentWorkspace(workspace);
+                            setShowWorkspaceDropdown(false);
+                          }}
+                          className={`w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition-colors ${
+                            currentWorkspace?.id === workspace.id ? 'bg-blue-50' : ''
+                          }`}
+                        >
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: workspace.color }}
+                          />
+                          <span className="text-gray-700 font-medium">{workspace.name}</span>
+                          {workspace.is_default && (
+                            <span className="ml-auto text-xs text-gray-500">Default</span>
+                          )}
+                        </button>
+                      ))}
+                      <div className="border-t border-gray-200 mt-2 pt-2">
+                        <button
+                          onClick={() => {
+                            setShowWorkspaceModal(true);
+                            setShowWorkspaceDropdown(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition-colors text-blue-600"
+                        >
+                          <FolderOpen className="w-4 h-4" />
+                          <span className="font-medium">Manage Workspaces</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -3907,6 +4006,12 @@ function App() {
       <NotificationSettingsModal
         isOpen={showNotificationSettings}
         onClose={() => setShowNotificationSettings(false)}
+      />
+
+      <WorkspaceModal
+        isOpen={showWorkspaceModal}
+        onClose={() => setShowWorkspaceModal(false)}
+        onWorkspaceChange={loadWorkspaces}
       />
 
       <Notepad
