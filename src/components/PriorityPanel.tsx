@@ -155,7 +155,7 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
         </div>
 
         {isExpanded && (
-          <div className="overflow-y-auto h-[270px]">
+          <div className="overflow-y-auto max-h-[300px]">
             {priorityContacts.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
                 <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-20" />
