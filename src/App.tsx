@@ -168,6 +168,7 @@ function App() {
   });
   const [filterPort, setFilterPort] = useState<string>('all');
   const [filterFuelType, setFilterFuelType] = useState<string>('all');
+  const [filterDeliveryMethod, setFilterDeliveryMethod] = useState<string>('all');
   const [tasks, setTasks] = useState<TaskWithRelated[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<TaskWithRelated[]>([]);
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -571,15 +572,34 @@ function App() {
           supplier.company_name.toLowerCase().includes(query) ||
           supplier.contact_person?.toLowerCase().includes(query) ||
           supplier.email?.toLowerCase().includes(query) ||
-          supplier.supplier_type?.toLowerCase().includes(query)
+          supplier.supplier_type?.toLowerCase().includes(query) ||
+          supplier.ports_detailed?.some(port => port.port_name.toLowerCase().includes(query)) ||
+          supplier.ports?.toLowerCase().includes(query)
       );
     }
 
     if (filterPort !== 'all') {
       filtered = filtered.filter((supplier) => {
-        if (!supplier.ports) return false;
-        const ports = supplier.ports.split(';').map(p => p.trim().toLowerCase());
-        return ports.some(port => port.includes(filterPort.toLowerCase()));
+        if (!supplier.ports_detailed || supplier.ports_detailed.length === 0) {
+          if (!supplier.ports) return false;
+          const ports = supplier.ports.split(';').map(p => p.trim().toLowerCase());
+          return ports.some(port => port.includes(filterPort.toLowerCase()));
+        }
+        return supplier.ports_detailed.some(port =>
+          port.port_name.toLowerCase().includes(filterPort.toLowerCase())
+        );
+      });
+    }
+
+    if (filterDeliveryMethod !== 'all') {
+      filtered = filtered.filter((supplier) => {
+        if (!supplier.ports_detailed || supplier.ports_detailed.length === 0) return false;
+        return supplier.ports_detailed.some(port => {
+          if (filterDeliveryMethod === 'barge') return port.has_barge;
+          if (filterDeliveryMethod === 'truck') return port.has_truck;
+          if (filterDeliveryMethod === 'expipe') return port.has_expipe;
+          return false;
+        });
       });
     }
 
@@ -594,7 +614,7 @@ function App() {
     filtered.sort((a, b) => a.company_name.localeCompare(b.company_name));
 
     setFilteredSuppliers(filtered);
-  }, [suppliers, searchQuery, filterPort, filterFuelType]);
+  }, [suppliers, searchQuery, filterPort, filterFuelType, filterDeliveryMethod]);
 
   useEffect(() => {
     let filtered = [...tasks];
@@ -3568,7 +3588,7 @@ function App() {
               <Filter className="w-5 h-5 text-gray-600" />
               <h3 className="font-medium text-gray-900">Filter Suppliers</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Port
@@ -3580,14 +3600,31 @@ function App() {
                 >
                   <option value="all">All Ports</option>
                   {Array.from(new Set(
-                    suppliers
-                      .flatMap((s) => s.ports?.split(';').map(p => p.trim()) || [])
-                      .filter(Boolean)
+                    suppliers.flatMap((s) => {
+                      const detailedPorts = s.ports_detailed?.map(p => p.port_name) || [];
+                      const legacyPorts = s.ports?.split(';').map(p => p.trim()) || [];
+                      return [...detailedPorts, ...legacyPorts];
+                    }).filter(Boolean)
                   )).sort().map((port) => (
                     <option key={port} value={port}>
                       {port}
                     </option>
                   ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Delivery Method
+                </label>
+                <select
+                  value={filterDeliveryMethod}
+                  onChange={(e) => setFilterDeliveryMethod(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                >
+                  <option value="all">All Methods</option>
+                  <option value="barge">Barge</option>
+                  <option value="truck">Truck</option>
+                  <option value="expipe">Ex-Pipe</option>
                 </select>
               </div>
               <div>
@@ -3667,7 +3704,7 @@ function App() {
                 </div>
               </div>
             )}
-            {(filterPort !== 'all' || filterFuelType !== 'all') && (
+            {(filterPort !== 'all' || filterFuelType !== 'all' || filterDeliveryMethod !== 'all') && (
               <div className="mt-3 flex items-center gap-2">
                 <span className="text-sm text-gray-600">
                   Showing {filteredSuppliers.length} of {suppliers.length} suppliers
@@ -3676,6 +3713,7 @@ function App() {
                   onClick={() => {
                     setFilterPort('all');
                     setFilterFuelType('all');
+                    setFilterDeliveryMethod('all');
                   }}
                   className="text-sm text-green-600 hover:text-green-800 underline"
                 >

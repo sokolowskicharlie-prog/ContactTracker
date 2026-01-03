@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Edit2, Trash2, Mail, Phone, MapPin, Package } from 'lucide-react';
+import { Edit2, Trash2, Mail, Phone, MapPin, Package, Ship, Truck, Anchor } from 'lucide-react';
 import { SupplierWithOrders } from '../lib/supabase';
 
 interface SupplierTableViewProps {
@@ -170,7 +170,28 @@ export default function SupplierTableView({
                   </td>
                   <td className="px-4 py-3" style={{ width: columnWidths.ports }}>
                     <div className="text-sm text-gray-900">
-                      {supplier.ports ? (
+                      {supplier.ports_detailed && supplier.ports_detailed.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {supplier.ports_detailed.slice(0, 2).map((port) => (
+                            <div key={port.id} className="flex items-center gap-1">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-xs">
+                                <MapPin className="w-3 h-3" />
+                                {port.port_name}
+                              </span>
+                              <div className="flex gap-0.5">
+                                {port.has_barge && <Ship className="w-3 h-3 text-blue-600" title="Barge" />}
+                                {port.has_truck && <Truck className="w-3 h-3 text-green-600" title="Truck" />}
+                                {port.has_expipe && <Anchor className="w-3 h-3 text-orange-600" title="Ex-Pipe" />}
+                              </div>
+                            </div>
+                          ))}
+                          {supplier.ports_detailed.length > 2 && (
+                            <span className="text-xs text-gray-500">
+                              +{supplier.ports_detailed.length - 2} more
+                            </span>
+                          )}
+                        </div>
+                      ) : supplier.ports ? (
                         <div className="flex flex-wrap gap-1">
                           {supplier.ports.split(',').slice(0, 2).map((port, idx) => (
                             <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-xs">
