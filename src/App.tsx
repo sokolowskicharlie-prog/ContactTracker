@@ -2261,7 +2261,10 @@ function App() {
       if (error) throw error;
       if (data) {
         if (data.button_order) {
-          setButtonOrder(data.button_order);
+          const defaultButtons = ['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact', 'alerts', 'stats'];
+          const savedOrder = data.button_order as string[];
+          const newButtons = defaultButtons.filter(btn => !savedOrder.includes(btn));
+          setButtonOrder([...savedOrder, ...newButtons]);
         }
         if (data.visible_filters) {
           setVisibleFilters(data.visible_filters as typeof visibleFilters);

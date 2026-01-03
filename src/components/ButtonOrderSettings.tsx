@@ -24,6 +24,7 @@ const DEFAULT_BUTTONS = [
   { id: 'bulk-search', label: 'Bulk Search' },
   { id: 'add-contact', label: 'Add Contact' },
   { id: 'alerts', label: 'Alerts' },
+  { id: 'stats', label: 'Statistics' },
 ];
 
 export default function ButtonOrderSettings({ onClose, onSave, currentOrder }: ButtonOrderSettingsProps) {
