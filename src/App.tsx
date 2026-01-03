@@ -4029,7 +4029,7 @@ function App() {
         onClose={() => setShowNotepad(false)}
         content={noteContent}
         onSave={handleSaveNote}
-        showGoals={showGoalProgressBox && hasGoals}
+        showGoals={showGoalProgressBox}
         contacts={contacts}
         panelOrder={panelOrder}
         showNotepad={showNotepad}
@@ -4068,7 +4068,7 @@ function App() {
         onClose={() => setShowPriorityPanel(false)}
         contacts={contacts}
         onContactClick={handleContactClick}
-        showGoals={showGoalProgressBox && hasGoals}
+        showGoals={showGoalProgressBox}
         showNotepad={showNotepad}
         panelOrder={panelOrder}
         showPriority={showPriorityPanel}
