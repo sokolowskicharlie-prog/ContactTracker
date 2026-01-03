@@ -23,6 +23,7 @@ import SupplierDetail from './components/SupplierDetail';
 import OrderModal from './components/OrderModal';
 import SupplierContactModal from './components/SupplierContactModal';
 import SupplierPortModal from './components/SupplierPortModal';
+import SupplierPortDuplicatesModal from './components/SupplierPortDuplicatesModal';
 import TaskModal from './components/TaskModal';
 import TaskList from './components/TaskList';
 import CalendarView from './components/CalendarView';
@@ -90,6 +91,7 @@ function App() {
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showSupplierContactModal, setShowSupplierContactModal] = useState(false);
   const [showSupplierPortModal, setShowSupplierPortModal] = useState(false);
+  const [showSupplierPortDuplicatesModal, setShowSupplierPortDuplicatesModal] = useState(false);
   const [showSupplierImportModal, setShowSupplierImportModal] = useState(false);
   const [showBulkSearchModal, setShowBulkSearchModal] = useState(false);
   const [editingVessel, setEditingVessel] = useState<Vessel | undefined>();
@@ -2166,6 +2168,28 @@ function App() {
     }
   };
 
+  const handleDeleteMultipleSupplierPorts = async (portIds: string[]) => {
+    try {
+      const { error } = await supabase.from('supplier_ports').delete().in('id', portIds);
+
+      if (error) throw error;
+      await loadSuppliers();
+
+      if (selectedSupplier) {
+        const updatedSupplier = suppliers.find(s => s.id === selectedSupplier.id);
+        if (updatedSupplier) {
+          setSelectedSupplier(updatedSupplier);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting supplier ports:', error);
+    }
+  };
+
+  const handleCheckPortDuplicates = () => {
+    setShowSupplierPortDuplicatesModal(true);
+  };
+
   const loadTasks = async () => {
     if (!currentWorkspace?.id) return;
     try {
@@ -4074,6 +4098,7 @@ function App() {
             setShowSupplierPortModal(true);
           }}
           onDeletePort={handleDeleteSupplierPort}
+          onCheckPortDuplicates={handleCheckPortDuplicates}
           onAddTask={() => handleAddTaskForSupplier(selectedSupplier.id)}
           onToggleTaskComplete={handleToggleTaskComplete}
           onEditTask={handleEditTask}
@@ -4115,6 +4140,15 @@ function App() {
             setEditingSupplierPort(undefined);
           }}
           onSave={handleSaveSupplierPort}
+        />
+      )}
+
+      {showSupplierPortDuplicatesModal && selectedSupplier && (
+        <SupplierPortDuplicatesModal
+          supplierId={selectedSupplier.id}
+          ports={selectedSupplier.ports_detailed || []}
+          onClose={() => setShowSupplierPortDuplicatesModal(false)}
+          onDeletePorts={handleDeleteMultipleSupplierPorts}
         />
       )}
 

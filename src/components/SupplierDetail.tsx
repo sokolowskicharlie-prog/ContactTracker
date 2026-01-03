@@ -1,4 +1,4 @@
-import { X, Building2, User, Mail, Phone, Globe, MapPin, Package, DollarSign, FileText, Star, Plus, Edit, Trash2, Calendar, Truck, Hash, Anchor, Smartphone, Briefcase, MessageCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, Ship, Fuel } from 'lucide-react';
+import { X, Building2, User, Mail, Phone, Globe, MapPin, Package, DollarSign, FileText, Star, Plus, Edit, Trash2, Calendar, Truck, Hash, Anchor, Smartphone, Briefcase, MessageCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, Ship, Fuel, Copy } from 'lucide-react';
 import { SupplierWithOrders, SupplierOrder, SupplierContact, SupplierPort, TaskWithRelated } from '../lib/supabase';
 
 interface SupplierDetailProps {
@@ -15,13 +15,14 @@ interface SupplierDetailProps {
   onAddPort: () => void;
   onEditPort: (port: SupplierPort) => void;
   onDeletePort: (portId: string) => void;
+  onCheckPortDuplicates: () => void;
   onAddTask: () => void;
   onToggleTaskComplete: (taskId: string, completed: boolean) => void;
   onEditTask: (task: TaskWithRelated) => void;
   onDeleteTask: (taskId: string) => void;
 }
 
-export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAddOrder, onEditOrder, onDeleteOrder, onAddContact, onEditContact, onDeleteContact, onAddPort, onEditPort, onDeletePort, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask }: SupplierDetailProps) {
+export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAddOrder, onEditOrder, onDeleteOrder, onAddContact, onEditContact, onDeleteContact, onAddPort, onEditPort, onDeletePort, onCheckPortDuplicates, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask }: SupplierDetailProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -291,13 +292,24 @@ export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAdd
               <h3 className="text-lg font-semibold text-gray-900">
                 Ports & Delivery Methods ({supplier.ports_detailed?.length || 0})
               </h3>
-              <button
-                onClick={onAddPort}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Add Port
-              </button>
+              <div className="flex gap-2">
+                {supplier.ports_detailed && supplier.ports_detailed.length > 1 && (
+                  <button
+                    onClick={onCheckPortDuplicates}
+                    className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors flex items-center gap-2"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Check Duplicates
+                  </button>
+                )}
+                <button
+                  onClick={onAddPort}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Port
+                </button>
+              </div>
             </div>
 
             {supplier.ports_detailed && supplier.ports_detailed.length > 0 ? (
