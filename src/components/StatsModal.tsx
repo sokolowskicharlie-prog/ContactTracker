@@ -16,12 +16,13 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
   const [goalInput, setGoalInput] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [dateFilterEnabled, setDateFilterEnabled] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       loadCallsData();
     }
-  }, [isOpen, startDate, endDate]);
+  }, [isOpen, startDate, endDate, dateFilterEnabled]);
 
   const loadCallsData = async () => {
     try {
@@ -43,11 +44,11 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.user.id);
 
-      if (startDate) {
+      if (dateFilterEnabled && startDate) {
         query = query.gte('call_date', `${startDate}T00:00:00`);
       }
 
-      if (endDate) {
+      if (dateFilterEnabled && endDate) {
         query = query.lte('call_date', `${endDate}T23:59:59`);
       }
 
@@ -200,13 +201,29 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
               </div>
 
               <div className="mb-4 space-y-3">
+                <div className="flex items-center justify-between p-2 bg-white rounded border border-gray-200">
+                  <span className="text-sm font-medium text-gray-700">Date Filter</span>
+                  <button
+                    onClick={() => setDateFilterEnabled(!dateFilterEnabled)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      dateFilterEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        dateFilterEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={!dateFilterEnabled}
+                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Start Date"
                   />
                 </div>
@@ -216,11 +233,12 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={!dateFilterEnabled}
+                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="End Date"
                   />
                 </div>
-                {(startDate || endDate) && (
+                {dateFilterEnabled && (startDate || endDate) && (
                   <button
                     onClick={() => {
                       setStartDate('');
