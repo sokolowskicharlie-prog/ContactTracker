@@ -2563,7 +2563,7 @@ function App() {
       {showGoalProgressBox && <GoalProgressBox onSelectContact={handleSelectContactFromGoals} onLogCall={handleLogCallFromSchedule} onLogEmail={handleLogEmailFromSchedule} showNotepad={showNotepad} panelOrder={panelOrder} showGoals={showGoalProgressBox && hasGoals} showPriority={showPriorityPanel} notepadExpanded={notepadExpanded} goalsExpanded={goalsExpanded} priorityExpanded={priorityExpanded} onExpandedChange={setGoalsExpanded} onHasGoalsChange={setHasGoals} panelSpacing={panelSpacing} />}
       <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-2">
             <div className="flex items-center gap-3">
               <div className={`p-3 rounded-xl ${
                 currentPage === 'contacts' ? 'bg-blue-600' :
@@ -2646,10 +2646,10 @@ function App() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => setShowNotepad(!showNotepad)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                className={`flex-shrink-0 flex items-center gap-2 px-2.5 sm:px-4 py-2 rounded-lg transition-colors ${
                   showNotepad
                     ? 'text-amber-600 bg-amber-50 hover:bg-amber-100'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-white'
@@ -2657,7 +2657,7 @@ function App() {
                 title={showNotepad ? 'Hide Notes' : 'Show Notes'}
               >
                 <StickyNote className="w-5 h-5" />
-                <span className="hidden sm:inline">Notes</span>
+                <span className="hidden sm:inline whitespace-nowrap">Notes</span>
               </button>
               <button
                 onClick={() => {
@@ -2665,7 +2665,7 @@ function App() {
                   setShowGoalProgressBox(newValue);
                   localStorage.setItem('goalProgressBoxVisible', String(newValue));
                 }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                className={`flex-shrink-0 flex items-center gap-2 px-2.5 sm:px-4 py-2 rounded-lg transition-colors ${
                   showGoalProgressBox
                     ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-white'
@@ -2673,11 +2673,11 @@ function App() {
                 title={showGoalProgressBox ? 'Hide Goals' : 'Show Goals'}
               >
                 <Target className="w-5 h-5" />
-                <span className="hidden sm:inline">Goals</span>
+                <span className="hidden sm:inline whitespace-nowrap">Goals</span>
               </button>
               <button
                 onClick={() => setShowPriorityPanel(!showPriorityPanel)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                className={`flex-shrink-0 flex items-center gap-2 px-2.5 sm:px-4 py-2 rounded-lg transition-colors ${
                   showPriorityPanel
                     ? 'text-purple-600 bg-purple-50 hover:bg-purple-100'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-white'
@@ -2685,27 +2685,27 @@ function App() {
                 title={showPriorityPanel ? 'Hide Priority' : 'Show Priority'}
               >
                 <TrendingUp className="w-5 h-5" />
-                <span className="hidden sm:inline">Priority</span>
+                <span className="hidden sm:inline whitespace-nowrap">Priority</span>
               </button>
               <button
                 onClick={() => setShowAccountSettings(true)}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg transition-colors"
+                className="flex-shrink-0 flex items-center gap-2 px-2.5 sm:px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg transition-colors"
                 title="Account Settings"
               >
                 <UserCog className="w-5 h-5" />
-                <span className="hidden sm:inline">Account</span>
+                <span className="hidden sm:inline whitespace-nowrap">Account</span>
               </button>
               <button
                 onClick={signOut}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg transition-colors"
+                className="flex-shrink-0 flex items-center gap-2 px-2.5 sm:px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg transition-colors"
                 title="Sign Out"
               >
                 <LogOut className="w-5 h-5" />
-                <span className="hidden sm:inline">Sign Out</span>
+                <span className="hidden sm:inline whitespace-nowrap">Sign Out</span>
               </button>
             </div>
           </div>
-          <p className="text-gray-600 ml-16">
+          <p className="text-gray-600 ml-0 lg:ml-16">
             {currentPage === 'contacts'
               ? 'Manage your contacts and track your calls and emails'
               : currentPage === 'suppliers'
