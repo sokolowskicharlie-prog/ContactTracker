@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Phone, Mail, Target, CheckSquare, Circle, CheckCircle2 } from 'lucide-react';
-import { TaskWithRelated } from '../lib/supabase';
+import { ChevronLeft, ChevronRight, Phone, Mail, Target, CheckSquare, Circle, CheckCircle2, Ship } from 'lucide-react';
+import { TaskWithRelated, FuelDeal } from '../lib/supabase';
 
 interface DailyGoal {
   id: string;
@@ -24,6 +24,7 @@ interface CalendarViewProps {
   tasks: TaskWithRelated[];
   goals: DailyGoal[];
   communications: Communication[];
+  deals: FuelDeal[];
   onTaskClick?: (task: TaskWithRelated) => void;
   onDateClick?: (date: Date) => void;
 }
@@ -37,7 +38,7 @@ interface CalendarEvent {
   data: any;
 }
 
-export default function CalendarView({ tasks, goals, communications, onTaskClick, onDateClick }: CalendarViewProps) {
+export default function CalendarView({ tasks, goals, communications, deals, onTaskClick, onDateClick }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const getDaysInMonth = (date: Date) => {
@@ -58,6 +59,18 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
 
   const nextMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
+  };
+
+  const getCountsForDate = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+
+    const goalsCount = goals.filter(g => g.target_date && g.target_date.startsWith(dateStr)).length;
+    const callsCount = communications.filter(c => c.type === 'call' && c.date.startsWith(dateStr)).length;
+    const emailsCount = communications.filter(c => c.type === 'email' && c.date.startsWith(dateStr)).length;
+    const dealsCount = deals.filter(d => d.deal_date.startsWith(dateStr)).length;
+    const tasksCount = tasks.filter(t => t.due_date && t.due_date.startsWith(dateStr)).length;
+
+    return { goals: goalsCount, calls: callsCount, emails: emailsCount, deals: dealsCount, tasks: tasksCount };
   };
 
   const getEventsForDate = (date: Date): CalendarEvent[] => {
@@ -199,20 +212,24 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
 
       <div className="mb-4 flex gap-4 text-xs flex-wrap">
         <div className="flex items-center gap-1.5">
-          <Circle className="w-3 h-3 text-blue-600" />
-          <span className="text-gray-600">Task</span>
-        </div>
-        <div className="flex items-center gap-1.5">
           <Target className="w-3 h-3 text-purple-600" />
-          <span className="text-gray-600">Goal</span>
+          <span className="text-gray-600">Goals</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Phone className="w-3 h-3 text-teal-600" />
-          <span className="text-gray-600">Call</span>
+          <span className="text-gray-600">Calls</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Mail className="w-3 h-3 text-orange-600" />
-          <span className="text-gray-600">Email</span>
+          <span className="text-gray-600">Emails</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Ship className="w-3 h-3 text-emerald-600" />
+          <span className="text-gray-600">Deals</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Circle className="w-3 h-3 text-blue-600" />
+          <span className="text-gray-600">Tasks</span>
         </div>
       </div>
 
@@ -231,24 +248,62 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
           const day = index + 1;
           const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
           const events = getEventsForDate(date);
+          const counts = getCountsForDate(date);
           const today = isToday(date);
+          const hasActivity = counts.goals > 0 || counts.calls > 0 || counts.emails > 0 || counts.deals > 0 || counts.tasks > 0;
 
           return (
             <div
               key={day}
               onClick={() => onDateClick?.(date)}
-              className={`border rounded-lg min-h-[100px] p-1 transition-colors ${
+              className={`border rounded-lg min-h-[120px] p-1 transition-colors ${
                 today ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               } ${onDateClick ? 'cursor-pointer' : ''}`}
             >
               <div className={`text-sm font-semibold mb-1 ${today ? 'text-blue-700' : 'text-gray-700'}`}>
                 {day}
               </div>
-              <div className="space-y-0.5 overflow-y-auto max-h-[70px]">
-                {events.slice(0, 3).map(renderEvent)}
-                {events.length > 3 && (
+
+              {hasActivity && (
+                <div className="mb-1 flex flex-wrap gap-0.5">
+                  {counts.goals > 0 && (
+                    <div className="flex items-center gap-0.5 text-xs text-purple-700 bg-purple-50 rounded px-1 py-0.5">
+                      <Target className="w-3 h-3" />
+                      <span className="font-medium">{counts.goals}</span>
+                    </div>
+                  )}
+                  {counts.calls > 0 && (
+                    <div className="flex items-center gap-0.5 text-xs text-teal-700 bg-teal-50 rounded px-1 py-0.5">
+                      <Phone className="w-3 h-3" />
+                      <span className="font-medium">{counts.calls}</span>
+                    </div>
+                  )}
+                  {counts.emails > 0 && (
+                    <div className="flex items-center gap-0.5 text-xs text-orange-700 bg-orange-50 rounded px-1 py-0.5">
+                      <Mail className="w-3 h-3" />
+                      <span className="font-medium">{counts.emails}</span>
+                    </div>
+                  )}
+                  {counts.deals > 0 && (
+                    <div className="flex items-center gap-0.5 text-xs text-emerald-700 bg-emerald-50 rounded px-1 py-0.5">
+                      <Ship className="w-3 h-3" />
+                      <span className="font-medium">{counts.deals}</span>
+                    </div>
+                  )}
+                  {counts.tasks > 0 && (
+                    <div className="flex items-center gap-0.5 text-xs text-blue-700 bg-blue-50 rounded px-1 py-0.5">
+                      <Circle className="w-3 h-3" />
+                      <span className="font-medium">{counts.tasks}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-0.5 overflow-y-auto max-h-[50px]">
+                {events.slice(0, 2).map(renderEvent)}
+                {events.length > 2 && (
                   <div className="text-xs text-gray-500 font-medium px-1">
-                    +{events.length - 3} more
+                    +{events.length - 2} more
                   </div>
                 )}
               </div>
