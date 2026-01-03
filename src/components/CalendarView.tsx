@@ -233,10 +233,6 @@ export default function CalendarView({ tasks, goals, communications, deals, onTa
           <span className="text-gray-600">Tasks Completed</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Target className="w-3 h-3 text-purple-600" />
-          <span className="text-gray-600">Goals</span>
-        </div>
-        <div className="flex items-center gap-1.5">
           <Phone className="w-3 h-3 text-teal-600" />
           <span className="text-gray-600">Calls Logged</span>
         </div>
@@ -289,12 +285,6 @@ export default function CalendarView({ tasks, goals, communications, deals, onTa
                   <div className="flex items-center gap-1 text-xs">
                     <CheckCircle2 className="w-3 h-3 text-green-600 flex-shrink-0" />
                     <span className="text-green-700 font-semibold">{counts.tasksCompleted}</span>
-                  </div>
-                )}
-                {counts.goals > 0 && (
-                  <div className="flex items-center gap-1 text-xs">
-                    <Target className="w-3 h-3 text-purple-600 flex-shrink-0" />
-                    <span className="text-purple-700 font-semibold">{counts.goals}</span>
                   </div>
                 )}
                 {counts.calls > 0 && (
