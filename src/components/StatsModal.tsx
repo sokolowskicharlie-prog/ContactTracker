@@ -1,4 +1,4 @@
-import { X, PieChart as PieChartIcon, Phone, Edit2, Check } from 'lucide-react';
+import { X, PieChart as PieChartIcon, Phone, Edit2, Check, Calendar } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { ContactWithActivity, supabase } from '../lib/supabase';
 import PieChart from './PieChart';
@@ -14,12 +14,14 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
   const [totalCalls, setTotalCalls] = useState(0);
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       loadCallsData();
     }
-  }, [isOpen]);
+  }, [isOpen, startDate, endDate]);
 
   const loadCallsData = async () => {
     try {
@@ -36,11 +38,21 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
         setCallsGoal(prefs.calls_goal || 100);
       }
 
-      const { count } = await supabase
+      let query = supabase
         .from('communications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.user.id)
         .eq('communication_type', 'call');
+
+      if (startDate) {
+        query = query.gte('timestamp', `${startDate}T00:00:00`);
+      }
+
+      if (endDate) {
+        query = query.lte('timestamp', `${endDate}T23:59:59`);
+      }
+
+      const { count } = await query;
 
       setTotalCalls(count || 0);
     } catch (error) {
@@ -187,6 +199,41 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
                   </button>
                 )}
               </div>
+
+              <div className="mb-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Start Date"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="End Date"
+                  />
+                </div>
+                {(startDate || endDate) && (
+                  <button
+                    onClick={() => {
+                      setStartDate('');
+                      setEndDate('');
+                    }}
+                    className="w-full px-3 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                  >
+                    Clear Dates
+                  </button>
+                )}
+              </div>
+
               <PieChart data={callsData} size={200} />
               <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
                 <div className="flex items-center justify-center gap-2">
