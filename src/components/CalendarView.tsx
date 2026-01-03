@@ -119,7 +119,7 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
   const getEventCounts = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
 
-    const tasksDueCount = tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr)).length;
+    const tasksDueCount = tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr) && !task.completed).length;
     const tasksCompletedCount = tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr) && task.completed).length;
     const callsCount = communications.filter(comm => comm.type === 'call' && comm.date && comm.date.startsWith(dateStr)).length;
     const emailsCount = communications.filter(comm => comm.type === 'email' && comm.date && comm.date.startsWith(dateStr)).length;
