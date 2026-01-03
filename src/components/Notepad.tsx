@@ -55,6 +55,10 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
     setNoteContent(content);
   }, [content]);
 
+  useEffect(() => {
+    setIsExpanded(notepadExpanded);
+  }, [notepadExpanded]);
+
   const handleSave = async () => {
     setIsSaving(true);
     await onSave(noteContent);

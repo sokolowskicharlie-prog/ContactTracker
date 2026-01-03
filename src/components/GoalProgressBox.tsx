@@ -138,6 +138,10 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
     }
   }, [goals, onHasGoalsChange]);
 
+  useEffect(() => {
+    setIsExpanded(goalsExpanded);
+  }, [goalsExpanded]);
+
   const loadGoals = async () => {
     if (!user) return;
 

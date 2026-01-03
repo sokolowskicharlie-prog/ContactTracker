@@ -1,5 +1,5 @@
 import { X, TrendingUp, ChevronDown, ChevronUp, Star, AlertTriangle, Check, Phone, Mail, Building2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ContactWithActivity } from '../lib/supabase';
 
 interface PriorityPanelProps {
@@ -30,6 +30,10 @@ const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: s
 export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad, panelOrder = ['notes', 'goals', 'priority'], showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, panelSpacing = 8 }: PriorityPanelProps) {
   const [isExpanded, setIsExpanded] = useState(priorityExpanded);
   const [selectedPriority, setSelectedPriority] = useState<number | null>(null);
+
+  useEffect(() => {
+    setIsExpanded(priorityExpanded);
+  }, [priorityExpanded]);
 
   if (!isOpen) return null;
 
@@ -107,7 +111,7 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
         const height = goalsExpanded ? PANEL_SIZES.goalsExpanded : PANEL_SIZES.goalsCollapsed;
         top += height + panelSpacing;
       } else if (panelId === 'priority' && showPriority) {
-        const height = isExpanded ? PANEL_SIZES.priorityExpanded : PANEL_SIZES.priorityCollapsed;
+        const height = priorityExpanded ? PANEL_SIZES.priorityExpanded : PANEL_SIZES.priorityCollapsed;
         top += height + panelSpacing;
       }
     }
