@@ -17,6 +17,7 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [dateFilterEnabled, setDateFilterEnabled] = useState(false);
+  const [showDateFilter, setShowDateFilter] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -164,92 +165,106 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
                 <h3 className="text-lg font-semibold text-gray-900">
                   Calls Progress
                 </h3>
-                {editingGoal ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={goalInput}
-                      onChange={(e) => setGoalInput(e.target.value)}
-                      className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          saveGoal();
-                        } else if (e.key === 'Escape') {
-                          cancelEditingGoal();
-                        }
-                      }}
-                      autoFocus
-                      min="1"
-                    />
+                <div className="flex items-center gap-2">
+                  {editingGoal ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={goalInput}
+                        onChange={(e) => setGoalInput(e.target.value)}
+                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            saveGoal();
+                          } else if (e.key === 'Escape') {
+                            cancelEditingGoal();
+                          }
+                        }}
+                        autoFocus
+                        min="1"
+                      />
+                      <button
+                        onClick={saveGoal}
+                        className="p-1 text-green-600 hover:bg-green-100 rounded"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
                     <button
-                      onClick={saveGoal}
-                      className="p-1 text-green-600 hover:bg-green-100 rounded"
+                      onClick={startEditingGoal}
+                      className="flex items-center gap-1 text-xs text-gray-600 hover:text-blue-600"
                     >
-                      <Check className="w-4 h-4" />
+                      <span>Goal: {callsGoal}</span>
+                      <Edit2 className="w-3 h-3" />
                     </button>
-                  </div>
-                ) : (
+                  )}
                   <button
-                    onClick={startEditingGoal}
-                    className="flex items-center gap-1 text-xs text-gray-600 hover:text-blue-600"
-                  >
-                    <span>Goal: {callsGoal}</span>
-                    <Edit2 className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-
-              <div className="mb-4 space-y-3">
-                <div className="flex items-center justify-between p-2 bg-white rounded border border-gray-200">
-                  <span className="text-sm font-medium text-gray-700">Date Filter</span>
-                  <button
-                    onClick={() => setDateFilterEnabled(!dateFilterEnabled)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      dateFilterEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                    onClick={() => setShowDateFilter(!showDateFilter)}
+                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                      showDateFilter
+                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        dateFilterEnabled ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
+                    Dates
                   </button>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    disabled={!dateFilterEnabled}
-                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    placeholder="Start Date"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    disabled={!dateFilterEnabled}
-                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    placeholder="End Date"
-                  />
-                </div>
-                {dateFilterEnabled && (startDate || endDate) && (
-                  <button
-                    onClick={() => {
-                      setStartDate('');
-                      setEndDate('');
-                    }}
-                    className="w-full px-3 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                  >
-                    Clear Dates
-                  </button>
-                )}
               </div>
+
+              {showDateFilter && (
+                <div className="mb-4 space-y-3">
+                  <div className="flex items-center justify-between p-2 bg-white rounded border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Date Filter</span>
+                    <button
+                      onClick={() => setDateFilterEnabled(!dateFilterEnabled)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        dateFilterEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          dateFilterEnabled ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      disabled={!dateFilterEnabled}
+                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      placeholder="Start Date"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      disabled={!dateFilterEnabled}
+                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      placeholder="End Date"
+                    />
+                  </div>
+                  {dateFilterEnabled && (startDate || endDate) && (
+                    <button
+                      onClick={() => {
+                        setStartDate('');
+                        setEndDate('');
+                      }}
+                      className="w-full px-3 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    >
+                      Clear Dates
+                    </button>
+                  )}
+                </div>
+              )}
 
               <PieChart data={callsData} size={200} />
               <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
