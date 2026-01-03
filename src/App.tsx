@@ -4020,6 +4020,15 @@ function App() {
         <DayScheduleModal
           date={selectedDate}
           tasks={tasks}
+          calls={contacts.flatMap(c => c.calls.map(call => ({
+            ...call,
+            contact_name: c.name
+          })))}
+          emails={contacts.flatMap(c => c.emails.map(email => ({
+            ...email,
+            contact_name: c.name
+          })))}
+          fuelDeals={contacts.flatMap(c => c.fuel_deals)}
           onClose={() => {
             setShowDayScheduleModal(false);
             setSelectedDate(null);

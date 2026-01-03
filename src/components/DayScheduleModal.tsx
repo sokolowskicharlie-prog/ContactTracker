@@ -1,19 +1,33 @@
-import { X, CheckCircle2, Circle, Clock, Plus } from 'lucide-react';
-import { TaskWithRelated } from '../lib/supabase';
+import { X, CheckCircle2, Circle, Clock, Plus, Phone, Mail, Fuel } from 'lucide-react';
+import { TaskWithRelated, Call, Email, FuelDeal } from '../lib/supabase';
 
 interface DayScheduleModalProps {
   date: Date;
   tasks: TaskWithRelated[];
+  calls: (Call & { contact_name: string })[];
+  emails: (Email & { contact_name: string })[];
+  fuelDeals: FuelDeal[];
   onClose: () => void;
   onTaskClick: (task: TaskWithRelated) => void;
   onCreateTask: () => void;
 }
 
-export default function DayScheduleModal({ date, tasks, onClose, onTaskClick, onCreateTask }: DayScheduleModalProps) {
+export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals, onClose, onTaskClick, onCreateTask }: DayScheduleModalProps) {
   const dateStr = date.toISOString().split('T')[0];
   const dayTasks = tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr));
+  const dueTasks = dayTasks.filter(task => !task.completed);
+  const completedTasks = dayTasks.filter(task => task.completed);
+  const dayCalls = calls.filter(call => call.call_date.startsWith(dateStr));
+  const dayEmails = emails.filter(email => email.email_date.startsWith(dateStr));
+  const dayDeals = fuelDeals.filter(deal => deal.deal_date.startsWith(dateStr));
 
-  const sortedTasks = [...dayTasks].sort((a, b) => {
+  const sortedDueTasks = [...dueTasks].sort((a, b) => {
+    const timeA = a.due_date ? new Date(a.due_date).getTime() : 0;
+    const timeB = b.due_date ? new Date(b.due_date).getTime() : 0;
+    return timeA - timeB;
+  });
+
+  const sortedCompletedTasks = [...completedTasks].sort((a, b) => {
     const timeA = a.due_date ? new Date(a.due_date).getTime() : 0;
     const timeB = b.due_date ? new Date(b.due_date).getTime() : 0;
     return timeA - timeB;
@@ -50,14 +64,16 @@ export default function DayScheduleModal({ date, tasks, onClose, onTaskClick, on
     }
   };
 
+  const totalActivities = dueTasks.length + completedTasks.length + dayCalls.length + dayEmails.length + dayDeals.length;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{formatDate(date)}</h2>
             <p className="text-sm text-gray-600 mt-1">
-              {dayTasks.length} {dayTasks.length === 1 ? 'task' : 'tasks'} scheduled
+              {totalActivities} {totalActivities === 1 ? 'activity' : 'activities'}
             </p>
           </div>
           <button
@@ -69,10 +85,10 @@ export default function DayScheduleModal({ date, tasks, onClose, onTaskClick, on
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
-          {sortedTasks.length === 0 ? (
+          {totalActivities === 0 ? (
             <div className="text-center py-12">
               <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4">No tasks scheduled for this day</p>
+              <p className="text-gray-600 mb-4">No activities for this day</p>
               <button
                 onClick={() => {
                   onCreateTask();
@@ -85,63 +101,181 @@ export default function DayScheduleModal({ date, tasks, onClose, onTaskClick, on
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
-              {sortedTasks.map((task) => (
-                <div
-                  key={task.id}
-                  onClick={() => {
-                    onTaskClick(task);
-                    onClose();
-                  }}
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
-                    task.completed
-                      ? 'bg-gray-50 border-gray-200 opacity-60'
-                      : 'bg-white border-gray-200 hover:border-blue-300'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1">
-                      {task.completed ? (
-                        <CheckCircle2 className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <Circle className="w-5 h-5 text-gray-400" />
-                      )}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        {task.due_date && (
-                          <div className="flex items-center gap-1 text-sm text-gray-600">
-                            <Clock className="w-4 h-4" />
-                            <span>{formatTime(task.due_date)}</span>
+            <div className="space-y-6">
+              {sortedDueTasks.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Circle className="w-5 h-5 text-blue-600" />
+                    Tasks Due ({sortedDueTasks.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {sortedDueTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        onClick={() => {
+                          onTaskClick(task);
+                          onClose();
+                        }}
+                        className="p-3 rounded-lg border bg-white hover:border-blue-300 cursor-pointer transition-all"
+                      >
+                        <div className="flex items-start gap-3">
+                          <Circle className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              {task.due_date && (
+                                <span className="text-xs text-gray-600">{formatTime(task.due_date)}</span>
+                              )}
+                              {task.priority && (
+                                <span className={`text-xs px-2 py-0.5 rounded-full border ${getPriorityColor(task.priority)}`}>
+                                  {task.priority}
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="font-medium text-gray-900">{task.title}</h4>
+                            {task.contact && (
+                              <p className="text-sm text-gray-600 mt-1">Related: {task.contact.name}</p>
+                            )}
                           </div>
-                        )}
-                        {task.priority && (
-                          <span className={`text-xs px-2 py-1 rounded-full border ${getPriorityColor(task.priority)}`}>
-                            {task.priority}
-                          </span>
-                        )}
-                      </div>
-
-                      <h3 className={`text-base font-semibold mb-1 ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                        {task.title}
-                      </h3>
-
-                      {task.description && (
-                        <p className={`text-sm ${task.completed ? 'text-gray-400' : 'text-gray-600'} line-clamp-2`}>
-                          {task.description}
-                        </p>
-                      )}
-
-                      {task.contact && (
-                        <div className="mt-2 text-sm text-gray-600">
-                          Related to: <span className="font-medium">{task.contact.name}</span>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              )}
+
+              {sortedCompletedTasks.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    Tasks Completed ({sortedCompletedTasks.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {sortedCompletedTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        onClick={() => {
+                          onTaskClick(task);
+                          onClose();
+                        }}
+                        className="p-3 rounded-lg border bg-gray-50 hover:border-green-300 cursor-pointer transition-all opacity-75"
+                      >
+                        <div className="flex items-start gap-3">
+                          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              {task.due_date && (
+                                <span className="text-xs text-gray-600">{formatTime(task.due_date)}</span>
+                              )}
+                            </div>
+                            <h4 className="font-medium text-gray-600 line-through">{task.title}</h4>
+                            {task.contact && (
+                              <p className="text-sm text-gray-500 mt-1">Related: {task.contact.name}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {dayCalls.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Phone className="w-5 h-5 text-blue-600" />
+                    Calls Logged ({dayCalls.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {dayCalls.map((call) => (
+                      <div key={call.id} className="p-3 rounded-lg border bg-blue-50">
+                        <div className="flex items-start gap-3">
+                          <Phone className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs text-gray-600">{formatTime(call.call_date)}</span>
+                              {call.communication_type && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                                  {call.communication_type}
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="font-medium text-gray-900">{call.contact_name}</h4>
+                            {call.spoke_with && (
+                              <p className="text-sm text-gray-600 mt-1">Spoke with: {call.spoke_with}</p>
+                            )}
+                            {call.notes && (
+                              <p className="text-sm text-gray-700 mt-1">{call.notes}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {dayEmails.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-purple-600" />
+                    Emails Logged ({dayEmails.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {dayEmails.map((email) => (
+                      <div key={email.id} className="p-3 rounded-lg border bg-purple-50">
+                        <div className="flex items-start gap-3">
+                          <Mail className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs text-gray-600">{formatTime(email.email_date)}</span>
+                            </div>
+                            <h4 className="font-medium text-gray-900">{email.contact_name}</h4>
+                            {email.subject && (
+                              <p className="text-sm text-gray-700 mt-1 font-medium">Subject: {email.subject}</p>
+                            )}
+                            {email.emailed_to && (
+                              <p className="text-sm text-gray-600 mt-1">To: {email.emailed_to}</p>
+                            )}
+                            {email.notes && (
+                              <p className="text-sm text-gray-700 mt-1">{email.notes}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {dayDeals.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Fuel className="w-5 h-5 text-orange-600" />
+                    Deals Logged ({dayDeals.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {dayDeals.map((deal) => (
+                      <div key={deal.id} className="p-3 rounded-lg border bg-orange-50">
+                        <div className="flex items-start gap-3">
+                          <Fuel className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs text-gray-600">{formatTime(deal.deal_date)}</span>
+                            </div>
+                            <h4 className="font-medium text-gray-900">{deal.vessel_name}</h4>
+                            <p className="text-sm text-gray-700 mt-1">
+                              {deal.fuel_quantity} MT of {deal.fuel_type} at {deal.port}
+                            </p>
+                            {deal.notes && (
+                              <p className="text-sm text-gray-600 mt-1">{deal.notes}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
