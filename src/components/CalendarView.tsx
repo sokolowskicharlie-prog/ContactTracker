@@ -104,6 +104,11 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
     return events;
   };
 
+  const getTaskCountForDate = (date: Date): number => {
+    const dateStr = date.toISOString().split('T')[0];
+    return tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr)).length;
+  };
+
   const isToday = (date: Date) => {
     const today = new Date();
     return date.getDate() === today.getDate() &&
@@ -231,6 +236,7 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
           const day = index + 1;
           const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
           const events = getEventsForDate(date);
+          const taskCount = getTaskCountForDate(date);
           const today = isToday(date);
 
           return (
@@ -241,8 +247,13 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
                 today ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               } ${onDateClick ? 'cursor-pointer' : ''}`}
             >
-              <div className={`text-sm font-semibold mb-1 ${today ? 'text-blue-700' : 'text-gray-700'}`}>
-                {day}
+              <div className={`text-sm font-semibold mb-1 flex items-center justify-between ${today ? 'text-blue-700' : 'text-gray-700'}`}>
+                <span>{day}</span>
+                {taskCount > 0 && (
+                  <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full">
+                    {taskCount}
+                  </span>
+                )}
               </div>
               <div className="space-y-0.5 overflow-y-auto max-h-[70px]">
                 {events.slice(0, 3).map(renderEvent)}
