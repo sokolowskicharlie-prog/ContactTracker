@@ -702,10 +702,6 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
     }
   };
 
-  if (goals.length === 0) {
-    return null;
-  }
-
   const calculateTopPosition = () => {
     let top = 80;
     const myIndex = panelOrder.indexOf('goals');
@@ -760,7 +756,14 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
 
         {isExpanded && (
           <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
-            {goals.map(goal => {
+            {goals.length === 0 ? (
+              <div className="text-center py-6 px-4">
+                <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-600 text-sm mb-2 font-medium">No goals set for today</p>
+                <p className="text-gray-500 text-xs">Go to the Tasks page to create your daily goals</p>
+              </div>
+            ) : (
+              goals.map(goal => {
               const progress = calculateProgress(goal);
               return (
                 <div
@@ -837,7 +840,8 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                   </div>
                 </div>
               );
-            })}
+            })
+            )}
           </div>
         )}
       </div>
