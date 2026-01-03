@@ -36,7 +36,7 @@ export async function getOrCreateDefaultWorkspace(userId: string): Promise<Works
     .from('workspaces')
     .insert({
       user_id: userId,
-      name: 'Personal',
+      name: 'Work',
       color: '#3B82F6',
       is_default: true,
       display_order: 0
