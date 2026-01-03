@@ -1,4 +1,4 @@
-import { X, Anchor, Truck, Ship, FileText, Fuel, Plus } from 'lucide-react';
+import { X, Anchor, Truck, Ship, FileText, Fuel, Plus, Edit2, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { SupplierPort, CustomFuelType, CustomDeliveryMethod, supabase } from '../lib/supabase';
 
@@ -25,6 +25,10 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
   const [newDeliveryMethod, setNewDeliveryMethod] = useState('');
   const [showAddFuelType, setShowAddFuelType] = useState(false);
   const [showAddDeliveryMethod, setShowAddDeliveryMethod] = useState(false);
+  const [editingFuelTypeId, setEditingFuelTypeId] = useState<string | null>(null);
+  const [editingFuelTypeName, setEditingFuelTypeName] = useState('');
+  const [editingDeliveryMethodId, setEditingDeliveryMethodId] = useState<string | null>(null);
+  const [editingDeliveryMethodName, setEditingDeliveryMethodName] = useState('');
 
   useEffect(() => {
     loadCustomTypes();
@@ -123,6 +127,62 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
     setSelectedDeliveryMethods(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
+  };
+
+  const handleEditFuelType = (fuelType: CustomFuelType) => {
+    setEditingFuelTypeId(fuelType.id);
+    setEditingFuelTypeName(fuelType.name);
+  };
+
+  const handleSaveFuelType = async () => {
+    if (!editingFuelTypeId || !editingFuelTypeName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('custom_fuel_types')
+        .update({ name: editingFuelTypeName.trim() })
+        .eq('id', editingFuelTypeId);
+
+      if (error) throw error;
+
+      setCustomFuelTypes(
+        customFuelTypes.map(ft =>
+          ft.id === editingFuelTypeId ? { ...ft, name: editingFuelTypeName.trim() } : ft
+        )
+      );
+      setEditingFuelTypeId(null);
+      setEditingFuelTypeName('');
+    } catch (error) {
+      console.error('Error updating fuel type:', error);
+    }
+  };
+
+  const handleEditDeliveryMethod = (method: CustomDeliveryMethod) => {
+    setEditingDeliveryMethodId(method.id);
+    setEditingDeliveryMethodName(method.name);
+  };
+
+  const handleSaveDeliveryMethod = async () => {
+    if (!editingDeliveryMethodId || !editingDeliveryMethodName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('custom_delivery_methods')
+        .update({ name: editingDeliveryMethodName.trim() })
+        .eq('id', editingDeliveryMethodId);
+
+      if (error) throw error;
+
+      setCustomDeliveryMethods(
+        customDeliveryMethods.map(dm =>
+          dm.id === editingDeliveryMethodId ? { ...dm, name: editingDeliveryMethodName.trim() } : dm
+        )
+      );
+      setEditingDeliveryMethodId(null);
+      setEditingDeliveryMethodName('');
+    } catch (error) {
+      console.error('Error updating delivery method:', error);
+    }
   };
 
   const savePortRelationships = async (portId: string) => {
@@ -300,19 +360,66 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
               </label>
 
               {customDeliveryMethods.map((method) => (
-                <label
+                <div
                   key={method.id}
-                  className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer bg-blue-50"
+                  className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg bg-blue-50"
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedDeliveryMethods.includes(method.id)}
-                    onChange={() => toggleDeliveryMethod(method.id)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <Truck className="w-5 h-5 text-blue-600" />
-                  <span className="text-sm font-medium text-gray-700">{method.name}</span>
-                </label>
+                  {editingDeliveryMethodId === method.id ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editingDeliveryMethodName}
+                        onChange={(e) => setEditingDeliveryMethodName(e.target.value)}
+                        className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSaveDeliveryMethod();
+                          } else if (e.key === 'Escape') {
+                            setEditingDeliveryMethodId(null);
+                            setEditingDeliveryMethodName('');
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveDeliveryMethod}
+                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingDeliveryMethodId(null);
+                          setEditingDeliveryMethodName('');
+                        }}
+                        className="p-1 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        type="checkbox"
+                        checked={selectedDeliveryMethods.includes(method.id)}
+                        onChange={() => toggleDeliveryMethod(method.id)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <Truck className="w-5 h-5 text-blue-600" />
+                      <span className="flex-1 text-sm font-medium text-gray-700">{method.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleEditDeliveryMethod(method)}
+                        className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  )}
+                </div>
               ))}
 
               {showAddDeliveryMethod && (
@@ -392,19 +499,66 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
               </label>
 
               {customFuelTypes.map((fuelType) => (
-                <label
+                <div
                   key={fuelType.id}
-                  className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer bg-blue-50"
+                  className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg bg-blue-50"
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedFuelTypes.includes(fuelType.id)}
-                    onChange={() => toggleFuelType(fuelType.id)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <Fuel className="w-5 h-5 text-blue-600" />
-                  <span className="text-sm font-medium text-gray-700">{fuelType.name}</span>
-                </label>
+                  {editingFuelTypeId === fuelType.id ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editingFuelTypeName}
+                        onChange={(e) => setEditingFuelTypeName(e.target.value)}
+                        className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSaveFuelType();
+                          } else if (e.key === 'Escape') {
+                            setEditingFuelTypeId(null);
+                            setEditingFuelTypeName('');
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveFuelType}
+                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingFuelTypeId(null);
+                          setEditingFuelTypeName('');
+                        }}
+                        className="p-1 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        type="checkbox"
+                        checked={selectedFuelTypes.includes(fuelType.id)}
+                        onChange={() => toggleFuelType(fuelType.id)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <Fuel className="w-5 h-5 text-blue-600" />
+                      <span className="flex-1 text-sm font-medium text-gray-700">{fuelType.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleEditFuelType(fuelType)}
+                        className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  )}
+                </div>
               ))}
 
               {showAddFuelType && (
