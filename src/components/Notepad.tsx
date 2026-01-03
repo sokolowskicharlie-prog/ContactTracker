@@ -37,7 +37,7 @@ interface SavedNote {
   updated_at: string;
 }
 
-export default function Notepad({ isOpen, onClose, content, onSave, showGoals, contacts = [], onSaveToNotesSection, onRefreshNotes, panelOrder = ['notes', 'goals', 'priority'], showNotepad = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, panelSpacing = 8, workspaceId }: NotepadProps) {
+export default function Notepad({ isOpen, onClose, content, onSave, showGoals, contacts = [], onSaveToNotesSection, onRefreshNotes, panelOrder = ['notes', 'goals', 'priority'], showNotepad = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, panelSpacing = 2, workspaceId }: NotepadProps) {
   const [noteContent, setNoteContent] = useState(content);
   const [isSaving, setIsSaving] = useState(false);
   const [isExpanded, setIsExpanded] = useState(notepadExpanded);

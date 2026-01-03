@@ -20,7 +20,7 @@ interface GoalProgressBoxProps {
   onClose?: () => void;
 }
 
-export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false, panelOrder = ['notes', 'goals', 'priority'], showGoals = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, onHasGoalsChange, panelSpacing = 8, onClose }: GoalProgressBoxProps) {
+export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false, panelOrder = ['notes', 'goals', 'priority'], showGoals = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, onHasGoalsChange, panelSpacing = 2, onClose }: GoalProgressBoxProps) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);

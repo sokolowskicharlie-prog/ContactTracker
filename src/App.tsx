@@ -196,7 +196,7 @@ function App() {
   const [noteId, setNoteId] = useState<string | undefined>();
   const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact', 'alerts']);
   const [panelOrder, setPanelOrder] = useState<string[]>(['notes', 'goals', 'priority']);
-  const [panelSpacing, setPanelSpacing] = useState<number>(8);
+  const [panelSpacing, setPanelSpacing] = useState<number>(2);
   const { user, loading: authLoading, signOut } = useAuth();
 
   useEffect(() => {
