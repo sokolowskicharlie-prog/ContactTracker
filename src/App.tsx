@@ -186,8 +186,8 @@ function App() {
     return saved !== null ? saved === 'true' : true;
   });
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
-  const [showNotepad, setShowNotepad] = useState(false);
-  const [showPriorityPanel, setShowPriorityPanel] = useState(false);
+  const [showNotepad, setShowNotepad] = useState(true);
+  const [showPriorityPanel, setShowPriorityPanel] = useState(true);
   const [notepadExpanded, setNotepadExpanded] = useState(true);
   const [goalsExpanded, setGoalsExpanded] = useState(true);
   const [priorityExpanded, setPriorityExpanded] = useState(true);
