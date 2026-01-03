@@ -715,7 +715,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
       notesCollapsed: 52,
       goalsExpanded: 180,
       goalsCollapsed: 52,
-      priorityExpanded: 300,
+      priorityExpanded: 352,
       priorityCollapsed: 52
     };
 
