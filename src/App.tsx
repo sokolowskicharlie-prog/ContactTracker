@@ -3732,7 +3732,7 @@ function App() {
                 id: call.id,
                 contact_id: c.id,
                 type: 'call' as const,
-                date: call.date,
+                date: call.call_date,
                 contact_name: c.name,
                 notes: call.notes,
               }))),
@@ -3740,11 +3740,12 @@ function App() {
                 id: email.id,
                 contact_id: c.id,
                 type: 'email' as const,
-                date: email.date,
+                date: email.email_date,
                 contact_name: c.name,
                 notes: email.notes,
               }))),
             ]}
+            fuelDeals={contacts.flatMap(c => c.fuel_deals)}
             onTaskClick={handleEditTask}
             onDateClick={(date) => {
               setSelectedDate(date);
