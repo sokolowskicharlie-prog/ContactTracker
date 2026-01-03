@@ -1,5 +1,6 @@
-import { X, PieChart as PieChartIcon } from 'lucide-react';
-import { ContactWithActivity } from '../lib/supabase';
+import { X, PieChart as PieChartIcon, Phone, Edit2, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ContactWithActivity, supabase } from '../lib/supabase';
 import PieChart from './PieChart';
 
 interface StatsModalProps {
@@ -9,6 +10,77 @@ interface StatsModalProps {
 }
 
 export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProps) {
+  const [callsGoal, setCallsGoal] = useState(100);
+  const [totalCalls, setTotalCalls] = useState(0);
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      loadCallsData();
+    }
+  }, [isOpen]);
+
+  const loadCallsData = async () => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { data: prefs } = await supabase
+        .from('user_preferences')
+        .select('calls_goal')
+        .eq('user_id', user.user.id)
+        .maybeSingle();
+
+      if (prefs) {
+        setCallsGoal(prefs.calls_goal || 100);
+      }
+
+      const { count } = await supabase
+        .from('communications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.user.id)
+        .eq('communication_type', 'call');
+
+      setTotalCalls(count || 0);
+    } catch (error) {
+      console.error('Error loading calls data:', error);
+    }
+  };
+
+  const startEditingGoal = () => {
+    setEditingGoal(true);
+    setGoalInput(callsGoal.toString());
+  };
+
+  const saveGoal = async () => {
+    const newGoal = parseInt(goalInput);
+    if (isNaN(newGoal) || newGoal < 1) return;
+
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({ calls_goal: newGoal })
+        .eq('user_id', user.user.id);
+
+      if (error) throw error;
+
+      setCallsGoal(newGoal);
+      setEditingGoal(false);
+      setGoalInput('');
+    } catch (error) {
+      console.error('Error updating calls goal:', error);
+    }
+  };
+
+  const cancelEditingGoal = () => {
+    setEditingGoal(false);
+    setGoalInput('');
+  };
+
   if (!isOpen) return null;
 
   // Calculate status distribution
@@ -48,9 +120,17 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
 
   const noPriority = contacts.filter(c => c.priority_rank === null || c.priority_rank === undefined).length;
 
+  const remaining = Math.max(0, callsGoal - totalCalls);
+  const callsData = [
+    { label: 'Calls Made', value: totalCalls, color: '#16a34a' },
+    { label: 'Remaining', value: remaining, color: '#e5e7eb' },
+  ].filter(item => item.value > 0);
+
+  const callsPercentage = callsGoal > 0 ? Math.round((totalCalls / callsGoal) * 100) : 0;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <PieChartIcon className="w-6 h-6" />
@@ -65,13 +145,68 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
         </div>
 
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Calls Progress */}
+            <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Calls Progress
+                </h3>
+                {editingGoal ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={goalInput}
+                      onChange={(e) => setGoalInput(e.target.value)}
+                      className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          saveGoal();
+                        } else if (e.key === 'Escape') {
+                          cancelEditingGoal();
+                        }
+                      }}
+                      autoFocus
+                      min="1"
+                    />
+                    <button
+                      onClick={saveGoal}
+                      className="p-1 text-green-600 hover:bg-green-100 rounded"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={startEditingGoal}
+                    className="flex items-center gap-1 text-xs text-gray-600 hover:text-blue-600"
+                  >
+                    <span>Goal: {callsGoal}</span>
+                    <Edit2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+              <PieChart data={callsData} size={200} />
+              <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                <div className="flex items-center justify-center gap-2">
+                  <Phone className="w-4 h-4 text-green-600" />
+                  <span className="text-2xl font-bold text-green-700">{totalCalls}</span>
+                  <span className="text-sm text-gray-600">/ {callsGoal}</span>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-gray-900">{callsPercentage}%</div>
+                  <div className="text-xs text-gray-600">Complete</div>
+                </div>
+              </div>
+            </div>
+
             {/* Status Distribution */}
             <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
                 Status Distribution
               </h3>
-              <PieChart data={statusData} size={240} />
+              <PieChart data={statusData} size={200} />
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="text-sm text-gray-600 text-center">
                   Total Contacts: <span className="font-semibold text-gray-900">{contacts.length}</span>
@@ -81,10 +216,10 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
 
             {/* Priority Distribution */}
             <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
                 Priority Distribution
               </h3>
-              <PieChart data={priorityData} size={240} />
+              <PieChart data={priorityData} size={200} />
               <div className="mt-4 pt-4 border-t border-gray-200 space-y-1">
                 <div className="text-sm text-gray-600 text-center">
                   With Priority: <span className="font-semibold text-gray-900">{contacts.length - noPriority}</span>
