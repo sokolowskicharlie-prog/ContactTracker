@@ -155,14 +155,14 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
         </div>
 
         {isExpanded && (
-          <div className="overflow-y-auto max-h-[300px]">
+          <div className="overflow-y-auto max-h-[300px] pb-0">
             {priorityContacts.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
                 <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-20" />
                 <p className="text-sm">No priority contacts yet.</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200">
+              <div className="divide-y divide-gray-200 flex flex-col">
                 {[0, 1, 2, 3, 4, 5].map(priority => {
                   const contactsInPriority = groupedByPriority[priority];
                   if (contactsInPriority.length === 0) return null;
@@ -170,8 +170,11 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
                   const priorityConfig = PRIORITY_LABELS[priority];
                   const isSelected = selectedPriority === priority;
 
+                  // Check if this is the last visible priority group
+                  const isLastGroup = [0, 1, 2, 3, 4, 5].reverse().find(p => groupedByPriority[p].length > 0) === priority;
+
                   return (
-                    <div key={priority} className="border-b border-gray-200 last:border-b-0">
+                    <div key={priority} className={`border-b border-gray-200 last:border-b-0 ${isLastGroup && isSelected ? 'pb-0' : ''}`}>
                       <button
                         onClick={() => setSelectedPriority(isSelected ? null : priority)}
                         className={`w-full px-4 py-2.5 flex items-center justify-between ${priorityConfig.bgColor} hover:opacity-80 transition-opacity`}
@@ -189,11 +192,11 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
 
                       {isSelected && (
                         <div className="bg-white divide-y divide-gray-100">
-                          {contactsInPriority.map(contact => (
+                          {contactsInPriority.map((contact, index) => (
                             <div
                               key={contact.id}
                               onClick={() => onContactClick(contact)}
-                              className="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                              className={`px-4 hover:bg-gray-50 cursor-pointer transition-colors ${index === contactsInPriority.length - 1 ? 'py-3 pb-1' : 'py-3'}`}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
