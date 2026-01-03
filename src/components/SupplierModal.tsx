@@ -1,4 +1,4 @@
-import { X, Building2, User, Mail, Phone, Globe, MapPin, Package, DollarSign, FileText, Star, Anchor } from 'lucide-react';
+import { X, Building2, User, Mail, Phone, Globe, MapPin, Package, DollarSign, FileText, Star, Anchor, Ship, Truck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Supplier } from '../lib/supabase';
 
@@ -40,6 +40,9 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
   const [generalEmail, setGeneralEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [rating, setRating] = useState<number | undefined>();
+  const [defaultHasBarge, setDefaultHasBarge] = useState(false);
+  const [defaultHasTruck, setDefaultHasTruck] = useState(false);
+  const [defaultHasExpipe, setDefaultHasExpipe] = useState(false);
 
   useEffect(() => {
     if (supplier) {
@@ -59,6 +62,9 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
       setGeneralEmail(supplier.general_email || '');
       setNotes(supplier.notes || '');
       setRating(supplier.rating);
+      setDefaultHasBarge(supplier.default_has_barge || false);
+      setDefaultHasTruck(supplier.default_has_truck || false);
+      setDefaultHasExpipe(supplier.default_has_expipe || false);
     }
   }, [supplier]);
 
@@ -84,6 +90,9 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
       general_email: generalEmail.trim() || null,
       notes: notes.trim() || null,
       rating: rating || null,
+      default_has_barge: defaultHasBarge,
+      default_has_truck: defaultHasTruck,
+      default_has_expipe: defaultHasExpipe,
     });
 
     onClose();
@@ -312,6 +321,47 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
                   placeholder="e.g., VLSFO, LSMGO, MGO, HFO"
                 />
               </div>
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Default Transport Types (Assumed for all ports)
+              </label>
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={defaultHasBarge}
+                    onChange={(e) => setDefaultHasBarge(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <Ship className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm text-gray-700">Barge</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={defaultHasTruck}
+                    onChange={(e) => setDefaultHasTruck(e.target.checked)}
+                    className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+                  />
+                  <Truck className="w-4 h-4 text-green-600" />
+                  <span className="text-sm text-gray-700">Truck</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={defaultHasExpipe}
+                    onChange={(e) => setDefaultHasExpipe(e.target.checked)}
+                    className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
+                  />
+                  <Anchor className="w-4 h-4 text-orange-600" />
+                  <span className="text-sm text-gray-700">Ex-Pipe</span>
+                </label>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                These transport types will be assumed for all ports unless overridden at the port level.
+              </p>
             </div>
 
             <div className="col-span-2">

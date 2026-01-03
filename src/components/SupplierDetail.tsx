@@ -335,25 +335,34 @@ export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAdd
                     <div className="space-y-2 mb-3">
                       <p className="text-xs text-gray-500 font-medium mb-1">Delivery Methods:</p>
                       <div className="flex flex-wrap gap-2">
-                        {port.has_barge && (
+                        {(port.has_barge || supplier.default_has_barge) && (
                           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm">
                             <Ship className="w-4 h-4" />
                             <span>Barge</span>
+                            {!port.has_barge && supplier.default_has_barge && (
+                              <span className="text-xs opacity-60">(default)</span>
+                            )}
                           </div>
                         )}
-                        {port.has_truck && (
+                        {(port.has_truck || supplier.default_has_truck) && (
                           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm">
                             <Truck className="w-4 h-4" />
                             <span>Truck</span>
+                            {!port.has_truck && supplier.default_has_truck && (
+                              <span className="text-xs opacity-60">(default)</span>
+                            )}
                           </div>
                         )}
-                        {port.has_expipe && (
+                        {(port.has_expipe || supplier.default_has_expipe) && (
                           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-lg text-sm">
                             <Anchor className="w-4 h-4" />
                             <span>Ex-Pipe</span>
+                            {!port.has_expipe && supplier.default_has_expipe && (
+                              <span className="text-xs opacity-60">(default)</span>
+                            )}
                           </div>
                         )}
-                        {!port.has_barge && !port.has_truck && !port.has_expipe && (
+                        {!port.has_barge && !port.has_truck && !port.has_expipe && !supplier.default_has_barge && !supplier.default_has_truck && !supplier.default_has_expipe && (
                           <span className="text-sm text-gray-400 italic">No delivery methods specified</span>
                         )}
                       </div>

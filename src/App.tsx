@@ -3800,6 +3800,10 @@ function App() {
               onSupplierClick={handleSupplierClick}
               onDeleteSupplier={handleDeleteSupplier}
               onEditSupplier={handleEditSupplier}
+              onEditPort={(port) => {
+                setEditingSupplierPort(port);
+                setShowSupplierPortModal(true);
+              }}
             />
           )
         ) : currentPage === 'tasks' ? (
