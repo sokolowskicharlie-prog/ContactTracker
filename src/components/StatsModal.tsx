@@ -39,17 +39,16 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
       }
 
       let query = supabase
-        .from('communications')
+        .from('calls')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.user.id)
-        .eq('communication_type', 'call');
+        .eq('user_id', user.user.id);
 
       if (startDate) {
-        query = query.gte('timestamp', `${startDate}T00:00:00`);
+        query = query.gte('call_date', `${startDate}T00:00:00`);
       }
 
       if (endDate) {
-        query = query.lte('timestamp', `${endDate}T23:59:59`);
+        query = query.lte('call_date', `${endDate}T23:59:59`);
       }
 
       const { count } = await query;
