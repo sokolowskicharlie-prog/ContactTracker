@@ -258,7 +258,7 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
         ))}
 
         {Array.from({ length: firstDay }).map((_, index) => (
-          <div key={`empty-${index}`} className="bg-gray-50 rounded-lg min-h-[100px] p-1" />
+          <div key={`empty-${index}`} className="bg-gray-50 rounded-lg min-h-[140px] p-1" />
         ))}
 
         {Array.from({ length: daysInMonth }).map((_, index) => {
@@ -271,7 +271,7 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
             <div
               key={day}
               onClick={() => onDateClick?.(date)}
-              className={`border rounded-lg min-h-[100px] p-1.5 transition-colors ${
+              className={`border rounded-lg min-h-[140px] p-1.5 transition-colors ${
                 today ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               } ${onDateClick ? 'cursor-pointer' : ''}`}
             >
