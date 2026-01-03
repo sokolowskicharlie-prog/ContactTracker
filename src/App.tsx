@@ -2718,76 +2718,76 @@ function App() {
           </p>
         </div>
 
-        <div className="mb-6 flex gap-2 bg-white rounded-lg p-1 shadow-sm border border-gray-200 w-fit">
+        <div className="mb-6 flex flex-wrap gap-2 bg-white rounded-lg p-1 shadow-sm border border-gray-200 w-full sm:w-fit">
           <button
             onClick={() => {
               setCurrentPage('contacts');
               setSearchQuery('');
             }}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+            className={`flex-shrink-0 px-4 sm:px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
               currentPage === 'contacts'
                 ? 'bg-blue-600 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
             <Users className="w-4 h-4" />
-            Contacts
+            <span className="whitespace-nowrap">Contacts</span>
           </button>
           <button
             onClick={() => {
               setCurrentPage('priority');
               setSearchQuery('');
             }}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+            className={`flex-shrink-0 px-4 sm:px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
               currentPage === 'priority'
                 ? 'bg-purple-600 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
             <TrendingUp className="w-4 h-4" />
-            Priority
+            <span className="whitespace-nowrap">Priority</span>
           </button>
           <button
             onClick={() => {
               setCurrentPage('suppliers');
               setSearchQuery('');
             }}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+            className={`flex-shrink-0 px-4 sm:px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
               currentPage === 'suppliers'
                 ? 'bg-green-600 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
             <Package className="w-4 h-4" />
-            Suppliers
+            <span className="whitespace-nowrap">Suppliers</span>
           </button>
           <button
             onClick={() => {
               setCurrentPage('tasks');
               setSearchQuery('');
             }}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+            className={`flex-shrink-0 px-4 sm:px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
               currentPage === 'tasks'
                 ? 'bg-orange-600 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
             <CheckSquare className="w-4 h-4" />
-            Tasks
+            <span className="whitespace-nowrap">Tasks</span>
           </button>
           <button
             onClick={() => {
               setCurrentPage('notes');
               setSearchQuery('');
             }}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+            className={`flex-shrink-0 px-4 sm:px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
               currentPage === 'notes'
                 ? 'bg-amber-600 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
             <StickyNote className="w-4 h-4" />
-            Notes
+            <span className="whitespace-nowrap">Notes</span>
           </button>
         </div>
 
