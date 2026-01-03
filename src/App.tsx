@@ -63,7 +63,7 @@ interface SavedNote {
 }
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'contacts' | 'suppliers' | 'tasks' | 'notes' | 'priority'>('contacts');
+  const [currentPage, setCurrentPage] = useState<'contacts' | 'suppliers' | 'tasks' | 'notes' | 'priority' | 'calendar'>('contacts');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [contacts, setContacts] = useState<ContactWithActivity[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<ContactWithActivity[]>([]);
@@ -172,7 +172,6 @@ function App() {
   const [editingNote, setEditingNote] = useState<SavedNote | undefined>();
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [taskFilter, setTaskFilter] = useState<'all' | 'pending' | 'completed'>('all');
-  const [taskViewMode, setTaskViewMode] = useState<'list' | 'calendar'>('list');
   const [preselectedContactId, setPreselectedContactId] = useState<string | undefined>();
   const [preselectedSupplierId, setPreselectedSupplierId] = useState<string | undefined>();
   const [showCommunicationsHistory, setShowCommunicationsHistory] = useState(false);
@@ -2597,6 +2596,7 @@ function App() {
                 currentPage === 'suppliers' ? 'bg-green-600' :
                 currentPage === 'priority' ? 'bg-purple-600' :
                 currentPage === 'notes' ? 'bg-amber-600' :
+                currentPage === 'calendar' ? 'bg-teal-600' :
                 'bg-orange-600'
               }`}>
                 {currentPage === 'contacts' ? (
@@ -2607,6 +2607,8 @@ function App() {
                   <TrendingUp className="w-8 h-8 text-white" />
                 ) : currentPage === 'notes' ? (
                   <StickyNote className="w-8 h-8 text-white" />
+                ) : currentPage === 'calendar' ? (
+                  <Calendar className="w-8 h-8 text-white" />
                 ) : (
                   <CheckSquare className="w-8 h-8 text-white" />
                 )}
@@ -2617,6 +2619,7 @@ function App() {
                    currentPage === 'suppliers' ? 'Supplier Tracker' :
                    currentPage === 'priority' ? 'Priority List' :
                    currentPage === 'notes' ? 'Notes' :
+                   currentPage === 'calendar' ? 'Calendar' :
                    'Task Manager'}
                 </h1>
                 <div className="relative">
@@ -2741,6 +2744,8 @@ function App() {
               ? 'View and manage your priority-ranked contacts'
               : currentPage === 'notes'
               ? 'Your saved notes and important information'
+              : currentPage === 'calendar'
+              ? 'View tasks, goals, and communications in calendar format'
               : 'Manage your tasks and stay on top of follow-ups'}
           </p>
         </div>
@@ -2816,10 +2821,24 @@ function App() {
             <StickyNote className="w-4 h-4" />
             <span className="whitespace-nowrap">Notes</span>
           </button>
+          <button
+            onClick={() => {
+              setCurrentPage('calendar');
+              setSearchQuery('');
+            }}
+            className={`flex-shrink-0 px-4 sm:px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+              currentPage === 'calendar'
+                ? 'bg-teal-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            <span className="whitespace-nowrap">Calendar</span>
+          </button>
         </div>
 
         <div className="mb-6 flex flex-col sm:flex-row gap-4">
-          {currentPage !== 'tasks' && currentPage !== 'notes' && (
+          {currentPage !== 'tasks' && currentPage !== 'notes' && currentPage !== 'calendar' && (
             <div className="flex gap-2 bg-white rounded-lg p-1 shadow-sm border border-gray-200">
               <button
                 onClick={() => setViewMode('grid')}
@@ -3603,37 +3622,9 @@ function App() {
 
         {currentPage === 'tasks' && (
           <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Filter className="w-5 h-5 text-gray-600" />
-                <h3 className="font-medium text-gray-900">Filter Tasks</h3>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setTaskViewMode('list')}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
-                    taskViewMode === 'list'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                  title="List view"
-                >
-                  <CheckSquare className="w-4 h-4" />
-                  List
-                </button>
-                <button
-                  onClick={() => setTaskViewMode('calendar')}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
-                    taskViewMode === 'calendar'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                  title="Calendar view"
-                >
-                  <Calendar className="w-4 h-4" />
-                  Calendar
-                </button>
-              </div>
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="w-5 h-5 text-gray-600" />
+              <h3 className="font-medium text-gray-900">Filter Tasks</h3>
             </div>
             <div className="flex gap-4">
               <button
@@ -3722,43 +3713,41 @@ function App() {
               onLogCall={handleLogCallFromSchedule}
               onLogEmail={handleLogEmailFromSchedule}
             />
-            {taskViewMode === 'list' ? (
-              <TaskList
-                tasks={filteredTasks}
-                onToggleComplete={handleToggleTaskComplete}
-                onDeleteTask={handleDeleteTask}
-                onEditTask={handleEditTask}
-              />
-            ) : (
-              <CalendarView
-                tasks={filteredTasks}
-                goals={completedGoals}
-                communications={[
-                  ...contacts.flatMap(c => c.calls.map(call => ({
-                    id: call.id,
-                    contact_id: c.id,
-                    type: 'call' as const,
-                    date: call.date,
-                    contact_name: c.name,
-                    notes: call.notes,
-                  }))),
-                  ...contacts.flatMap(c => c.emails.map(email => ({
-                    id: email.id,
-                    contact_id: c.id,
-                    type: 'email' as const,
-                    date: email.date,
-                    contact_name: c.name,
-                    notes: email.notes,
-                  }))),
-                ]}
-                onTaskClick={handleEditTask}
-                onDateClick={(date) => {
-                  setEditingTask(undefined);
-                  setShowTaskModal(true);
-                }}
-              />
-            )}
+            <TaskList
+              tasks={filteredTasks}
+              onToggleComplete={handleToggleTaskComplete}
+              onDeleteTask={handleDeleteTask}
+              onEditTask={handleEditTask}
+            />
           </>
+        ) : currentPage === 'calendar' ? (
+          <CalendarView
+            tasks={tasks}
+            goals={completedGoals}
+            communications={[
+              ...contacts.flatMap(c => c.calls.map(call => ({
+                id: call.id,
+                contact_id: c.id,
+                type: 'call' as const,
+                date: call.date,
+                contact_name: c.name,
+                notes: call.notes,
+              }))),
+              ...contacts.flatMap(c => c.emails.map(email => ({
+                id: email.id,
+                contact_id: c.id,
+                type: 'email' as const,
+                date: email.date,
+                contact_name: c.name,
+                notes: email.notes,
+              }))),
+            ]}
+            onTaskClick={handleEditTask}
+            onDateClick={(date) => {
+              setEditingTask(undefined);
+              setShowTaskModal(true);
+            }}
+          />
         ) : currentPage === 'notes' ? (
           <NotesSection
             notes={savedNotes}
