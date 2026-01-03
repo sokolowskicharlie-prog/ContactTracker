@@ -1,4 +1,4 @@
-import { X, Building2, User, Mail, Phone, Globe, MapPin, Package, DollarSign, FileText, Star, Plus, Edit, Trash2, Calendar, Truck, Hash, Anchor, Smartphone, Briefcase, MessageCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, Ship } from 'lucide-react';
+import { X, Building2, User, Mail, Phone, Globe, MapPin, Package, DollarSign, FileText, Star, Plus, Edit, Trash2, Calendar, Truck, Hash, Anchor, Smartphone, Briefcase, MessageCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, Ship, Fuel } from 'lucide-react';
 import { SupplierWithOrders, SupplierOrder, SupplierContact, SupplierPort, TaskWithRelated } from '../lib/supabase';
 
 interface SupplierDetailProps {
@@ -367,6 +367,26 @@ export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAdd
                         )}
                       </div>
                     </div>
+
+                    {(port.has_vlsfo || port.has_lsmgo) && (
+                      <div className="space-y-2 mb-3">
+                        <p className="text-xs text-gray-500 font-medium mb-1">Fuel Types:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {port.has_vlsfo && (
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm">
+                              <Fuel className="w-4 h-4" />
+                              <span>VLSFO</span>
+                            </div>
+                          )}
+                          {port.has_lsmgo && (
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-sm">
+                              <Fuel className="w-4 h-4" />
+                              <span>LSMGO</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {port.notes && (
                       <p className="text-xs text-gray-500 italic border-t border-gray-100 pt-2">{port.notes}</p>

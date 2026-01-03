@@ -1,4 +1,4 @@
-import { X, Anchor, Truck, Ship, FileText } from 'lucide-react';
+import { X, Anchor, Truck, Ship, FileText, Fuel } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { SupplierPort } from '../lib/supabase';
 
@@ -14,6 +14,8 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
   const [hasBarge, setHasBarge] = useState(false);
   const [hasTruck, setHasTruck] = useState(false);
   const [hasExpipe, setHasExpipe] = useState(false);
+  const [hasVlsfo, setHasVlsfo] = useState(false);
+  const [hasLsmgo, setHasLsmgo] = useState(false);
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
@@ -22,6 +24,8 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
       setHasBarge(supplierPort.has_barge);
       setHasTruck(supplierPort.has_truck);
       setHasExpipe(supplierPort.has_expipe);
+      setHasVlsfo(supplierPort.has_vlsfo);
+      setHasLsmgo(supplierPort.has_lsmgo);
       setNotes(supplierPort.notes || '');
     }
   }, [supplierPort]);
@@ -39,6 +43,8 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
         has_barge: hasBarge,
         has_truck: hasTruck,
         has_expipe: hasExpipe,
+        has_vlsfo: hasVlsfo,
+        has_lsmgo: hasLsmgo,
         notes: notes.trim() || undefined,
       });
     } else {
@@ -53,6 +59,8 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
           has_barge: hasBarge,
           has_truck: hasTruck,
           has_expipe: hasExpipe,
+          has_vlsfo: hasVlsfo,
+          has_lsmgo: hasLsmgo,
           notes: notes.trim() || undefined,
         });
       }
@@ -135,6 +143,35 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
                 />
                 <Anchor className="w-5 h-5 text-gray-600" />
                 <span className="text-sm font-medium text-gray-700">Ex-Pipe</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Fuel Types
+            </label>
+            <div className="space-y-2">
+              <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasVlsfo}
+                  onChange={(e) => setHasVlsfo(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <Fuel className="w-5 h-5 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">VLSFO</span>
+              </label>
+
+              <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasLsmgo}
+                  onChange={(e) => setHasLsmgo(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <Fuel className="w-5 h-5 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">LSMGO</span>
               </label>
             </div>
           </div>

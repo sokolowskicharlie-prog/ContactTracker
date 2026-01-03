@@ -174,6 +174,8 @@ export type SupplierPort = {
   has_barge: boolean;
   has_truck: boolean;
   has_expipe: boolean;
+  has_vlsfo: boolean;
+  has_lsmgo: boolean;
   notes?: string;
   created_at: string;
   updated_at: string;
