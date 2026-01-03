@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, ChevronDown, ChevronUp, Phone, Mail, Fuel, Clock, X, User, Calendar, Plus, Trash2, Edit2, Check, ArrowUp, ArrowDown, RefreshCw, CheckSquare, CalendarRange } from 'lucide-react';
+import { Target, ChevronDown, ChevronUp, Phone, Mail, Fuel, Clock, X, User, Calendar, Plus, Trash2, Edit2, Check, ArrowUp, ArrowDown, RefreshCw, CheckSquare } from 'lucide-react';
 import { supabase, DailyGoal, Call, Email, FuelDeal, Contact, ContactPerson, CallSchedule, Task } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
@@ -71,8 +71,6 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
   const [replacingScheduleId, setReplacingScheduleId] = useState<string | null>(null);
   const [replaceContactId, setReplaceContactId] = useState<string>('');
   const [isAddingCall, setIsAddingCall] = useState(false);
-  const [callsStartDate, setCallsStartDate] = useState<string>('');
-  const [callsEndDate, setCallsEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     if (user) {
@@ -80,7 +78,6 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
       loadActivities();
       loadContacts();
       loadContactPersons();
-      loadDateRangePreferences();
 
       const callsSubscription = supabase
         .channel('calls_progress')
@@ -166,21 +163,26 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
   const loadActivities = async () => {
     if (!user) return;
 
+    const today = new Date().toISOString().split('T')[0];
+
     const [callsResult, emailsResult, dealsResult] = await Promise.all([
       supabase
         .from('calls')
         .select('*')
         .eq('user_id', user.id)
+        .gte('call_date', today)
         .order('call_date', { ascending: false }),
       supabase
         .from('emails')
         .select('*')
         .eq('user_id', user.id)
+        .gte('email_date', today)
         .order('email_date', { ascending: false }),
       supabase
         .from('fuel_deals')
         .select('*')
         .eq('user_id', user.id)
+        .gte('deal_date', today)
         .order('deal_date', { ascending: false })
     ]);
 
@@ -213,46 +215,6 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
 
     if (!error) {
       setContactPersons(data || []);
-    }
-  };
-
-  const loadDateRangePreferences = async () => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('user_preferences')
-      .select('calls_start_date, calls_end_date')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (!error && data) {
-      if (data.calls_start_date) {
-        setCallsStartDate(data.calls_start_date);
-      }
-      if (data.calls_end_date) {
-        setCallsEndDate(data.calls_end_date);
-      }
-    }
-  };
-
-  const saveDateRangePreferences = async (startDate: string, endDate: string) => {
-    if (!user) return;
-
-    const { data: existingPrefs } = await supabase
-      .from('user_preferences')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (existingPrefs) {
-      await supabase
-        .from('user_preferences')
-        .update({ calls_start_date: startDate, calls_end_date: endDate })
-        .eq('user_id', user.id);
-    } else {
-      await supabase
-        .from('user_preferences')
-        .insert([{ user_id: user.id, calls_start_date: startDate, calls_end_date: endDate }]);
     }
   };
 
@@ -675,29 +637,26 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
     let currentCount = 0;
     const today = new Date().toISOString().split('T')[0];
 
-    const startDate = callsStartDate || today;
-    const endDate = callsEndDate || today;
-
     if (goal.goal_type === 'calls') {
       currentCount = calls.filter(c => {
         const callDate = new Date(c.call_date).toISOString().split('T')[0];
         const commType = c.communication_type || 'phone_call';
-        return callDate >= startDate && callDate <= endDate && (commType === 'phone_call' || commType === 'whatsapp');
+        return callDate === today && (commType === 'phone_call' || commType === 'whatsapp');
       }).length;
     } else if (goal.goal_type === 'emails') {
       const emailCount = emails.filter(e => {
         const emailDate = new Date(e.email_date).toISOString().split('T')[0];
-        return emailDate >= startDate && emailDate <= endDate;
+        return emailDate === today;
       }).length;
       const emailCallCount = calls.filter(c => {
         const callDate = new Date(c.call_date).toISOString().split('T')[0];
-        return callDate >= startDate && callDate <= endDate && c.communication_type === 'email';
+        return callDate === today && c.communication_type === 'email';
       }).length;
       currentCount = emailCount + emailCallCount;
     } else if (goal.goal_type === 'deals') {
       currentCount = deals.filter(d => {
         const dealDate = new Date(d.deal_date).toISOString().split('T')[0];
-        return dealDate >= startDate && dealDate <= endDate;
+        return dealDate === today;
       }).length;
     }
 
@@ -1010,7 +969,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                       <span className="text-sm text-gray-600">Target: {selectedGoal.target_time}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 mb-3">
+                  <div className="flex items-center gap-4">
                     <div>
                       <p className="text-2xl font-bold text-gray-900">
                         {calculateProgress(selectedGoal).currentAmount} / {selectedGoal.target_amount}
@@ -1018,38 +977,6 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                       <p className="text-sm text-gray-600">
                         {Math.round(calculateProgress(selectedGoal).percentComplete)}% Complete
                       </p>
-                    </div>
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-blue-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CalendarRange className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-gray-700">Date Range Filter</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <label className="block text-xs text-gray-600 mb-1">Start Date</label>
-                        <input
-                          type="date"
-                          value={callsStartDate}
-                          onChange={(e) => {
-                            setCallsStartDate(e.target.value);
-                            saveDateRangePreferences(e.target.value, callsEndDate);
-                          }}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-xs text-gray-600 mb-1">End Date</label>
-                        <input
-                          type="date"
-                          value={callsEndDate}
-                          onChange={(e) => {
-                            setCallsEndDate(e.target.value);
-                            saveDateRangePreferences(callsStartDate, e.target.value);
-                          }}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
                     </div>
                   </div>
                   {selectedGoal.notes && (
