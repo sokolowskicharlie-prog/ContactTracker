@@ -3,7 +3,7 @@ import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutG
 import { useAuth } from './lib/auth';
 import { Workspace, getWorkspaces, getOrCreateDefaultWorkspace } from './lib/workspaces';
 import AuthForm from './components/AuthForm';
-import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, Task, TaskWithRelated, Contact, DailyGoal } from './lib/supabase';
+import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, SupplierPort, Task, TaskWithRelated, Contact, DailyGoal } from './lib/supabase';
 import { getTimezoneForCountry } from './lib/timezones';
 import * as XLSX from 'xlsx';
 import ContactList from './components/ContactList';
@@ -22,6 +22,7 @@ import SupplierModal from './components/SupplierModal';
 import SupplierDetail from './components/SupplierDetail';
 import OrderModal from './components/OrderModal';
 import SupplierContactModal from './components/SupplierContactModal';
+import SupplierPortModal from './components/SupplierPortModal';
 import TaskModal from './components/TaskModal';
 import TaskList from './components/TaskList';
 import CalendarView from './components/CalendarView';
@@ -88,6 +89,7 @@ function App() {
   const [showSupplierDetail, setShowSupplierDetail] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showSupplierContactModal, setShowSupplierContactModal] = useState(false);
+  const [showSupplierPortModal, setShowSupplierPortModal] = useState(false);
   const [showSupplierImportModal, setShowSupplierImportModal] = useState(false);
   const [showBulkSearchModal, setShowBulkSearchModal] = useState(false);
   const [editingVessel, setEditingVessel] = useState<Vessel | undefined>();
@@ -100,6 +102,7 @@ function App() {
   const [selectedSupplier, setSelectedSupplier] = useState<SupplierWithOrders | undefined>();
   const [editingOrder, setEditingOrder] = useState<SupplierOrder | undefined>();
   const [editingSupplierContact, setEditingSupplierContact] = useState<SupplierContact | undefined>();
+  const [editingSupplierPort, setEditingSupplierPort] = useState<SupplierPort | undefined>();
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | undefined>();
   const [filterCountries, setFilterCountries] = useState<string[]>([]);
   const [filterTimezones, setFilterTimezones] = useState<string[]>([]);
@@ -1181,14 +1184,23 @@ function App() {
 
       if (contactsError) throw contactsError;
 
+      const { data: portsData, error: portsError } = await supabase
+        .from('supplier_ports')
+        .select('*')
+        .order('port_name');
+
+      if (portsError) throw portsError;
+
       const suppliersWithOrders: SupplierWithOrders[] = (suppliersData || []).map((supplier) => {
         const supplierOrders = (ordersData || []).filter((order) => order.supplier_id === supplier.id);
         const supplierContacts = (contactsData || []).filter((contact) => contact.supplier_id === supplier.id);
+        const supplierPorts = (portsData || []).filter((port) => port.supplier_id === supplier.id);
 
         return {
           ...supplier,
           orders: supplierOrders,
           contacts: supplierContacts,
+          ports_detailed: supplierPorts,
           total_orders: supplierOrders.length,
           last_order_date: supplierOrders[0]?.order_date,
         };
@@ -2080,6 +2092,57 @@ function App() {
       }
     } catch (error) {
       console.error('Error deleting supplier contact:', error);
+    }
+  };
+
+  const handleSaveSupplierPort = async (portData: Partial<SupplierPort>) => {
+    if (!selectedSupplier) return;
+
+    try {
+      if (portData.id) {
+        const { error } = await supabase
+          .from('supplier_ports')
+          .update(portData)
+          .eq('id', portData.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('supplier_ports').insert([
+          {
+            supplier_id: selectedSupplier.id,
+            ...portData,
+          },
+        ]);
+
+        if (error) throw error;
+      }
+
+      await loadSuppliers();
+      const updatedSupplier = suppliers.find(s => s.id === selectedSupplier.id);
+      if (updatedSupplier) {
+        setSelectedSupplier(updatedSupplier);
+      }
+      setEditingSupplierPort(undefined);
+    } catch (error) {
+      console.error('Error saving supplier port:', error);
+    }
+  };
+
+  const handleDeleteSupplierPort = async (portId: string) => {
+    try {
+      const { error } = await supabase.from('supplier_ports').delete().eq('id', portId);
+
+      if (error) throw error;
+      await loadSuppliers();
+
+      if (selectedSupplier) {
+        const updatedSupplier = suppliers.find(s => s.id === selectedSupplier.id);
+        if (updatedSupplier) {
+          setSelectedSupplier(updatedSupplier);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting supplier port:', error);
     }
   };
 
@@ -3960,6 +4023,15 @@ function App() {
             setShowSupplierContactModal(true);
           }}
           onDeleteContact={handleDeleteSupplierContact}
+          onAddPort={() => {
+            setEditingSupplierPort(undefined);
+            setShowSupplierPortModal(true);
+          }}
+          onEditPort={(port) => {
+            setEditingSupplierPort(port);
+            setShowSupplierPortModal(true);
+          }}
+          onDeletePort={handleDeleteSupplierPort}
           onAddTask={() => handleAddTaskForSupplier(selectedSupplier.id)}
           onToggleTaskComplete={handleToggleTaskComplete}
           onEditTask={handleEditTask}
@@ -3989,6 +4061,18 @@ function App() {
             setEditingSupplierContact(undefined);
           }}
           onSave={handleSaveSupplierContact}
+        />
+      )}
+
+      {showSupplierPortModal && selectedSupplier && (
+        <SupplierPortModal
+          supplierPort={editingSupplierPort}
+          supplierId={selectedSupplier.id}
+          onClose={() => {
+            setShowSupplierPortModal(false);
+            setEditingSupplierPort(undefined);
+          }}
+          onSave={handleSaveSupplierPort}
         />
       )}
 

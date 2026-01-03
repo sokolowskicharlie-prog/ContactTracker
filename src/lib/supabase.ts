@@ -167,6 +167,18 @@ export type SupplierContact = {
   created_at: string;
 };
 
+export type SupplierPort = {
+  id: string;
+  supplier_id: string;
+  port_name: string;
+  has_barge: boolean;
+  has_truck: boolean;
+  has_expipe: boolean;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type SupplierOrder = {
   id: string;
   supplier_id: string;
@@ -184,6 +196,7 @@ export type SupplierOrder = {
 export type SupplierWithOrders = Supplier & {
   orders: SupplierOrder[];
   contacts: SupplierContact[];
+  ports_detailed: SupplierPort[];
   total_orders: number;
   last_order_date?: string;
 };

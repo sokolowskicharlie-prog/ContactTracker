@@ -1,5 +1,5 @@
-import { X, Building2, User, Mail, Phone, Globe, MapPin, Package, DollarSign, FileText, Star, Plus, Edit, Trash2, Calendar, Truck, Hash, Anchor, Smartphone, Briefcase, MessageCircle, CheckSquare, Circle, CheckCircle2, AlertCircle } from 'lucide-react';
-import { SupplierWithOrders, SupplierOrder, SupplierContact, TaskWithRelated } from '../lib/supabase';
+import { X, Building2, User, Mail, Phone, Globe, MapPin, Package, DollarSign, FileText, Star, Plus, Edit, Trash2, Calendar, Truck, Hash, Anchor, Smartphone, Briefcase, MessageCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, Ship } from 'lucide-react';
+import { SupplierWithOrders, SupplierOrder, SupplierContact, SupplierPort, TaskWithRelated } from '../lib/supabase';
 
 interface SupplierDetailProps {
   supplier: SupplierWithOrders;
@@ -12,13 +12,16 @@ interface SupplierDetailProps {
   onAddContact: () => void;
   onEditContact: (contact: SupplierContact) => void;
   onDeleteContact: (contactId: string) => void;
+  onAddPort: () => void;
+  onEditPort: (port: SupplierPort) => void;
+  onDeletePort: (portId: string) => void;
   onAddTask: () => void;
   onToggleTaskComplete: (taskId: string, completed: boolean) => void;
   onEditTask: (task: TaskWithRelated) => void;
   onDeleteTask: (taskId: string) => void;
 }
 
-export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAddOrder, onEditOrder, onDeleteOrder, onAddContact, onEditContact, onDeleteContact, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask }: SupplierDetailProps) {
+export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAddOrder, onEditOrder, onDeleteOrder, onAddContact, onEditContact, onDeleteContact, onAddPort, onEditPort, onDeletePort, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask }: SupplierDetailProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -281,6 +284,93 @@ export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAdd
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="border-t border-gray-200 pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Ports & Delivery Methods ({supplier.ports_detailed?.length || 0})
+              </h3>
+              <button
+                onClick={onAddPort}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Port
+              </button>
+            </div>
+
+            {supplier.ports_detailed && supplier.ports_detailed.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {supplier.ports_detailed.map((port) => (
+                  <div
+                    key={port.id}
+                    className="bg-white border border-gray-200 rounded-lg p-4"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Anchor className="w-5 h-5 text-blue-600" />
+                        <h4 className="font-semibold text-gray-900">{port.port_name}</h4>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => onEditPort(port)}
+                          className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete port ${port.port_name}?`)) {
+                              onDeletePort(port.id);
+                            }
+                          }}
+                          className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 mb-3">
+                      <p className="text-xs text-gray-500 font-medium mb-1">Delivery Methods:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {port.has_barge && (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm">
+                            <Ship className="w-4 h-4" />
+                            <span>Barge</span>
+                          </div>
+                        )}
+                        {port.has_truck && (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm">
+                            <Truck className="w-4 h-4" />
+                            <span>Truck</span>
+                          </div>
+                        )}
+                        {port.has_expipe && (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-lg text-sm">
+                            <Anchor className="w-4 h-4" />
+                            <span>Ex-Pipe</span>
+                          </div>
+                        )}
+                        {!port.has_barge && !port.has_truck && !port.has_expipe && (
+                          <span className="text-sm text-gray-400 italic">No delivery methods specified</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {port.notes && (
+                      <p className="text-xs text-gray-500 italic border-t border-gray-100 pt-2">{port.notes}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                <Anchor className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                <p>No ports added yet</p>
+              </div>
+            )}
           </div>
 
           <div className="border-t border-gray-200 pt-6">
