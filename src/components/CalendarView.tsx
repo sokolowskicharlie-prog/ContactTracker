@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Phone, Mail, Target, CheckSquare, Circle, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Phone, Mail, CheckSquare, Circle, CheckCircle2, DollarSign } from 'lucide-react';
 import { TaskWithRelated } from '../lib/supabase';
 
 interface DailyGoal {
@@ -20,10 +20,17 @@ interface Communication {
   notes?: string;
 }
 
+interface FuelDeal {
+  id: string;
+  contact_id: string;
+  created_at: string;
+}
+
 interface CalendarViewProps {
   tasks: TaskWithRelated[];
   goals: DailyGoal[];
   communications: Communication[];
+  fuelDeals?: FuelDeal[];
   onTaskClick?: (task: TaskWithRelated) => void;
   onDateClick?: (date: Date) => void;
 }
@@ -37,7 +44,7 @@ interface CalendarEvent {
   data: any;
 }
 
-export default function CalendarView({ tasks, goals, communications, onTaskClick, onDateClick }: CalendarViewProps) {
+export default function CalendarView({ tasks, goals, communications, fuelDeals = [], onTaskClick, onDateClick }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const getDaysInMonth = (date: Date) => {
@@ -112,16 +119,18 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
   const getEventCounts = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
 
+    const tasksDueCount = tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr)).length;
     const tasksCompletedCount = tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr) && task.completed).length;
-    const goalsCount = goals.filter(goal => goal.target_date && goal.target_date.startsWith(dateStr)).length;
     const callsCount = communications.filter(comm => comm.type === 'call' && comm.date && comm.date.startsWith(dateStr)).length;
     const emailsCount = communications.filter(comm => comm.type === 'email' && comm.date && comm.date.startsWith(dateStr)).length;
+    const dealsCount = fuelDeals.filter(deal => deal.created_at && deal.created_at.startsWith(dateStr)).length;
 
     return {
+      tasksDue: tasksDueCount,
       tasksCompleted: tasksCompletedCount,
-      goals: goalsCount,
       calls: callsCount,
       emails: emailsCount,
+      deals: dealsCount,
     };
   };
 
@@ -220,12 +229,12 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
 
       <div className="mb-4 flex gap-4 text-xs flex-wrap">
         <div className="flex items-center gap-1.5">
-          <CheckCircle2 className="w-3 h-3 text-green-600" />
-          <span className="text-gray-600">Tasks Completed</span>
+          <Circle className="w-3 h-3 text-blue-600" />
+          <span className="text-gray-600">Tasks Due</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Target className="w-3 h-3 text-purple-600" />
-          <span className="text-gray-600">Goals</span>
+          <CheckCircle2 className="w-3 h-3 text-green-600" />
+          <span className="text-gray-600">Tasks Completed</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Phone className="w-3 h-3 text-teal-600" />
@@ -234,6 +243,10 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
         <div className="flex items-center gap-1.5">
           <Mail className="w-3 h-3 text-orange-600" />
           <span className="text-gray-600">Emails Logged</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <DollarSign className="w-3 h-3 text-emerald-600" />
+          <span className="text-gray-600">Deals Logged</span>
         </div>
       </div>
 
@@ -266,32 +279,34 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
                 {day}
               </div>
               <div className="space-y-1">
-                {counts.tasksCompleted > 0 && (
-                  <div className="flex items-center gap-1 text-xs">
-                    <CheckCircle2 className="w-3 h-3 text-green-600 flex-shrink-0" />
-                    <span className="text-green-700 font-semibold">{counts.tasksCompleted}</span>
-                    <span className="text-green-600 truncate">Done</span>
+                {counts.tasksDue > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <Circle className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                    <span className="text-blue-700 font-semibold">{counts.tasksDue}</span>
                   </div>
                 )}
-                {counts.goals > 0 && (
-                  <div className="flex items-center gap-1 text-xs">
-                    <Target className="w-3 h-3 text-purple-600 flex-shrink-0" />
-                    <span className="text-purple-700 font-semibold">{counts.goals}</span>
-                    <span className="text-purple-600 truncate">Goal{counts.goals !== 1 ? 's' : ''}</span>
+                {counts.tasksCompleted > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <CheckCircle2 className="w-3 h-3 text-green-600 flex-shrink-0" />
+                    <span className="text-green-700 font-semibold">{counts.tasksCompleted}</span>
                   </div>
                 )}
                 {counts.calls > 0 && (
-                  <div className="flex items-center gap-1 text-xs">
+                  <div className="flex items-center gap-1.5 text-xs">
                     <Phone className="w-3 h-3 text-teal-600 flex-shrink-0" />
                     <span className="text-teal-700 font-semibold">{counts.calls}</span>
-                    <span className="text-teal-600 truncate">Call{counts.calls !== 1 ? 's' : ''}</span>
                   </div>
                 )}
                 {counts.emails > 0 && (
-                  <div className="flex items-center gap-1 text-xs">
+                  <div className="flex items-center gap-1.5 text-xs">
                     <Mail className="w-3 h-3 text-orange-600 flex-shrink-0" />
                     <span className="text-orange-700 font-semibold">{counts.emails}</span>
-                    <span className="text-orange-600 truncate">Email{counts.emails !== 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                {counts.deals > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <DollarSign className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                    <span className="text-emerald-700 font-semibold">{counts.deals}</span>
                   </div>
                 )}
               </div>
