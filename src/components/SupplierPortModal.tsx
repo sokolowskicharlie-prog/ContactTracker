@@ -26,19 +26,37 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
     }
   }, [supplierPort]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!portName.trim()) return;
 
-    onSave({
-      ...(supplierPort?.id ? { id: supplierPort.id } : {}),
-      supplier_id: supplierId,
-      port_name: portName.trim(),
-      has_barge: hasBarge,
-      has_truck: hasTruck,
-      has_expipe: hasExpipe,
-      notes: notes.trim() || undefined,
-    });
+    if (supplierPort) {
+      // Editing existing port - single port only
+      onSave({
+        id: supplierPort.id,
+        supplier_id: supplierId,
+        port_name: portName.trim(),
+        has_barge: hasBarge,
+        has_truck: hasTruck,
+        has_expipe: hasExpipe,
+        notes: notes.trim() || undefined,
+      });
+    } else {
+      // Adding new port(s) - support multiple ports separated by semicolons
+      const portNames = portName.split(';').map(p => p.trim()).filter(Boolean);
+
+      // Call onSave for each port sequentially
+      for (const name of portNames) {
+        await onSave({
+          supplier_id: supplierId,
+          port_name: name,
+          has_barge: hasBarge,
+          has_truck: hasTruck,
+          has_expipe: hasExpipe,
+          notes: notes.trim() || undefined,
+        });
+      }
+    }
 
     onClose();
   };
@@ -61,7 +79,7 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Port Name *
+              Port Name{supplierPort ? '' : 's'} *
             </label>
             <div className="relative">
               <Anchor className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -71,9 +89,14 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
                 onChange={(e) => setPortName(e.target.value)}
                 required
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., Singapore, Rotterdam, Dubai"
+                placeholder={supplierPort ? "e.g., Singapore" : "e.g., Singapore; Rotterdam; Dubai"}
               />
             </div>
+            {!supplierPort && (
+              <p className="text-xs text-gray-500 mt-1">
+                Tip: Add multiple ports at once by separating them with semicolons (;)
+              </p>
+            )}
           </div>
 
           <div>
@@ -142,7 +165,7 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
               type="submit"
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              {supplierPort ? 'Update' : 'Add'} Port
+              {supplierPort ? 'Update Port' : portName.includes(';') ? `Add ${portName.split(';').filter(p => p.trim()).length} Ports` : 'Add Port'}
             </button>
           </div>
         </form>
