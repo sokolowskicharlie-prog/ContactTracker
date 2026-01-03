@@ -17,9 +17,10 @@ interface GoalProgressBoxProps {
   onExpandedChange?: (expanded: boolean) => void;
   onHasGoalsChange?: (hasGoals: boolean) => void;
   panelSpacing?: number;
+  onClose?: () => void;
 }
 
-export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false, panelOrder = ['notes', 'goals', 'priority'], showGoals = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, onHasGoalsChange, panelSpacing = 8 }: GoalProgressBoxProps) {
+export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail, showNotepad = false, panelOrder = ['notes', 'goals', 'priority'], showGoals = false, showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, onHasGoalsChange, panelSpacing = 8, onClose }: GoalProgressBoxProps) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
@@ -743,19 +744,30 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
             <Target className="w-5 h-5" />
             <h3 className="font-semibold">Today's Goals</h3>
           </div>
-          <button
-            onClick={() => {
-              const newExpanded = !isExpanded;
-              setIsExpanded(newExpanded);
-              if (onExpandedChange) {
-                onExpandedChange(newExpanded);
-              }
-            }}
-            className="p-1 hover:bg-white/20 rounded transition-colors"
-            title={isExpanded ? 'Collapse' : 'Expand'}
-          >
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const newExpanded = !isExpanded;
+                setIsExpanded(newExpanded);
+                if (onExpandedChange) {
+                  onExpandedChange(newExpanded);
+                }
+              }}
+              className="p-1 hover:bg-white/20 rounded transition-colors"
+              title={isExpanded ? 'Collapse' : 'Expand'}
+            >
+              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="p-1 hover:bg-white/20 rounded transition-colors"
+                title="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {isExpanded && (

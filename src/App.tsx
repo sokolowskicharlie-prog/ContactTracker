@@ -2567,7 +2567,10 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <GlobalGoalNotifications />
-      {showGoalProgressBox && <GoalProgressBox onSelectContact={handleSelectContactFromGoals} onLogCall={handleLogCallFromSchedule} onLogEmail={handleLogEmailFromSchedule} showNotepad={showNotepad} panelOrder={panelOrder} showGoals={showGoalProgressBox && hasGoals} showPriority={showPriorityPanel} notepadExpanded={notepadExpanded} goalsExpanded={goalsExpanded} priorityExpanded={priorityExpanded} onExpandedChange={setGoalsExpanded} onHasGoalsChange={setHasGoals} panelSpacing={panelSpacing} />}
+      {showGoalProgressBox && <GoalProgressBox onSelectContact={handleSelectContactFromGoals} onLogCall={handleLogCallFromSchedule} onLogEmail={handleLogEmailFromSchedule} showNotepad={showNotepad} panelOrder={panelOrder} showGoals={showGoalProgressBox && hasGoals} showPriority={showPriorityPanel} notepadExpanded={notepadExpanded} goalsExpanded={goalsExpanded} priorityExpanded={priorityExpanded} onExpandedChange={setGoalsExpanded} onHasGoalsChange={setHasGoals} panelSpacing={panelSpacing} onClose={() => {
+        setShowGoalProgressBox(false);
+        localStorage.setItem('goalProgressBoxVisible', 'false');
+      }} />}
       <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-2">
