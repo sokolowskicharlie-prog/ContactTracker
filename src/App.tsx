@@ -44,6 +44,7 @@ import PriorityPanel from './components/PriorityPanel';
 import NotificationSettingsModal from './components/NotificationSettingsModal';
 import WorkspaceModal from './components/WorkspaceModal';
 import StatsModal from './components/StatsModal';
+import DayScheduleModal from './components/DayScheduleModal';
 
 interface NotificationSettings {
   id?: string;
@@ -167,6 +168,8 @@ function App() {
   const [tasks, setTasks] = useState<TaskWithRelated[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<TaskWithRelated[]>([]);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showDayScheduleModal, setShowDayScheduleModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [savedNotes, setSavedNotes] = useState<SavedNote[]>([]);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [editingNote, setEditingNote] = useState<SavedNote | undefined>();
@@ -3744,8 +3747,8 @@ function App() {
             ]}
             onTaskClick={handleEditTask}
             onDateClick={(date) => {
-              setEditingTask(undefined);
-              setShowTaskModal(true);
+              setSelectedDate(date);
+              setShowDayScheduleModal(true);
             }}
           />
         ) : currentPage === 'notes' ? (
@@ -4009,6 +4012,22 @@ function App() {
             setPreselectedSupplierId(undefined);
           }}
           onSave={handleSaveTask}
+        />
+      )}
+
+      {showDayScheduleModal && selectedDate && (
+        <DayScheduleModal
+          date={selectedDate}
+          tasks={tasks}
+          onClose={() => {
+            setShowDayScheduleModal(false);
+            setSelectedDate(null);
+          }}
+          onTaskClick={handleEditTask}
+          onCreateTask={() => {
+            setEditingTask(undefined);
+            setShowTaskModal(true);
+          }}
         />
       )}
 
