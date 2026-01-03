@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell, ChevronDown, FolderOpen, PieChart } from 'lucide-react';
+import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell, ChevronDown, FolderOpen, PieChart, Calendar } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import { Workspace, getWorkspaces, getOrCreateDefaultWorkspace } from './lib/workspaces';
 import AuthForm from './components/AuthForm';
@@ -24,6 +24,7 @@ import OrderModal from './components/OrderModal';
 import SupplierContactModal from './components/SupplierContactModal';
 import TaskModal from './components/TaskModal';
 import TaskList from './components/TaskList';
+import CalendarView from './components/CalendarView';
 import CommunicationsHistory from './components/CommunicationsHistory';
 import ButtonOrderSettings from './components/ButtonOrderSettings';
 import PanelOrderSettings from './components/PanelOrderSettings';
@@ -171,6 +172,7 @@ function App() {
   const [editingNote, setEditingNote] = useState<SavedNote | undefined>();
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [taskFilter, setTaskFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [taskViewMode, setTaskViewMode] = useState<'list' | 'calendar'>('list');
   const [preselectedContactId, setPreselectedContactId] = useState<string | undefined>();
   const [preselectedSupplierId, setPreselectedSupplierId] = useState<string | undefined>();
   const [showCommunicationsHistory, setShowCommunicationsHistory] = useState(false);
@@ -3601,9 +3603,37 @@ function App() {
 
         {currentPage === 'tasks' && (
           <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Filter className="w-5 h-5 text-gray-600" />
-              <h3 className="font-medium text-gray-900">Filter Tasks</h3>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-gray-600" />
+                <h3 className="font-medium text-gray-900">Filter Tasks</h3>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setTaskViewMode('list')}
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
+                    taskViewMode === 'list'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  title="List view"
+                >
+                  <CheckSquare className="w-4 h-4" />
+                  List
+                </button>
+                <button
+                  onClick={() => setTaskViewMode('calendar')}
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
+                    taskViewMode === 'calendar'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  title="Calendar view"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Calendar
+                </button>
+              </div>
             </div>
             <div className="flex gap-4">
               <button
@@ -3692,12 +3722,42 @@ function App() {
               onLogCall={handleLogCallFromSchedule}
               onLogEmail={handleLogEmailFromSchedule}
             />
-            <TaskList
-              tasks={filteredTasks}
-              onToggleComplete={handleToggleTaskComplete}
-              onDeleteTask={handleDeleteTask}
-              onEditTask={handleEditTask}
-            />
+            {taskViewMode === 'list' ? (
+              <TaskList
+                tasks={filteredTasks}
+                onToggleComplete={handleToggleTaskComplete}
+                onDeleteTask={handleDeleteTask}
+                onEditTask={handleEditTask}
+              />
+            ) : (
+              <CalendarView
+                tasks={filteredTasks}
+                goals={completedGoals}
+                communications={[
+                  ...contacts.flatMap(c => c.calls.map(call => ({
+                    id: call.id,
+                    contact_id: c.id,
+                    type: 'call' as const,
+                    date: call.date,
+                    contact_name: c.name,
+                    notes: call.notes,
+                  }))),
+                  ...contacts.flatMap(c => c.emails.map(email => ({
+                    id: email.id,
+                    contact_id: c.id,
+                    type: 'email' as const,
+                    date: email.date,
+                    contact_name: c.name,
+                    notes: email.notes,
+                  }))),
+                ]}
+                onTaskClick={handleEditTask}
+                onDateClick={(date) => {
+                  setEditingTask(undefined);
+                  setShowTaskModal(true);
+                }}
+              />
+            )}
           </>
         ) : currentPage === 'notes' ? (
           <NotesSection
