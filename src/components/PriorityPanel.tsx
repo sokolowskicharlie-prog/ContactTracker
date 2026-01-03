@@ -174,7 +174,7 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
                     <div key={priority} className="border-b border-gray-200 last:border-b-0">
                       <button
                         onClick={() => setSelectedPriority(isSelected ? null : priority)}
-                        className={`w-full px-4 py-1.5 flex items-center justify-between ${priorityConfig.bgColor} hover:opacity-80 transition-opacity`}
+                        className={`w-full px-4 py-2.5 flex items-center justify-between ${priorityConfig.bgColor} hover:opacity-80 transition-opacity`}
                       >
                         <div className="flex items-center gap-2">
                           <span className={`font-bold ${priorityConfig.color} text-lg`}>{priority}</span>
