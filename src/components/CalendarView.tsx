@@ -109,6 +109,22 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
     return tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr)).length;
   };
 
+  const getEventCounts = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+
+    const tasksCompletedCount = tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr) && task.completed).length;
+    const goalsCount = goals.filter(goal => goal.target_date && goal.target_date.startsWith(dateStr)).length;
+    const callsCount = communications.filter(comm => comm.type === 'call' && comm.date && comm.date.startsWith(dateStr)).length;
+    const emailsCount = communications.filter(comm => comm.type === 'email' && comm.date && comm.date.startsWith(dateStr)).length;
+
+    return {
+      tasksCompleted: tasksCompletedCount,
+      goals: goalsCount,
+      calls: callsCount,
+      emails: emailsCount,
+    };
+  };
+
   const isToday = (date: Date) => {
     const today = new Date();
     return date.getDate() === today.getDate() &&
@@ -204,20 +220,20 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
 
       <div className="mb-4 flex gap-4 text-xs flex-wrap">
         <div className="flex items-center gap-1.5">
-          <Circle className="w-3 h-3 text-blue-600" />
-          <span className="text-gray-600">Task</span>
+          <CheckCircle2 className="w-3 h-3 text-green-600" />
+          <span className="text-gray-600">Tasks Completed</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Target className="w-3 h-3 text-purple-600" />
-          <span className="text-gray-600">Goal</span>
+          <span className="text-gray-600">Goals</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Phone className="w-3 h-3 text-teal-600" />
-          <span className="text-gray-600">Call</span>
+          <span className="text-gray-600">Calls Logged</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Mail className="w-3 h-3 text-orange-600" />
-          <span className="text-gray-600">Email</span>
+          <span className="text-gray-600">Emails Logged</span>
         </div>
       </div>
 
@@ -235,31 +251,47 @@ export default function CalendarView({ tasks, goals, communications, onTaskClick
         {Array.from({ length: daysInMonth }).map((_, index) => {
           const day = index + 1;
           const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-          const events = getEventsForDate(date);
-          const taskCount = getTaskCountForDate(date);
+          const counts = getEventCounts(date);
           const today = isToday(date);
 
           return (
             <div
               key={day}
               onClick={() => onDateClick?.(date)}
-              className={`border rounded-lg min-h-[100px] p-1 transition-colors ${
+              className={`border rounded-lg min-h-[100px] p-1.5 transition-colors ${
                 today ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               } ${onDateClick ? 'cursor-pointer' : ''}`}
             >
-              <div className={`text-sm font-semibold mb-1 flex items-center justify-between ${today ? 'text-blue-700' : 'text-gray-700'}`}>
-                <span>{day}</span>
-                {taskCount > 0 && (
-                  <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full">
-                    {taskCount}
-                  </span>
-                )}
+              <div className={`text-sm font-semibold mb-2 ${today ? 'text-blue-700' : 'text-gray-700'}`}>
+                {day}
               </div>
-              <div className="space-y-0.5 overflow-y-auto max-h-[70px]">
-                {events.slice(0, 3).map(renderEvent)}
-                {events.length > 3 && (
-                  <div className="text-xs text-gray-500 font-medium px-1">
-                    +{events.length - 3} more
+              <div className="space-y-1">
+                {counts.tasksCompleted > 0 && (
+                  <div className="flex items-center gap-1 text-xs">
+                    <CheckCircle2 className="w-3 h-3 text-green-600 flex-shrink-0" />
+                    <span className="text-green-700 font-semibold">{counts.tasksCompleted}</span>
+                    <span className="text-green-600 truncate">Done</span>
+                  </div>
+                )}
+                {counts.goals > 0 && (
+                  <div className="flex items-center gap-1 text-xs">
+                    <Target className="w-3 h-3 text-purple-600 flex-shrink-0" />
+                    <span className="text-purple-700 font-semibold">{counts.goals}</span>
+                    <span className="text-purple-600 truncate">Goal{counts.goals !== 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                {counts.calls > 0 && (
+                  <div className="flex items-center gap-1 text-xs">
+                    <Phone className="w-3 h-3 text-teal-600 flex-shrink-0" />
+                    <span className="text-teal-700 font-semibold">{counts.calls}</span>
+                    <span className="text-teal-600 truncate">Call{counts.calls !== 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                {counts.emails > 0 && (
+                  <div className="flex items-center gap-1 text-xs">
+                    <Mail className="w-3 h-3 text-orange-600 flex-shrink-0" />
+                    <span className="text-orange-700 font-semibold">{counts.emails}</span>
+                    <span className="text-orange-600 truncate">Email{counts.emails !== 1 ? 's' : ''}</span>
                   </div>
                 )}
               </div>
