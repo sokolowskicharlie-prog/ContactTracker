@@ -213,6 +213,8 @@ function App() {
     if (!user || !currentWorkspace) return;
     loadContacts();
     loadSuppliers();
+    loadTasks();
+    loadSavedNotes();
   }, [user, currentWorkspace]);
 
   useEffect(() => {
@@ -1328,12 +1330,13 @@ function App() {
   };
 
   const loadSavedNotes = async () => {
-    if (!user) return;
+    if (!user || !currentWorkspace?.id) return;
     try {
       const { data, error } = await supabase
         .from('saved_notes')
         .select('*')
         .eq('user_id', user.id)
+        .eq('workspace_id', currentWorkspace.id)
         .order('updated_at', { ascending: false });
 
       if (error) {
@@ -1368,6 +1371,7 @@ function App() {
           .from('saved_notes')
           .insert([{
             user_id: user.id,
+            workspace_id: currentWorkspace?.id,
             title: note.title,
             content: note.content,
             contact_id: note.contact_id,
@@ -2074,10 +2078,12 @@ function App() {
   };
 
   const loadTasks = async () => {
+    if (!currentWorkspace?.id) return;
     try {
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
+        .eq('workspace_id', currentWorkspace.id)
         .order('due_date', { ascending: true });
 
       if (tasksError) throw tasksError;
@@ -2138,6 +2144,7 @@ function App() {
       } else {
         const { error } = await supabase.from('tasks').insert([{
           user_id: user.id,
+          workspace_id: currentWorkspace?.id,
           ...taskData
         }]);
 
@@ -4030,6 +4037,7 @@ function App() {
         onExpandedChange={setNotepadExpanded}
         onRefreshNotes={loadSavedNotes}
         panelSpacing={panelSpacing}
+        workspaceId={currentWorkspace?.id}
         onSaveToNotesSection={async (title: string, content: string, contactId?: string) => {
           if (!user) return;
           try {
@@ -4037,6 +4045,7 @@ function App() {
               .from('saved_notes')
               .insert([{
                 user_id: user.id,
+                workspace_id: currentWorkspace?.id,
                 title,
                 content,
                 contact_id: contactId,
