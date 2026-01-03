@@ -4046,12 +4046,17 @@ function App() {
           }}
           onToggleTask={handleToggleTaskComplete}
           onContactClick={(contactId) => {
-            setSelectedContact(contacts.find(c => c.id === contactId) || null);
-            setShowDayScheduleModal(false);
+            const contact = contacts.find(c => c.id === contactId);
+            if (contact) {
+              setSelectedContact(contact);
+              setShowContactDetail(true);
+              setShowDayScheduleModal(false);
+            }
           }}
           onCallClick={(call) => {
             const contact = contacts.find(c => c.calls.some(cc => cc.id === call.id));
             if (contact) {
+              setSelectedContact(contact);
               setEditingCall(call);
               setShowCallModal(true);
               setShowDayScheduleModal(false);
@@ -4060,6 +4065,7 @@ function App() {
           onEmailClick={(email) => {
             const contact = contacts.find(c => c.emails.some(e => e.id === email.id));
             if (contact) {
+              setSelectedContact(contact);
               setEditingEmail(email);
               setShowEmailModal(true);
               setShowDayScheduleModal(false);
@@ -4068,6 +4074,7 @@ function App() {
           onFuelDealClick={(deal) => {
             const contact = contacts.find(c => c.fuel_deals.some(d => d.id === deal.id));
             if (contact) {
+              setSelectedContact(contact);
               setEditingFuelDeal(deal);
               setShowFuelDealModal(true);
               setShowDayScheduleModal(false);
