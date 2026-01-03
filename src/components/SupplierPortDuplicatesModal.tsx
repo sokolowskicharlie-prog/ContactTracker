@@ -188,6 +188,12 @@ export default function SupplierPortDuplicatesModal({
                               <span>Ex-Pipe</span>
                             </div>
                           )}
+                          {port.custom_delivery_methods && port.custom_delivery_methods.map((method) => (
+                            <div key={method.id} className="flex items-center gap-1 px-2 py-1 bg-blue-200 text-blue-800 rounded text-xs">
+                              <Truck className="w-3 h-3" />
+                              <span>{method.name}</span>
+                            </div>
+                          ))}
                           {port.has_vlsfo && (
                             <div className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
                               <Fuel className="w-3 h-3" />
@@ -200,6 +206,12 @@ export default function SupplierPortDuplicatesModal({
                               <span>LSMGO</span>
                             </div>
                           )}
+                          {port.custom_fuel_types && port.custom_fuel_types.map((fuelType) => (
+                            <div key={fuelType.id} className="flex items-center gap-1 px-2 py-1 bg-purple-200 text-purple-800 rounded text-xs">
+                              <Fuel className="w-3 h-3" />
+                              <span>{fuelType.name}</span>
+                            </div>
+                          ))}
                         </div>
 
                         {port.notes && (

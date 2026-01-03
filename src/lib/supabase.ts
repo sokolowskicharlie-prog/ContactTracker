@@ -167,6 +167,20 @@ export type SupplierContact = {
   created_at: string;
 };
 
+export type CustomFuelType = {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+};
+
+export type CustomDeliveryMethod = {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+};
+
 export type SupplierPort = {
   id: string;
   supplier_id: string;
@@ -179,6 +193,8 @@ export type SupplierPort = {
   notes?: string;
   created_at: string;
   updated_at: string;
+  custom_fuel_types?: CustomFuelType[];
+  custom_delivery_methods?: CustomDeliveryMethod[];
 };
 
 export type SupplierOrder = {

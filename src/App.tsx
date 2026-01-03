@@ -1213,10 +1213,38 @@ function App() {
 
       if (portsError) throw portsError;
 
+      const { data: portFuelTypesData, error: portFuelTypesError } = await supabase
+        .from('supplier_port_fuel_types')
+        .select(`
+          port_id,
+          fuel_type:custom_fuel_types(id, name, user_id, created_at)
+        `);
+
+      if (portFuelTypesError) throw portFuelTypesError;
+
+      const { data: portDeliveryMethodsData, error: portDeliveryMethodsError } = await supabase
+        .from('supplier_port_delivery_methods')
+        .select(`
+          port_id,
+          delivery_method:custom_delivery_methods(id, name, user_id, created_at)
+        `);
+
+      if (portDeliveryMethodsError) throw portDeliveryMethodsError;
+
       const suppliersWithOrders: SupplierWithOrders[] = (suppliersData || []).map((supplier) => {
         const supplierOrders = (ordersData || []).filter((order) => order.supplier_id === supplier.id);
         const supplierContacts = (contactsData || []).filter((contact) => contact.supplier_id === supplier.id);
-        const supplierPorts = (portsData || []).filter((port) => port.supplier_id === supplier.id);
+        const supplierPorts = (portsData || []).filter((port) => port.supplier_id === supplier.id).map((port) => ({
+          ...port,
+          custom_fuel_types: (portFuelTypesData || [])
+            .filter((pft: any) => pft.port_id === port.id)
+            .map((pft: any) => pft.fuel_type)
+            .filter(Boolean),
+          custom_delivery_methods: (portDeliveryMethodsData || [])
+            .filter((pdm: any) => pdm.port_id === port.id)
+            .map((pdm: any) => pdm.delivery_method)
+            .filter(Boolean),
+        }));
 
         return {
           ...supplier,

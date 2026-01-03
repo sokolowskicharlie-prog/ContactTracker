@@ -1,6 +1,6 @@
-import { X, Anchor, Truck, Ship, FileText, Fuel } from 'lucide-react';
+import { X, Anchor, Truck, Ship, FileText, Fuel, Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { SupplierPort } from '../lib/supabase';
+import { SupplierPort, CustomFuelType, CustomDeliveryMethod, supabase } from '../lib/supabase';
 
 interface SupplierPortModalProps {
   supplierPort?: SupplierPort;
@@ -17,6 +17,18 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
   const [hasVlsfo, setHasVlsfo] = useState(false);
   const [hasLsmgo, setHasLsmgo] = useState(false);
   const [notes, setNotes] = useState('');
+  const [customFuelTypes, setCustomFuelTypes] = useState<CustomFuelType[]>([]);
+  const [customDeliveryMethods, setCustomDeliveryMethods] = useState<CustomDeliveryMethod[]>([]);
+  const [selectedFuelTypes, setSelectedFuelTypes] = useState<string[]>([]);
+  const [selectedDeliveryMethods, setSelectedDeliveryMethods] = useState<string[]>([]);
+  const [newFuelType, setNewFuelType] = useState('');
+  const [newDeliveryMethod, setNewDeliveryMethod] = useState('');
+  const [showAddFuelType, setShowAddFuelType] = useState(false);
+  const [showAddDeliveryMethod, setShowAddDeliveryMethod] = useState(false);
+
+  useEffect(() => {
+    loadCustomTypes();
+  }, []);
 
   useEffect(() => {
     if (supplierPort) {
@@ -27,46 +39,176 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
       setHasVlsfo(supplierPort.has_vlsfo);
       setHasLsmgo(supplierPort.has_lsmgo);
       setNotes(supplierPort.notes || '');
+      setSelectedFuelTypes((supplierPort.custom_fuel_types || []).map(ft => ft.id));
+      setSelectedDeliveryMethods((supplierPort.custom_delivery_methods || []).map(dm => dm.id));
     }
   }, [supplierPort]);
+
+  const loadCustomTypes = async () => {
+    try {
+      const { data: fuelTypes } = await supabase
+        .from('custom_fuel_types')
+        .select('*')
+        .order('name');
+
+      const { data: deliveryMethods } = await supabase
+        .from('custom_delivery_methods')
+        .select('*')
+        .order('name');
+
+      setCustomFuelTypes(fuelTypes || []);
+      setCustomDeliveryMethods(deliveryMethods || []);
+    } catch (error) {
+      console.error('Error loading custom types:', error);
+    }
+  };
+
+  const handleAddFuelType = async () => {
+    if (!newFuelType.trim()) return;
+
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { data, error } = await supabase
+        .from('custom_fuel_types')
+        .insert([{ name: newFuelType.trim(), user_id: user.user.id }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setCustomFuelTypes([...customFuelTypes, data]);
+        setSelectedFuelTypes([...selectedFuelTypes, data.id]);
+        setNewFuelType('');
+        setShowAddFuelType(false);
+      }
+    } catch (error) {
+      console.error('Error adding fuel type:', error);
+    }
+  };
+
+  const handleAddDeliveryMethod = async () => {
+    if (!newDeliveryMethod.trim()) return;
+
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { data, error } = await supabase
+        .from('custom_delivery_methods')
+        .insert([{ name: newDeliveryMethod.trim(), user_id: user.user.id }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setCustomDeliveryMethods([...customDeliveryMethods, data]);
+        setSelectedDeliveryMethods([...selectedDeliveryMethods, data.id]);
+        setNewDeliveryMethod('');
+        setShowAddDeliveryMethod(false);
+      }
+    } catch (error) {
+      console.error('Error adding delivery method:', error);
+    }
+  };
+
+  const toggleFuelType = (id: string) => {
+    setSelectedFuelTypes(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleDeliveryMethod = (id: string) => {
+    setSelectedDeliveryMethods(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const savePortRelationships = async (portId: string) => {
+    try {
+      if (selectedFuelTypes.length > 0) {
+        await supabase.from('supplier_port_fuel_types').delete().eq('port_id', portId);
+        const fuelTypeInserts = selectedFuelTypes.map(ftId => ({
+          port_id: portId,
+          fuel_type_id: ftId,
+        }));
+        await supabase.from('supplier_port_fuel_types').insert(fuelTypeInserts);
+      } else {
+        await supabase.from('supplier_port_fuel_types').delete().eq('port_id', portId);
+      }
+
+      if (selectedDeliveryMethods.length > 0) {
+        await supabase.from('supplier_port_delivery_methods').delete().eq('port_id', portId);
+        const deliveryMethodInserts = selectedDeliveryMethods.map(dmId => ({
+          port_id: portId,
+          delivery_method_id: dmId,
+        }));
+        await supabase.from('supplier_port_delivery_methods').insert(deliveryMethodInserts);
+      } else {
+        await supabase.from('supplier_port_delivery_methods').delete().eq('port_id', portId);
+      }
+    } catch (error) {
+      console.error('Error saving port relationships:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!portName.trim()) return;
 
-    if (supplierPort) {
-      // Editing existing port - single port only
-      onSave({
-        id: supplierPort.id,
-        supplier_id: supplierId,
-        port_name: portName.trim(),
-        has_barge: hasBarge,
-        has_truck: hasTruck,
-        has_expipe: hasExpipe,
-        has_vlsfo: hasVlsfo,
-        has_lsmgo: hasLsmgo,
-        notes: notes.trim() || undefined,
-      });
-    } else {
-      // Adding new port(s) - support multiple ports separated by semicolons
-      const portNames = portName.split(';').map(p => p.trim()).filter(Boolean);
+    try {
+      if (supplierPort) {
+        const { data, error } = await supabase
+          .from('supplier_ports')
+          .update({
+            port_name: portName.trim(),
+            has_barge: hasBarge,
+            has_truck: hasTruck,
+            has_expipe: hasExpipe,
+            has_vlsfo: hasVlsfo,
+            has_lsmgo: hasLsmgo,
+            notes: notes.trim() || null,
+          })
+          .eq('id', supplierPort.id)
+          .select()
+          .single();
 
-      // Call onSave for each port sequentially
-      for (const name of portNames) {
-        await onSave({
-          supplier_id: supplierId,
-          port_name: name,
-          has_barge: hasBarge,
-          has_truck: hasTruck,
-          has_expipe: hasExpipe,
-          has_vlsfo: hasVlsfo,
-          has_lsmgo: hasLsmgo,
-          notes: notes.trim() || undefined,
-        });
+        if (error) throw error;
+        if (data) {
+          await savePortRelationships(data.id);
+        }
+      } else {
+        const portNames = portName.split(';').map(p => p.trim()).filter(Boolean);
+
+        for (const name of portNames) {
+          const { data, error } = await supabase
+            .from('supplier_ports')
+            .insert([{
+              supplier_id: supplierId,
+              port_name: name,
+              has_barge: hasBarge,
+              has_truck: hasTruck,
+              has_expipe: hasExpipe,
+              has_vlsfo: hasVlsfo,
+              has_lsmgo: hasLsmgo,
+              notes: notes.trim() || null,
+            }])
+            .select()
+            .single();
+
+          if (error) throw error;
+          if (data) {
+            await savePortRelationships(data.id);
+          }
+        }
       }
-    }
 
-    onClose();
+      onSave({});
+      onClose();
+    } catch (error) {
+      console.error('Error saving port:', error);
+    }
   };
 
   return (
@@ -108,10 +250,22 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Delivery Methods
-            </label>
-            <div className="space-y-2">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Delivery Methods
+              </label>
+              {!showAddDeliveryMethod && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddDeliveryMethod(true)}
+                  className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add Custom
+                </button>
+              )}
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
               <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
                 <input
                   type="checkbox"
@@ -144,14 +298,77 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
                 <Anchor className="w-5 h-5 text-gray-600" />
                 <span className="text-sm font-medium text-gray-700">Ex-Pipe</span>
               </label>
+
+              {customDeliveryMethods.map((method) => (
+                <label
+                  key={method.id}
+                  className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer bg-blue-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedDeliveryMethods.includes(method.id)}
+                    onChange={() => toggleDeliveryMethod(method.id)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <Truck className="w-5 h-5 text-blue-600" />
+                  <span className="text-sm font-medium text-gray-700">{method.name}</span>
+                </label>
+              ))}
+
+              {showAddDeliveryMethod && (
+                <div className="flex gap-2 p-2 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50">
+                  <input
+                    type="text"
+                    value={newDeliveryMethod}
+                    onChange={(e) => setNewDeliveryMethod(e.target.value)}
+                    placeholder="New delivery method..."
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddDeliveryMethod();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddDeliveryMethod}
+                    className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddDeliveryMethod(false);
+                      setNewDeliveryMethod('');
+                    }}
+                    className="px-3 py-2 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fuel Types
-            </label>
-            <div className="space-y-2">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Fuel Types
+              </label>
+              {!showAddFuelType && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddFuelType(true)}
+                  className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add Custom
+                </button>
+              )}
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
               <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
                 <input
                   type="checkbox"
@@ -173,6 +390,57 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
                 <Fuel className="w-5 h-5 text-gray-600" />
                 <span className="text-sm font-medium text-gray-700">LSMGO</span>
               </label>
+
+              {customFuelTypes.map((fuelType) => (
+                <label
+                  key={fuelType.id}
+                  className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer bg-blue-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedFuelTypes.includes(fuelType.id)}
+                    onChange={() => toggleFuelType(fuelType.id)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <Fuel className="w-5 h-5 text-blue-600" />
+                  <span className="text-sm font-medium text-gray-700">{fuelType.name}</span>
+                </label>
+              ))}
+
+              {showAddFuelType && (
+                <div className="flex gap-2 p-2 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50">
+                  <input
+                    type="text"
+                    value={newFuelType}
+                    onChange={(e) => setNewFuelType(e.target.value)}
+                    placeholder="New fuel type..."
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddFuelType();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddFuelType}
+                    className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddFuelType(false);
+                      setNewFuelType('');
+                    }}
+                    className="px-3 py-2 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

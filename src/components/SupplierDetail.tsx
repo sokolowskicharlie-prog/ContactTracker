@@ -374,13 +374,19 @@ export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAdd
                             )}
                           </div>
                         )}
-                        {!port.has_barge && !port.has_truck && !port.has_expipe && !supplier.default_has_barge && !supplier.default_has_truck && !supplier.default_has_expipe && (
+                        {port.custom_delivery_methods && port.custom_delivery_methods.map((method) => (
+                          <div key={method.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-800 rounded-lg text-sm">
+                            <Truck className="w-4 h-4" />
+                            <span>{method.name}</span>
+                          </div>
+                        ))}
+                        {!port.has_barge && !port.has_truck && !port.has_expipe && !supplier.default_has_barge && !supplier.default_has_truck && !supplier.default_has_expipe && (!port.custom_delivery_methods || port.custom_delivery_methods.length === 0) && (
                           <span className="text-sm text-gray-400 italic">No delivery methods specified</span>
                         )}
                       </div>
                     </div>
 
-                    {(port.has_vlsfo || port.has_lsmgo) && (
+                    {(port.has_vlsfo || port.has_lsmgo || (port.custom_fuel_types && port.custom_fuel_types.length > 0)) && (
                       <div className="space-y-2 mb-3">
                         <p className="text-xs text-gray-500 font-medium mb-1">Fuel Types:</p>
                         <div className="flex flex-wrap gap-2">
@@ -396,6 +402,12 @@ export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAdd
                               <span>LSMGO</span>
                             </div>
                           )}
+                          {port.custom_fuel_types && port.custom_fuel_types.map((fuelType) => (
+                            <div key={fuelType.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 text-purple-800 rounded-lg text-sm">
+                              <Fuel className="w-4 h-4" />
+                              <span>{fuelType.name}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
