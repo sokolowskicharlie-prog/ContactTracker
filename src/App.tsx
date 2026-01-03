@@ -4022,13 +4022,19 @@ function App() {
           tasks={tasks}
           calls={contacts.flatMap(c => c.calls.map(call => ({
             ...call,
-            contact_name: c.name
+            contact_name: c.name,
+            contact_id: c.id
           })))}
           emails={contacts.flatMap(c => c.emails.map(email => ({
             ...email,
-            contact_name: c.name
+            contact_name: c.name,
+            contact_id: c.id
           })))}
-          fuelDeals={contacts.flatMap(c => c.fuel_deals)}
+          fuelDeals={contacts.flatMap(c => c.fuel_deals.map(deal => ({
+            ...deal,
+            contact_name: c.name,
+            contact_id: c.id
+          })))}
           onClose={() => {
             setShowDayScheduleModal(false);
             setSelectedDate(null);
@@ -4039,6 +4045,34 @@ function App() {
             setShowTaskModal(true);
           }}
           onToggleTask={handleToggleTaskComplete}
+          onContactClick={(contactId) => {
+            setSelectedContact(contacts.find(c => c.id === contactId) || null);
+            setShowDayScheduleModal(false);
+          }}
+          onCallClick={(call) => {
+            const contact = contacts.find(c => c.calls.some(cc => cc.id === call.id));
+            if (contact) {
+              setEditingCall(call);
+              setShowCallModal(true);
+              setShowDayScheduleModal(false);
+            }
+          }}
+          onEmailClick={(email) => {
+            const contact = contacts.find(c => c.emails.some(e => e.id === email.id));
+            if (contact) {
+              setEditingEmail(email);
+              setShowEmailModal(true);
+              setShowDayScheduleModal(false);
+            }
+          }}
+          onFuelDealClick={(deal) => {
+            const contact = contacts.find(c => c.fuel_deals.some(d => d.id === deal.id));
+            if (contact) {
+              setEditingFuelDeal(deal);
+              setShowFuelDealModal(true);
+              setShowDayScheduleModal(false);
+            }
+          }}
         />
       )}
 

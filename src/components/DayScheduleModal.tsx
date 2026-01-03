@@ -4,16 +4,20 @@ import { TaskWithRelated, Call, Email, FuelDeal } from '../lib/supabase';
 interface DayScheduleModalProps {
   date: Date;
   tasks: TaskWithRelated[];
-  calls: (Call & { contact_name: string })[];
-  emails: (Email & { contact_name: string })[];
-  fuelDeals: FuelDeal[];
+  calls: (Call & { contact_name: string; contact_id: string })[];
+  emails: (Email & { contact_name: string; contact_id: string })[];
+  fuelDeals: (FuelDeal & { contact_name: string; contact_id: string })[];
   onClose: () => void;
   onTaskClick: (task: TaskWithRelated) => void;
   onCreateTask: () => void;
   onToggleTask: (taskId: string, completed: boolean) => void;
+  onContactClick: (contactId: string) => void;
+  onCallClick: (call: Call) => void;
+  onEmailClick: (email: Email) => void;
+  onFuelDealClick: (deal: FuelDeal) => void;
 }
 
-export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals, onClose, onTaskClick, onCreateTask, onToggleTask }: DayScheduleModalProps) {
+export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals, onClose, onTaskClick, onCreateTask, onToggleTask, onContactClick, onCallClick, onEmailClick, onFuelDealClick }: DayScheduleModalProps) {
   const dateStr = date.toISOString().split('T')[0];
   const dayTasks = tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr));
   const dueTasks = dayTasks.filter(task => !task.completed);
@@ -144,7 +148,18 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
                             </div>
                             <h4 className="font-medium text-gray-900">{task.title}</h4>
                             {task.contact && (
-                              <p className="text-sm text-gray-600 mt-1">Related: {task.contact.name}</p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Related: <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onContactClick(task.contact.id);
+                                    onClose();
+                                  }}
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {task.contact.name}
+                                </button>
+                              </p>
                             )}
                           </div>
                         </div>
@@ -190,7 +205,18 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
                             </div>
                             <h4 className="font-medium text-gray-600 line-through">{task.title}</h4>
                             {task.contact && (
-                              <p className="text-sm text-gray-500 mt-1">Related: {task.contact.name}</p>
+                              <p className="text-sm text-gray-500 mt-1">
+                                Related: <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onContactClick(task.contact.id);
+                                    onClose();
+                                  }}
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {task.contact.name}
+                                </button>
+                              </p>
                             )}
                           </div>
                         </div>
@@ -208,10 +234,16 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
                   </h3>
                   <div className="space-y-2">
                     {dayCalls.map((call) => (
-                      <div key={call.id} className="p-3 rounded-lg border bg-blue-50">
+                      <div key={call.id} className="p-3 rounded-lg border bg-blue-50 hover:border-blue-300 transition-all">
                         <div className="flex items-start gap-3">
                           <Phone className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                          <div className="flex-1 min-w-0">
+                          <div
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => {
+                              onCallClick(call);
+                              onClose();
+                            }}
+                          >
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs text-gray-600">{formatTime(call.call_date)}</span>
                               {call.communication_type && (
@@ -220,7 +252,18 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
                                 </span>
                               )}
                             </div>
-                            <h4 className="font-medium text-gray-900">{call.contact_name}</h4>
+                            <h4 className="font-medium text-gray-900">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onContactClick(call.contact_id);
+                                  onClose();
+                                }}
+                                className="text-blue-600 hover:underline"
+                              >
+                                {call.contact_name}
+                              </button>
+                            </h4>
                             {call.spoke_with && (
                               <p className="text-sm text-gray-600 mt-1">Spoke with: {call.spoke_with}</p>
                             )}
@@ -243,14 +286,31 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
                   </h3>
                   <div className="space-y-2">
                     {dayEmails.map((email) => (
-                      <div key={email.id} className="p-3 rounded-lg border bg-purple-50">
+                      <div key={email.id} className="p-3 rounded-lg border bg-purple-50 hover:border-purple-300 transition-all">
                         <div className="flex items-start gap-3">
                           <Mail className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                          <div className="flex-1 min-w-0">
+                          <div
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => {
+                              onEmailClick(email);
+                              onClose();
+                            }}
+                          >
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs text-gray-600">{formatTime(email.email_date)}</span>
                             </div>
-                            <h4 className="font-medium text-gray-900">{email.contact_name}</h4>
+                            <h4 className="font-medium text-gray-900">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onContactClick(email.contact_id);
+                                  onClose();
+                                }}
+                                className="text-blue-600 hover:underline"
+                              >
+                                {email.contact_name}
+                              </button>
+                            </h4>
                             {email.subject && (
                               <p className="text-sm text-gray-700 mt-1 font-medium">Subject: {email.subject}</p>
                             )}
@@ -276,16 +336,34 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
                   </h3>
                   <div className="space-y-2">
                     {dayDeals.map((deal) => (
-                      <div key={deal.id} className="p-3 rounded-lg border bg-orange-50">
+                      <div key={deal.id} className="p-3 rounded-lg border bg-orange-50 hover:border-orange-300 transition-all">
                         <div className="flex items-start gap-3">
                           <Fuel className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-                          <div className="flex-1 min-w-0">
+                          <div
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => {
+                              onFuelDealClick(deal);
+                              onClose();
+                            }}
+                          >
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs text-gray-600">{formatTime(deal.deal_date)}</span>
                             </div>
                             <h4 className="font-medium text-gray-900">{deal.vessel_name}</h4>
                             <p className="text-sm text-gray-700 mt-1">
                               {deal.fuel_quantity} MT of {deal.fuel_type} at {deal.port}
+                              {deal.contact_name && (
+                                <span> - <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onContactClick(deal.contact_id);
+                                    onClose();
+                                  }}
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {deal.contact_name}
+                                </button></span>
+                              )}
                             </p>
                             {deal.notes && (
                               <p className="text-sm text-gray-600 mt-1">{deal.notes}</p>
