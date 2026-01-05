@@ -367,11 +367,15 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
       return;
     }
 
-    const contactEmail = result.contact.email?.toLowerCase().trim();
-    if (contactEmail === searchedText) {
+    const existingEmail = result.contact.email?.trim() || '';
+    const existingEmails = existingEmail ? existingEmail.split(/[,;]/).map(e => e.toLowerCase().trim()) : [];
+
+    if (existingEmails.includes(searchedText)) {
       alert('This email is already associated with the contact');
       return;
     }
+
+    const newEmail = existingEmail ? `${existingEmail}, ${searchedText}` : searchedText;
 
     const confirmAdd = confirm(`Add email "${searchedText}" to contact "${result.contact.name}"?`);
     if (!confirmAdd) return;
@@ -379,14 +383,14 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
     try {
       const { error } = await supabase
         .from('contacts')
-        .update({ email: searchedText })
+        .update({ email: newEmail })
         .eq('id', result.contact.id);
 
       if (error) throw error;
 
       alert('Email added successfully');
 
-      result.contact.email = searchedText;
+      result.contact.email = newEmail;
       setSearchResults([...searchResults]);
     } catch (error) {
       console.error('Error adding email:', error);
