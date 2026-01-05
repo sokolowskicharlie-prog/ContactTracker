@@ -353,19 +353,6 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
     return filtered;
   };
 
-  const toggleSort = () => {
-    if (sortType === 'none') {
-      setSortType('found-first');
-    } else if (sortType === 'found-first') {
-      setSortType('not-found-first');
-    } else if (sortType === 'not-found-first') {
-      setSortType('alphabetical');
-    } else if (sortType === 'alphabetical') {
-      setSortType('priority');
-    } else {
-      setSortType('none');
-    }
-  };
 
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -585,21 +572,19 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                     <span className="text-sm text-gray-600">Not Found:</span>
                     <span className="ml-2 font-bold text-red-600">{notFoundCount}</span>
                   </div>
-                  <div className="border-l border-gray-300 pl-6">
-                    <button
-                      onClick={toggleSort}
-                      className="flex items-center gap-2 text-sm text-gray-700 hover:text-blue-600 transition-colors font-medium"
-                      title="Click to cycle through sort options"
+                  <div className="border-l border-gray-300 pl-6 flex items-center gap-2">
+                    <ArrowUpDown className="w-4 h-4 text-gray-600" />
+                    <select
+                      value={sortType}
+                      onChange={(e) => setSortType(e.target.value as SortType)}
+                      className="text-sm text-gray-700 border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white cursor-pointer"
                     >
-                      <ArrowUpDown className="w-4 h-4" />
-                      <span>
-                        {sortType === 'none' && 'Sort: None'}
-                        {sortType === 'found-first' && 'Sort: Found First'}
-                        {sortType === 'not-found-first' && 'Sort: Not Found First'}
-                        {sortType === 'alphabetical' && 'Sort: A-Z (by Match Name)'}
-                        {sortType === 'priority' && 'Sort: Priority Status'}
-                      </span>
-                    </button>
+                      <option value="none">Sort: None</option>
+                      <option value="found-first">Sort: Found First</option>
+                      <option value="not-found-first">Sort: Not Found First</option>
+                      <option value="alphabetical">Sort: A-Z (by Match Name)</option>
+                      <option value="priority">Sort: Priority Status</option>
+                    </select>
                   </div>
                 </div>
                 <div className="flex gap-2">
