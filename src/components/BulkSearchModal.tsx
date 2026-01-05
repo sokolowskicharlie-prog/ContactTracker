@@ -375,7 +375,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
       return;
     }
 
-    const newEmail = existingEmail ? `${existingEmail}, ${searchedText}` : searchedText;
+    const newEmail = existingEmail ? `${existingEmail}; ${searchedText}` : searchedText;
 
     const confirmAdd = confirm(`Add email "${searchedText}" to contact "${result.contact.name}"?`);
     if (!confirmAdd) return;
