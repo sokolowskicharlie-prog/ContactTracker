@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, Upload, Search, Download, AlertCircle, ArrowUpDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { ContactWithActivity } from '../lib/supabase';
+import { ContactWithActivity, Supplier, supabase } from '../lib/supabase';
 
 interface BulkSearchModalProps {
   contacts: ContactWithActivity[];
@@ -12,7 +12,9 @@ interface BulkSearchModalProps {
 interface SearchResult {
   searchedName: string;
   found: boolean;
+  type?: 'contact' | 'supplier';
   contact?: ContactWithActivity;
+  supplier?: Supplier;
 }
 
 type SortType = 'none' | 'found-first' | 'not-found-first';
@@ -63,23 +65,34 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
     performSearch(names);
   };
 
-  const performSearch = (names: string[]) => {
-    const results: SearchResult[] = names.map(searchedName => {
+  const performSearch = async (names: string[]) => {
+    const results: SearchResult[] = [];
+
+    for (const searchedName of names) {
       const searchTerm = searchedName.toLowerCase().trim();
 
       // Skip empty search terms
       if (!searchTerm) {
-        return {
+        results.push({
           searchedName,
-          found: false,
-          contact: undefined
-        };
+          found: false
+        });
+        continue;
       }
 
+      // Check if it's an email domain search (e.g., @company.com)
+      const isEmailDomain = searchTerm.startsWith('@');
+
+      // Search in contacts first
       const foundContact = contacts.find(contact => {
         const contactName = contact.name?.toLowerCase() || '';
         const contactEmail = contact.email?.toLowerCase() || '';
         const contactCompany = contact.company?.toLowerCase() || '';
+
+        if (isEmailDomain) {
+          // Match email domain
+          return contactEmail.includes(searchTerm);
+        }
 
         // Exact or partial match in name, email, or company
         return (
@@ -92,12 +105,55 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
         );
       });
 
-      return {
+      if (foundContact) {
+        results.push({
+          searchedName,
+          found: true,
+          type: 'contact',
+          contact: foundContact
+        });
+        continue;
+      }
+
+      // If not found in contacts, search in suppliers
+      try {
+        let supplierQuery = supabase
+          .from('suppliers')
+          .select('*');
+
+        if (isEmailDomain) {
+          // Search for email domain in both email and general_email fields
+          supplierQuery = supplierQuery.or(
+            `email.ilike.%${searchTerm}%,general_email.ilike.%${searchTerm}%`
+          );
+        } else {
+          // Search in company name, contact person, email, and general_email
+          supplierQuery = supplierQuery.or(
+            `company_name.ilike.%${searchTerm}%,contact_person.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,general_email.ilike.%${searchTerm}%`
+          );
+        }
+
+        const { data: suppliers } = await supplierQuery;
+
+        if (suppliers && suppliers.length > 0) {
+          results.push({
+            searchedName,
+            found: true,
+            type: 'supplier',
+            supplier: suppliers[0]
+          });
+          continue;
+        }
+      } catch (error) {
+        console.error('Error searching suppliers:', error);
+      }
+
+      // Not found in either database
+      results.push({
         searchedName,
-        found: !!foundContact,
-        contact: foundContact
-      };
-    });
+        found: false
+      });
+    }
 
     setSearchResults(results);
   };
@@ -113,14 +169,34 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
         return statuses.length > 0 ? statuses.join(', ') : 'None';
       };
 
+      if (result.type === 'supplier' && result.supplier) {
+        return {
+          'Searched Name': result.searchedName,
+          'Status': result.found ? 'Found' : 'Not Found',
+          'Type': 'Supplier',
+          'Company Name': result.supplier.company_name || '',
+          'Contact Person': result.supplier.contact_person || '',
+          'Country': result.supplier.country || '',
+          'Email': result.supplier.email || '',
+          'General Email': result.supplier.general_email || '',
+          'Phone': result.supplier.phone || '',
+          'Supplier Type': result.supplier.supplier_type || '',
+          'Contact Status': '',
+          'Priority Rank': ''
+        };
+      }
+
       return {
         'Searched Name': result.searchedName,
         'Status': result.found ? 'Found' : 'Not Found',
-        'Contact Name': result.contact?.name || '',
-        'Company': result.contact?.company || '',
+        'Type': result.type === 'contact' ? 'Contact' : '',
+        'Company Name': result.contact?.company || '',
+        'Contact Person': result.contact?.name || '',
         'Country': result.contact?.country || '',
         'Email': result.contact?.email || '',
+        'General Email': '',
         'Phone': result.contact?.phone || '',
+        'Supplier Type': '',
         'Contact Status': getContactStatus(),
         'Priority Rank': result.contact?.priority_rank || ''
       };
@@ -165,8 +241,8 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
           <div className="flex items-center gap-3">
             <Search className="w-6 h-6" />
             <div>
-              <h2 className="text-xl font-bold">Bulk Contact Search</h2>
-              <p className="text-blue-100 text-sm">Search multiple contacts at once</p>
+              <h2 className="text-xl font-bold">Bulk Search</h2>
+              <p className="text-blue-100 text-sm">Search contacts and suppliers at once</p>
             </div>
           </div>
           <button
@@ -188,7 +264,9 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                     <ul className="list-disc list-inside space-y-1">
                       <li>Upload an Excel file with names or emails in the first column</li>
                       <li>Or paste names/emails (one per line) in the text area below</li>
-                      <li>The system will search for matching contacts by name, email, or company</li>
+                      <li>Searches both Contacts and Suppliers databases</li>
+                      <li>Matches by name, email, company, or email domain (e.g., @company.com)</li>
+                      <li>Results show whether it's a Contact or Supplier</li>
                       <li>Export results to Excel when done</li>
                     </ul>
                   </div>
@@ -236,7 +314,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                   className="mt-3 w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
                   <Search className="w-5 h-5" />
-                  Search Contacts
+                  Search
                 </button>
               </div>
             </div>
@@ -317,6 +395,11 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                           >
                             {result.found ? 'Found' : 'Not Found'}
                           </span>
+                          {result.type && (
+                            <span className="text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-800">
+                              {result.type === 'contact' ? 'Contact' : 'Supplier'}
+                            </span>
+                          )}
                         </div>
                         {result.contact && (
                           <div className="text-sm text-gray-700 space-y-1">
@@ -371,6 +454,45 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                             </div>
                           </div>
                         )}
+                        {result.supplier && (
+                          <div className="text-sm text-gray-700 space-y-1">
+                            <div>
+                              <span className="font-medium">Company Name:</span>{' '}
+                              {result.supplier.company_name}
+                            </div>
+                            {result.supplier.contact_person && (
+                              <div>
+                                <span className="font-medium">Contact Person:</span>{' '}
+                                {result.supplier.contact_person}
+                              </div>
+                            )}
+                            {result.supplier.country && (
+                              <div>
+                                <span className="font-medium">Country:</span>{' '}
+                                {result.supplier.country}
+                              </div>
+                            )}
+                            {result.supplier.email && (
+                              <div>
+                                <span className="font-medium">Email:</span>{' '}
+                                {result.supplier.email}
+                              </div>
+                            )}
+                            {result.supplier.general_email && (
+                              <div>
+                                <span className="font-medium">General Email:</span>{' '}
+                                {result.supplier.general_email}
+                              </div>
+                            )}
+                            {result.supplier.supplier_type && (
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">
+                                  {result.supplier.supplier_type}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                       {result.contact && (
                         <button
@@ -380,6 +502,17 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                           className="ml-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
                         >
                           View Contact
+                        </button>
+                      )}
+                      {result.supplier && (
+                        <button
+                          onClick={() => {
+                            // Navigate to supplier view - you may need to implement this
+                            alert('Supplier details can be viewed in the Suppliers tab');
+                          }}
+                          className="ml-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                        >
+                          View Supplier
                         </button>
                       )}
                     </div>
