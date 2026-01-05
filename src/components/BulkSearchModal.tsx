@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Upload, Search, Download, AlertCircle, ArrowUpDown } from 'lucide-react';
+import { X, Upload, Search, Download, AlertCircle, ArrowUpDown, Filter } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ContactWithActivity, Supplier, supabase } from '../lib/supabase';
 
@@ -24,6 +24,11 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [textInput, setTextInput] = useState('');
   const [sortType, setSortType] = useState<SortType>('none');
+
+  const [filterText, setFilterText] = useState('');
+  const [filterFoundStatus, setFilterFoundStatus] = useState<'all' | 'found' | 'not-found'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'contact' | 'supplier'>('all');
+  const [filterContactStatus, setFilterContactStatus] = useState<'all' | 'client' | 'traction' | 'jammed' | 'none'>('all');
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -254,25 +259,77 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
   const foundCount = searchResults.filter(r => r.found).length;
   const notFoundCount = searchResults.length - foundCount;
 
-  const getSortedResults = () => {
-    if (sortType === 'none') {
-      return searchResults;
+  const getFilteredAndSortedResults = () => {
+    let filtered = [...searchResults];
+
+    if (filterText.trim()) {
+      const searchTerm = filterText.toLowerCase().trim();
+      filtered = filtered.filter(result => {
+        const name = result.contact?.name?.toLowerCase() || '';
+        const email = result.contact?.email?.toLowerCase() || '';
+        const company = result.contact?.company?.toLowerCase() || '';
+        const supplierName = result.supplier?.company_name?.toLowerCase() || '';
+        const supplierEmail = result.supplier?.email?.toLowerCase() || '';
+        const supplierGeneralEmail = result.supplier?.general_email?.toLowerCase() || '';
+        const country = result.contact?.country?.toLowerCase() || result.supplier?.country?.toLowerCase() || '';
+
+        return (
+          name.includes(searchTerm) ||
+          email.includes(searchTerm) ||
+          company.includes(searchTerm) ||
+          supplierName.includes(searchTerm) ||
+          supplierEmail.includes(searchTerm) ||
+          supplierGeneralEmail.includes(searchTerm) ||
+          country.includes(searchTerm)
+        );
+      });
     }
 
-    const sorted = [...searchResults];
+    if (filterFoundStatus !== 'all') {
+      filtered = filtered.filter(result => {
+        if (filterFoundStatus === 'found') return result.found;
+        if (filterFoundStatus === 'not-found') return !result.found;
+        return true;
+      });
+    }
+
+    if (filterType !== 'all') {
+      filtered = filtered.filter(result => {
+        if (filterType === 'contact') return result.type === 'contact';
+        if (filterType === 'supplier') return result.type === 'supplier';
+        return true;
+      });
+    }
+
+    if (filterContactStatus !== 'all') {
+      filtered = filtered.filter(result => {
+        if (!result.contact) return false;
+        if (filterContactStatus === 'client') return result.contact.is_client;
+        if (filterContactStatus === 'traction') return result.contact.has_traction;
+        if (filterContactStatus === 'jammed') return result.contact.is_jammed;
+        if (filterContactStatus === 'none') {
+          return !result.contact.is_client && !result.contact.has_traction && !result.contact.is_jammed;
+        }
+        return true;
+      });
+    }
+
+    if (sortType === 'none') {
+      return filtered;
+    }
 
     if (sortType === 'found-first') {
-      return sorted.sort((a, b) => (b.found ? 1 : 0) - (a.found ? 1 : 0));
+      return filtered.sort((a, b) => (b.found ? 1 : 0) - (a.found ? 1 : 0));
     } else if (sortType === 'not-found-first') {
-      return sorted.sort((a, b) => (a.found ? 1 : 0) - (b.found ? 1 : 0));
+      return filtered.sort((a, b) => (a.found ? 1 : 0) - (b.found ? 1 : 0));
     } else if (sortType === 'alphabetical') {
-      return sorted.sort((a, b) => {
+      return filtered.sort((a, b) => {
         const nameA = a.contact?.name || a.contact?.email || a.supplier?.company_name || a.searchedName;
         const nameB = b.contact?.name || b.contact?.email || b.supplier?.company_name || b.searchedName;
         return nameA.toLowerCase().localeCompare(nameB.toLowerCase());
       });
     } else if (sortType === 'priority') {
-      return sorted.sort((a, b) => {
+      return filtered.sort((a, b) => {
         const getPriorityValue = (result: SearchResult) => {
           if (!result.contact) return 4;
           if (result.contact.is_jammed) return 1;
@@ -286,7 +343,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
       });
     }
 
-    return sorted;
+    return filtered;
   };
 
   const toggleSort = () => {
@@ -434,6 +491,10 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                       setSearchNames([]);
                       setTextInput('');
                       setSortType('none');
+                      setFilterText('');
+                      setFilterFoundStatus('all');
+                      setFilterType('all');
+                      setFilterContactStatus('all');
                     }}
                     className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
                   >
@@ -442,8 +503,96 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                 </div>
               </div>
 
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Filter className="w-4 h-4 text-gray-600" />
+                  <h3 className="font-semibold text-gray-800">Filter Results</h3>
+                  <span className="ml-auto text-sm text-gray-600">
+                    Showing: {getFilteredAndSortedResults().length} / {searchResults.length}
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Search Text
+                    </label>
+                    <input
+                      type="text"
+                      value={filterText}
+                      onChange={(e) => setFilterText(e.target.value)}
+                      placeholder="Search by name, email, company, country..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Found Status
+                      </label>
+                      <select
+                        value={filterFoundStatus}
+                        onChange={(e) => setFilterFoundStatus(e.target.value as any)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="all">All</option>
+                        <option value="found">Found</option>
+                        <option value="not-found">Not Found</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Type
+                      </label>
+                      <select
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value as any)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="all">All</option>
+                        <option value="contact">Contact</option>
+                        <option value="supplier">Supplier</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Contact Status
+                      </label>
+                      <select
+                        value={filterContactStatus}
+                        onChange={(e) => setFilterContactStatus(e.target.value as any)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="all">All</option>
+                        <option value="jammed">Jammed</option>
+                        <option value="client">Client</option>
+                        <option value="none">None</option>
+                        <option value="traction">Traction</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {(filterText || filterFoundStatus !== 'all' || filterType !== 'all' || filterContactStatus !== 'all') && (
+                    <button
+                      onClick={() => {
+                        setFilterText('');
+                        setFilterFoundStatus('all');
+                        setFilterType('all');
+                        setFilterContactStatus('all');
+                      }}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Clear All Filters
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <div className="space-y-2">
-                {getSortedResults().map((result, index) => (
+                {getFilteredAndSortedResults().map((result, index) => (
                   <div
                     key={index}
                     className={`p-4 rounded-lg border-2 ${
