@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { X, Upload, Search, Download, AlertCircle, ArrowUpDown, Filter } from 'lucide-react';
+import { X, Upload, Search, Download, AlertCircle, ArrowUpDown, Filter, Plus, Mail } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ContactWithActivity, Supplier, supabase } from '../lib/supabase';
+import ContactModal from './ContactModal';
+import SupplierModal from './SupplierModal';
 
 interface BulkSearchModalProps {
   contacts: ContactWithActivity[];
@@ -29,6 +31,11 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
   const [filterFoundStatus, setFilterFoundStatus] = useState<'all' | 'found' | 'not-found'>('all');
   const [filterType, setFilterType] = useState<'all' | 'contact' | 'supplier'>('all');
   const [filterContactStatus, setFilterContactStatus] = useState<'all' | 'client' | 'traction' | 'jammed' | 'none'>('all');
+
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
+  const [prefilledEmail, setPrefilledEmail] = useState('');
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -360,6 +367,123 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
     }
   };
 
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const handleAddEmailToContact = async (result: SearchResult) => {
+    if (!result.contact) return;
+
+    const searchedText = result.searchedName.toLowerCase().trim();
+    if (!isValidEmail(searchedText)) {
+      alert('The searched text is not a valid email address');
+      return;
+    }
+
+    const contactEmail = result.contact.email?.toLowerCase().trim();
+    if (contactEmail === searchedText) {
+      alert('This email is already associated with the contact');
+      return;
+    }
+
+    const confirmAdd = confirm(`Add email "${searchedText}" to contact "${result.contact.name}"?`);
+    if (!confirmAdd) return;
+
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .update({ email: searchedText })
+        .eq('id', result.contact.id);
+
+      if (error) throw error;
+
+      alert('Email added successfully');
+
+      result.contact.email = searchedText;
+      setSearchResults([...searchResults]);
+    } catch (error) {
+      console.error('Error adding email:', error);
+      alert('Failed to add email to contact');
+    }
+  };
+
+  const handleCreateNewContact = (result: SearchResult) => {
+    const searchedText = result.searchedName.trim();
+    setPrefilledEmail(isValidEmail(searchedText) ? searchedText : '');
+    setSelectedResult(result);
+    setShowContactModal(true);
+  };
+
+  const handleCreateNewSupplier = (result: SearchResult) => {
+    const searchedText = result.searchedName.trim();
+    setPrefilledEmail(isValidEmail(searchedText) ? searchedText : '');
+    setSelectedResult(result);
+    setShowSupplierModal(true);
+  };
+
+  const handleContactSave = async (contact: Partial<ContactWithActivity>, contactPersons: any[]) => {
+    try {
+      const { data: newContact, error } = await supabase
+        .from('contacts')
+        .insert([contact])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (contactPersons && contactPersons.length > 0) {
+        const personsWithContactId = contactPersons.map(person => ({
+          ...person,
+          contact_id: newContact.id
+        }));
+
+        const { error: personsError } = await supabase
+          .from('contact_persons')
+          .insert(personsWithContactId);
+
+        if (personsError) throw personsError;
+      }
+
+      alert('Contact created successfully');
+      setShowContactModal(false);
+
+      if (selectedResult) {
+        selectedResult.found = true;
+        selectedResult.type = 'contact';
+        selectedResult.contact = newContact as ContactWithActivity;
+        setSearchResults([...searchResults]);
+      }
+    } catch (error) {
+      console.error('Error creating contact:', error);
+      alert('Failed to create contact');
+    }
+  };
+
+  const handleSupplierSave = async (supplier: Partial<Supplier>) => {
+    try {
+      const { data: newSupplier, error } = await supabase
+        .from('suppliers')
+        .insert([supplier])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      alert('Supplier created successfully');
+      setShowSupplierModal(false);
+
+      if (selectedResult) {
+        selectedResult.found = true;
+        selectedResult.type = 'supplier';
+        selectedResult.supplier = newSupplier;
+        setSearchResults([...searchResults]);
+      }
+    } catch (error) {
+      console.error('Error creating supplier:', error);
+      alert('Failed to create supplier');
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
@@ -603,24 +727,27 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="font-semibold text-gray-900">
-                            {result.searchedName}
-                          </span>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full font-medium ${
-                              result.found
-                                ? 'bg-green-200 text-green-800'
-                                : 'bg-red-200 text-red-800'
-                            }`}
-                          >
-                            {result.found ? 'Found' : 'Not Found'}
-                          </span>
-                          {result.type && (
-                            <span className="text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-800">
-                              {result.type === 'contact' ? 'Contact' : 'Supplier'}
+                        <div className="space-y-2 mb-3">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-gray-600 font-medium">Searched:</span>
+                            <span className="font-semibold text-gray-900">
+                              {result.searchedName}
                             </span>
-                          )}
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                result.found
+                                  ? 'bg-green-200 text-green-800'
+                                  : 'bg-red-200 text-red-800'
+                              }`}
+                            >
+                              {result.found ? 'Found' : 'Not Found'}
+                            </span>
+                            {result.type && (
+                              <span className="text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-800">
+                                {result.type === 'contact' ? 'Contact' : 'Supplier'}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         {result.contact && (
                           <div className="text-sm text-gray-700 space-y-1">
@@ -715,27 +842,58 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                           </div>
                         )}
                       </div>
-                      {result.contact && (
-                        <button
-                          onClick={() => {
-                            onSelectContact(result.contact!);
-                          }}
-                          className="ml-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                        >
-                          View Contact
-                        </button>
-                      )}
-                      {result.supplier && (
-                        <button
-                          onClick={() => {
-                            // Navigate to supplier view - you may need to implement this
-                            alert('Supplier details can be viewed in the Suppliers tab');
-                          }}
-                          className="ml-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm"
-                        >
-                          View Supplier
-                        </button>
-                      )}
+                      <div className="ml-4 flex flex-col gap-2">
+                        {result.contact && (
+                          <>
+                            <button
+                              onClick={() => {
+                                onSelectContact(result.contact!);
+                              }}
+                              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap"
+                            >
+                              View Contact
+                            </button>
+                            {isValidEmail(result.searchedName) &&
+                             result.contact.email?.toLowerCase() !== result.searchedName.toLowerCase() && (
+                              <button
+                                onClick={() => handleAddEmailToContact(result)}
+                                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap flex items-center gap-2"
+                              >
+                                <Mail className="w-4 h-4" />
+                                Add Email
+                              </button>
+                            )}
+                          </>
+                        )}
+                        {result.supplier && (
+                          <button
+                            onClick={() => {
+                              alert('Supplier details can be viewed in the Suppliers tab');
+                            }}
+                            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm whitespace-nowrap"
+                          >
+                            View Supplier
+                          </button>
+                        )}
+                        {!result.found && (
+                          <>
+                            <button
+                              onClick={() => handleCreateNewContact(result)}
+                              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap flex items-center gap-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              New Contact
+                            </button>
+                            <button
+                              onClick={() => handleCreateNewSupplier(result)}
+                              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm whitespace-nowrap flex items-center gap-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              New Supplier
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -744,6 +902,30 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
           )}
         </div>
       </div>
+
+      {showContactModal && (
+        <ContactModal
+          contact={prefilledEmail ? { email: prefilledEmail } as any : undefined}
+          onClose={() => {
+            setShowContactModal(false);
+            setSelectedResult(null);
+            setPrefilledEmail('');
+          }}
+          onSave={handleContactSave}
+        />
+      )}
+
+      {showSupplierModal && (
+        <SupplierModal
+          supplier={prefilledEmail ? { email: prefilledEmail } as any : undefined}
+          onClose={() => {
+            setShowSupplierModal(false);
+            setSelectedResult(null);
+            setPrefilledEmail('');
+          }}
+          onSave={handleSupplierSave}
+        />
+      )}
     </div>
   );
 }
