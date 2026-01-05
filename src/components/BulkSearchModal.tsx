@@ -414,7 +414,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
     const searchedText = result.searchedName.trim();
     const isEmail = isValidEmail(searchedText);
     setPrefilledEmail(isEmail ? searchedText : '');
-    setPrefilledCompanyName(isEmail ? extractCompanyNameFromEmail(searchedText) : '');
+    setPrefilledCompanyName(isEmail ? extractCompanyNameFromEmail(searchedText) : searchedText);
     setSelectedResult(result);
     setShowContactModal(true);
   };
@@ -423,7 +423,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
     const searchedText = result.searchedName.trim();
     const isEmail = isValidEmail(searchedText);
     setPrefilledEmail(isEmail ? searchedText : '');
-    setPrefilledCompanyName(isEmail ? extractCompanyNameFromEmail(searchedText) : '');
+    setPrefilledCompanyName(isEmail ? extractCompanyNameFromEmail(searchedText) : searchedText);
     setSelectedResult(result);
     setShowSupplierModal(true);
   };
@@ -922,7 +922,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
 
       {showContactModal && (
         <ContactModal
-          contact={prefilledEmail ? { email: prefilledEmail, company: prefilledCompanyName } as any : undefined}
+          contact={prefilledCompanyName ? { email: prefilledEmail, company: prefilledCompanyName, name: prefilledCompanyName } as any : undefined}
           onClose={() => {
             setShowContactModal(false);
             setSelectedResult(null);
@@ -935,7 +935,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
 
       {showSupplierModal && (
         <SupplierModal
-          supplier={prefilledEmail ? { email: prefilledEmail, company_name: prefilledCompanyName } as any : undefined}
+          supplier={prefilledCompanyName ? { email: prefilledEmail, company_name: prefilledCompanyName, contact_person: prefilledCompanyName } as any : undefined}
           onClose={() => {
             setShowSupplierModal(false);
             setSelectedResult(null);
