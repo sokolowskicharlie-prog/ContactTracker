@@ -81,18 +81,72 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
       }
 
       // Check if it's an email domain search (e.g., @company.com)
-      const isEmailDomain = searchTerm.startsWith('@');
+      let isEmailDomain = searchTerm.startsWith('@');
+      let domainToSearch = searchTerm;
 
-      // Search in contacts first
+      // If it's a full email address, extract the domain
+      if (!isEmailDomain && searchTerm.includes('@')) {
+        const atIndex = searchTerm.indexOf('@');
+        domainToSearch = searchTerm.substring(atIndex); // e.g., "ukbrokers@wfscorp.com" -> "@wfscorp.com"
+        isEmailDomain = true;
+      }
+
+      // If searching by domain, find ALL matches
+      if (isEmailDomain) {
+        const allContactMatches = contacts.filter(contact => {
+          const contactEmail = contact.email?.toLowerCase() || '';
+          return contactEmail.includes(domainToSearch);
+        });
+
+        // Search in suppliers for domain matches
+        let supplierMatches: any[] = [];
+        try {
+          const { data: suppliers } = await supabase
+            .from('suppliers')
+            .select('*')
+            .or(`email.ilike.%${domainToSearch}%,general_email.ilike.%${domainToSearch}%`);
+
+          supplierMatches = suppliers || [];
+        } catch (error) {
+          console.error('Error searching suppliers:', error);
+        }
+
+        // Add all contact matches as separate results
+        allContactMatches.forEach(contact => {
+          results.push({
+            searchedName: `${contact.name || contact.email} (${domainToSearch})`,
+            found: true,
+            type: 'contact',
+            contact: contact
+          });
+        });
+
+        // Add all supplier matches as separate results
+        supplierMatches.forEach(supplier => {
+          results.push({
+            searchedName: `${supplier.company_name} (${domainToSearch})`,
+            found: true,
+            type: 'supplier',
+            supplier: supplier
+          });
+        });
+
+        // If no matches found at all
+        if (allContactMatches.length === 0 && supplierMatches.length === 0) {
+          results.push({
+            searchedName,
+            found: false
+          });
+        }
+
+        continue;
+      }
+
+      // Non-domain search: Search in contacts first
       const foundContact = contacts.find(contact => {
         const contactName = contact.name?.toLowerCase() || '';
         const contactEmail = contact.email?.toLowerCase() || '';
         const contactCompany = contact.company?.toLowerCase() || '';
-
-        if (isEmailDomain) {
-          // Match email domain
-          return contactEmail.includes(searchTerm);
-        }
 
         // Exact or partial match in name, email, or company
         return (
@@ -117,23 +171,12 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
 
       // If not found in contacts, search in suppliers
       try {
-        let supplierQuery = supabase
+        const { data: suppliers } = await supabase
           .from('suppliers')
-          .select('*');
-
-        if (isEmailDomain) {
-          // Search for email domain in both email and general_email fields
-          supplierQuery = supplierQuery.or(
-            `email.ilike.%${searchTerm}%,general_email.ilike.%${searchTerm}%`
-          );
-        } else {
-          // Search in company name, contact person, email, and general_email
-          supplierQuery = supplierQuery.or(
+          .select('*')
+          .or(
             `company_name.ilike.%${searchTerm}%,contact_person.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,general_email.ilike.%${searchTerm}%`
           );
-        }
-
-        const { data: suppliers } = await supplierQuery;
 
         if (suppliers && suppliers.length > 0) {
           results.push({
@@ -265,8 +308,9 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                       <li>Upload an Excel file with names or emails in the first column</li>
                       <li>Or paste names/emails (one per line) in the text area below</li>
                       <li>Searches both Contacts and Suppliers databases</li>
-                      <li>Matches by name, email, company, or email domain (e.g., @company.com)</li>
-                      <li>Results show whether it's a Contact or Supplier</li>
+                      <li>Matches by name, email, company, or email domain</li>
+                      <li>When you enter a full email (e.g., ukbrokers@wfscorp.com), it automatically extracts and searches for ALL contacts and suppliers with that domain (@wfscorp.com)</li>
+                      <li>Each matching contact or supplier is shown as a separate result</li>
                       <li>Export results to Excel when done</li>
                     </ul>
                   </div>
