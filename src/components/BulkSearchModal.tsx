@@ -62,17 +62,32 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
 
   const performSearch = (names: string[]) => {
     const results: SearchResult[] = names.map(searchedName => {
-      const lowerSearchName = searchedName.toLowerCase();
-      const foundContact = contacts.find(contact =>
-        contact.name.toLowerCase().includes(lowerSearchName) ||
-        lowerSearchName.includes(contact.name.toLowerCase()) ||
-        contact.company?.toLowerCase().includes(lowerSearchName) ||
-        contact.email?.toLowerCase().includes(lowerSearchName) ||
-        lowerSearchName.includes(contact.email?.toLowerCase() || '') ||
-        contact.jammed_note?.toLowerCase().includes(lowerSearchName) ||
-        contact.traction_note?.toLowerCase().includes(lowerSearchName) ||
-        contact.client_note?.toLowerCase().includes(lowerSearchName)
-      );
+      const searchTerm = searchedName.toLowerCase().trim();
+
+      // Skip empty search terms
+      if (!searchTerm) {
+        return {
+          searchedName,
+          found: false,
+          contact: undefined
+        };
+      }
+
+      const foundContact = contacts.find(contact => {
+        const contactName = contact.name?.toLowerCase() || '';
+        const contactEmail = contact.email?.toLowerCase() || '';
+        const contactCompany = contact.company?.toLowerCase() || '';
+
+        // Exact or partial match in name, email, or company
+        return (
+          contactName.includes(searchTerm) ||
+          contactEmail.includes(searchTerm) ||
+          contactCompany.includes(searchTerm) ||
+          // Also check if search term matches the name/email exactly (for reverse lookup)
+          (contactName && searchTerm.includes(contactName) && contactName.length > 2) ||
+          (contactEmail && searchTerm === contactEmail)
+        );
+      });
 
       return {
         searchedName,
