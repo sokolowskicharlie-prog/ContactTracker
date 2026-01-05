@@ -78,7 +78,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
     console.log('ContactModal received contact:', contact);
     if (contact) {
       console.log('Loading contact persons:', contact.contact_persons);
-      setName(contact.name);
+      setName(contact.name || '');
       setPhone(contact.phone || '');
       setPhoneType(contact.phone_type || 'general');
       setEmail(contact.email || '');
@@ -119,6 +119,18 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       setContactPersons([]);
     }
   }, [contact]);
+
+  useEffect(() => {
+    if (email && !company && !contact?.id) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(email)) {
+        const domain = email.split('@')[1];
+        const domainWithoutTLD = domain.split('.')[0];
+        const suggestedCompany = domainWithoutTLD.charAt(0).toUpperCase() + domainWithoutTLD.slice(1);
+        setCompany(suggestedCompany);
+      }
+    }
+  }, [email, company, contact]);
 
   const addContactPerson = () => {
     setContactPersons([...contactPersons, { name: '', job_title: '', phone: '', phone_type: 'general', mobile: '', mobile_type: 'general', email: '', email_type: 'general', is_primary: contactPersons.length === 0 }]);

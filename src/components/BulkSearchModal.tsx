@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import { ContactWithActivity, Supplier, supabase } from '../lib/supabase';
 import ContactModal from './ContactModal';
 import SupplierModal from './SupplierModal';
+import { useAuth } from '../lib/auth';
 
 interface BulkSearchModalProps {
   contacts: ContactWithActivity[];
@@ -22,6 +23,7 @@ interface SearchResult {
 type SortType = 'none' | 'found-first' | 'not-found-first' | 'alphabetical' | 'priority';
 
 export default function BulkSearchModal({ contacts, onClose, onSelectContact }: BulkSearchModalProps) {
+  const { user } = useAuth();
   const [searchNames, setSearchNames] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [textInput, setTextInput] = useState('');
@@ -36,6 +38,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
   const [prefilledEmail, setPrefilledEmail] = useState('');
+  const [prefilledCompanyName, setPrefilledCompanyName] = useState('');
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -360,6 +363,13 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
+  const extractCompanyNameFromEmail = (email: string): string => {
+    if (!isValidEmail(email)) return '';
+    const domain = email.split('@')[1];
+    const domainWithoutTLD = domain.split('.')[0];
+    return domainWithoutTLD.charAt(0).toUpperCase() + domainWithoutTLD.slice(1);
+  };
+
   const handleAddEmailToContact = async (result: SearchResult) => {
     if (!result.contact) return;
 
@@ -402,23 +412,32 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
 
   const handleCreateNewContact = (result: SearchResult) => {
     const searchedText = result.searchedName.trim();
-    setPrefilledEmail(isValidEmail(searchedText) ? searchedText : '');
+    const isEmail = isValidEmail(searchedText);
+    setPrefilledEmail(isEmail ? searchedText : '');
+    setPrefilledCompanyName(isEmail ? extractCompanyNameFromEmail(searchedText) : '');
     setSelectedResult(result);
     setShowContactModal(true);
   };
 
   const handleCreateNewSupplier = (result: SearchResult) => {
     const searchedText = result.searchedName.trim();
-    setPrefilledEmail(isValidEmail(searchedText) ? searchedText : '');
+    const isEmail = isValidEmail(searchedText);
+    setPrefilledEmail(isEmail ? searchedText : '');
+    setPrefilledCompanyName(isEmail ? extractCompanyNameFromEmail(searchedText) : '');
     setSelectedResult(result);
     setShowSupplierModal(true);
   };
 
   const handleContactSave = async (contact: Partial<ContactWithActivity>, contactPersons: any[]) => {
+    if (!user) {
+      alert('You must be logged in to create a contact');
+      return;
+    }
+
     try {
       const { data: newContact, error } = await supabase
         .from('contacts')
-        .insert([contact])
+        .insert([{ ...contact, user_id: user.id }])
         .select()
         .single();
 
@@ -427,7 +446,8 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
       if (contactPersons && contactPersons.length > 0) {
         const personsWithContactId = contactPersons.map(person => ({
           ...person,
-          contact_id: newContact.id
+          contact_id: newContact.id,
+          user_id: user.id
         }));
 
         const { error: personsError } = await supabase
@@ -453,10 +473,15 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
   };
 
   const handleSupplierSave = async (supplier: Partial<Supplier>) => {
+    if (!user) {
+      alert('You must be logged in to create a supplier');
+      return;
+    }
+
     try {
       const { data: newSupplier, error } = await supabase
         .from('suppliers')
-        .insert([supplier])
+        .insert([{ ...supplier, user_id: user.id }])
         .select()
         .single();
 
@@ -897,11 +922,12 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
 
       {showContactModal && (
         <ContactModal
-          contact={prefilledEmail ? { email: prefilledEmail } as any : undefined}
+          contact={prefilledEmail ? { email: prefilledEmail, company: prefilledCompanyName } as any : undefined}
           onClose={() => {
             setShowContactModal(false);
             setSelectedResult(null);
             setPrefilledEmail('');
+            setPrefilledCompanyName('');
           }}
           onSave={handleContactSave}
         />
@@ -909,11 +935,12 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
 
       {showSupplierModal && (
         <SupplierModal
-          supplier={prefilledEmail ? { email: prefilledEmail } as any : undefined}
+          supplier={prefilledEmail ? { email: prefilledEmail, company_name: prefilledCompanyName } as any : undefined}
           onClose={() => {
             setShowSupplierModal(false);
             setSelectedResult(null);
             setPrefilledEmail('');
+            setPrefilledCompanyName('');
           }}
           onSave={handleSupplierSave}
         />

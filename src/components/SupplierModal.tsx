@@ -46,7 +46,7 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
 
   useEffect(() => {
     if (supplier) {
-      setCompanyName(supplier.company_name);
+      setCompanyName(supplier.company_name || '');
       setContactPerson(supplier.contact_person || '');
       setEmail(supplier.email || '');
       setPhone(supplier.phone || '');
@@ -67,6 +67,18 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
       setDefaultHasExpipe(supplier.default_has_expipe || false);
     }
   }, [supplier]);
+
+  useEffect(() => {
+    if (email && !companyName && !supplier?.id) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(email)) {
+        const domain = email.split('@')[1];
+        const domainWithoutTLD = domain.split('.')[0];
+        const suggestedCompany = domainWithoutTLD.charAt(0).toUpperCase() + domainWithoutTLD.slice(1);
+        setCompanyName(suggestedCompany);
+      }
+    }
+  }, [email, companyName, supplier]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
