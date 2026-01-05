@@ -17,7 +17,7 @@ interface SearchResult {
   supplier?: Supplier;
 }
 
-type SortType = 'none' | 'found-first' | 'not-found-first';
+type SortType = 'none' | 'found-first' | 'not-found-first' | 'alphabetical' | 'priority';
 
 export default function BulkSearchModal({ contacts, onClose, onSelectContact }: BulkSearchModalProps) {
   const [searchNames, setSearchNames] = useState<string[]>([]);
@@ -260,11 +260,33 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
     }
 
     const sorted = [...searchResults];
+
     if (sortType === 'found-first') {
       return sorted.sort((a, b) => (b.found ? 1 : 0) - (a.found ? 1 : 0));
-    } else {
+    } else if (sortType === 'not-found-first') {
       return sorted.sort((a, b) => (a.found ? 1 : 0) - (b.found ? 1 : 0));
+    } else if (sortType === 'alphabetical') {
+      return sorted.sort((a, b) => {
+        const nameA = a.contact?.name || a.contact?.email || a.supplier?.company_name || a.searchedName;
+        const nameB = b.contact?.name || b.contact?.email || b.supplier?.company_name || b.searchedName;
+        return nameA.toLowerCase().localeCompare(nameB.toLowerCase());
+      });
+    } else if (sortType === 'priority') {
+      return sorted.sort((a, b) => {
+        const getPriorityValue = (result: SearchResult) => {
+          if (!result.contact) return 4;
+          if (result.contact.is_jammed) return 1;
+          if (result.contact.is_client) return 2;
+          if (!result.contact.is_client && !result.contact.has_traction && !result.contact.is_jammed) return 3;
+          if (result.contact.has_traction) return 4;
+          return 5;
+        };
+
+        return getPriorityValue(a) - getPriorityValue(b);
+      });
     }
+
+    return sorted;
   };
 
   const toggleSort = () => {
@@ -272,6 +294,10 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
       setSortType('found-first');
     } else if (sortType === 'found-first') {
       setSortType('not-found-first');
+    } else if (sortType === 'not-found-first') {
+      setSortType('alphabetical');
+    } else if (sortType === 'alphabetical') {
+      setSortType('priority');
     } else {
       setSortType('none');
     }
@@ -388,6 +414,8 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                         {sortType === 'none' && 'Sort by Status'}
                         {sortType === 'found-first' && 'Found First'}
                         {sortType === 'not-found-first' && 'Not Found First'}
+                        {sortType === 'alphabetical' && 'Alphabetical'}
+                        {sortType === 'priority' && 'Priority Status'}
                       </span>
                     </button>
                   </div>
