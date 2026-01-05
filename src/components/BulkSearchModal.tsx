@@ -67,6 +67,8 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
         contact.name.toLowerCase().includes(lowerSearchName) ||
         lowerSearchName.includes(contact.name.toLowerCase()) ||
         contact.company?.toLowerCase().includes(lowerSearchName) ||
+        contact.email?.toLowerCase().includes(lowerSearchName) ||
+        lowerSearchName.includes(contact.email?.toLowerCase() || '') ||
         contact.jammed_note?.toLowerCase().includes(lowerSearchName) ||
         contact.traction_note?.toLowerCase().includes(lowerSearchName) ||
         contact.client_note?.toLowerCase().includes(lowerSearchName)
@@ -130,9 +132,9 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                   <div className="text-sm text-blue-800">
                     <p className="font-semibold mb-1">How to use:</p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li>Upload an Excel file with names in the first column</li>
-                      <li>Or paste names (one per line) in the text area below</li>
-                      <li>The system will search for matching contacts</li>
+                      <li>Upload an Excel file with names or emails in the first column</li>
+                      <li>Or paste names/emails (one per line) in the text area below</li>
+                      <li>The system will search for matching contacts by name, email, or company</li>
                       <li>Export results to Excel when done</li>
                     </ul>
                   </div>
@@ -165,12 +167,12 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Paste Names (one per line)
+                  Paste Names or Emails (one per line)
                 </label>
                 <textarea
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
-                  placeholder="John Smith&#10;Jane Doe&#10;Company ABC"
+                  placeholder="John Smith&#10;jane.doe@example.com&#10;Company ABC&#10;john@company.com"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={8}
                 />
