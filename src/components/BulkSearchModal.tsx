@@ -103,15 +103,28 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
   };
 
   const exportResults = () => {
-    const exportData = searchResults.map(result => ({
-      'Searched Name': result.searchedName,
-      'Status': result.found ? 'Found' : 'Not Found',
-      'Contact Name': result.contact?.name || '',
-      'Company': result.contact?.company || '',
-      'Country': result.contact?.country || '',
-      'Email': result.contact?.email || '',
-      'Phone': result.contact?.phone || ''
-    }));
+    const exportData = searchResults.map(result => {
+      const getContactStatus = () => {
+        if (!result.contact) return '';
+        const statuses = [];
+        if (result.contact.is_client) statuses.push('Client');
+        if (result.contact.has_traction) statuses.push('Traction');
+        if (result.contact.is_jammed) statuses.push('Jammed');
+        return statuses.length > 0 ? statuses.join(', ') : 'None';
+      };
+
+      return {
+        'Searched Name': result.searchedName,
+        'Status': result.found ? 'Found' : 'Not Found',
+        'Contact Name': result.contact?.name || '',
+        'Company': result.contact?.company || '',
+        'Country': result.contact?.country || '',
+        'Email': result.contact?.email || '',
+        'Phone': result.contact?.phone || '',
+        'Contact Status': getContactStatus(),
+        'Priority Rank': result.contact?.priority_rank || ''
+      };
+    });
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
@@ -329,6 +342,33 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                                 {result.contact.email}
                               </div>
                             )}
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                              {result.contact.is_client && (
+                                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+                                  Client
+                                </span>
+                              )}
+                              {result.contact.has_traction && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                                  Traction
+                                </span>
+                              )}
+                              {result.contact.is_jammed && (
+                                <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full font-medium">
+                                  Jammed
+                                </span>
+                              )}
+                              {result.contact.priority_rank && result.contact.priority_rank > 0 && (
+                                <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">
+                                  Priority: {result.contact.priority_rank}
+                                </span>
+                              )}
+                              {!result.contact.is_client && !result.contact.has_traction && !result.contact.is_jammed && (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
+                                  None
+                                </span>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
