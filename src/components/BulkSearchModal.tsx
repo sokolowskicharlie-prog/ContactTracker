@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Upload, Search, Download, AlertCircle } from 'lucide-react';
+import { X, Upload, Search, Download, AlertCircle, ArrowUpDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ContactWithActivity } from '../lib/supabase';
 
@@ -15,10 +15,13 @@ interface SearchResult {
   contact?: ContactWithActivity;
 }
 
+type SortType = 'none' | 'found-first' | 'not-found-first';
+
 export default function BulkSearchModal({ contacts, onClose, onSelectContact }: BulkSearchModalProps) {
   const [searchNames, setSearchNames] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [textInput, setTextInput] = useState('');
+  const [sortType, setSortType] = useState<SortType>('none');
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -119,6 +122,29 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
   const foundCount = searchResults.filter(r => r.found).length;
   const notFoundCount = searchResults.length - foundCount;
 
+  const getSortedResults = () => {
+    if (sortType === 'none') {
+      return searchResults;
+    }
+
+    const sorted = [...searchResults];
+    if (sortType === 'found-first') {
+      return sorted.sort((a, b) => (b.found ? 1 : 0) - (a.found ? 1 : 0));
+    } else {
+      return sorted.sort((a, b) => (a.found ? 1 : 0) - (b.found ? 1 : 0));
+    }
+  };
+
+  const toggleSort = () => {
+    if (sortType === 'none') {
+      setSortType('found-first');
+    } else if (sortType === 'found-first') {
+      setSortType('not-found-first');
+    } else {
+      setSortType('none');
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
@@ -217,6 +243,19 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                     <span className="text-sm text-gray-600">Not Found:</span>
                     <span className="ml-2 font-bold text-red-600">{notFoundCount}</span>
                   </div>
+                  <div className="border-l border-gray-300 pl-6">
+                    <button
+                      onClick={toggleSort}
+                      className="flex items-center gap-2 text-sm text-gray-700 hover:text-blue-600 transition-colors"
+                    >
+                      <ArrowUpDown className="w-4 h-4" />
+                      <span>
+                        {sortType === 'none' && 'Sort by Status'}
+                        {sortType === 'found-first' && 'Found First'}
+                        {sortType === 'not-found-first' && 'Not Found First'}
+                      </span>
+                    </button>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -231,6 +270,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                       setSearchResults([]);
                       setSearchNames([]);
                       setTextInput('');
+                      setSortType('none');
                     }}
                     className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
                   >
@@ -240,7 +280,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
               </div>
 
               <div className="space-y-2">
-                {searchResults.map((result, index) => (
+                {getSortedResults().map((result, index) => (
                   <div
                     key={index}
                     className={`p-4 rounded-lg border-2 ${
