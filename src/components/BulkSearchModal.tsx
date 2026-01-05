@@ -126,7 +126,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
         // Add all contact matches as separate results
         allContactMatches.forEach(contact => {
           results.push({
-            searchedName: `${contact.name || contact.email} (${domainToSearch})`,
+            searchedName: searchedName,
             found: true,
             type: 'contact',
             contact: contact
@@ -136,7 +136,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
         // Add all supplier matches as separate results
         supplierMatches.forEach(supplier => {
           results.push({
-            searchedName: `${supplier.company_name} (${domainToSearch})`,
+            searchedName: searchedName,
             found: true,
             type: 'supplier',
             supplier: supplier
