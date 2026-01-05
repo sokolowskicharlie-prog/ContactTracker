@@ -588,15 +588,16 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                   <div className="border-l border-gray-300 pl-6">
                     <button
                       onClick={toggleSort}
-                      className="flex items-center gap-2 text-sm text-gray-700 hover:text-blue-600 transition-colors"
+                      className="flex items-center gap-2 text-sm text-gray-700 hover:text-blue-600 transition-colors font-medium"
+                      title="Click to cycle through sort options"
                     >
                       <ArrowUpDown className="w-4 h-4" />
                       <span>
-                        {sortType === 'none' && 'Sort by Status'}
-                        {sortType === 'found-first' && 'Found First'}
-                        {sortType === 'not-found-first' && 'Not Found First'}
-                        {sortType === 'alphabetical' && 'Alphabetical'}
-                        {sortType === 'priority' && 'Priority Status'}
+                        {sortType === 'none' && 'Sort: None'}
+                        {sortType === 'found-first' && 'Sort: Found First'}
+                        {sortType === 'not-found-first' && 'Sort: Not Found First'}
+                        {sortType === 'alphabetical' && 'Sort: A-Z (by Match Name)'}
+                        {sortType === 'priority' && 'Sort: Priority Status'}
                       </span>
                     </button>
                   </div>
@@ -751,9 +752,18 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                         </div>
                         {result.contact && (
                           <div className="text-sm text-gray-700 space-y-1">
-                            <div>
-                              <span className="font-medium">Contact Name:</span>{' '}
-                              {result.contact.name}
+                            <div className="bg-blue-50 p-2 rounded border border-blue-200 mb-2">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-semibold text-blue-700 uppercase">Found Match:</span>
+                              </div>
+                              <div className="font-semibold text-gray-900">
+                                {result.contact.name}
+                                {result.contact.email && (
+                                  <span className="ml-2 text-blue-600">
+                                    ({result.contact.email})
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             {result.contact.company && (
                               <div>
@@ -765,12 +775,6 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                               <div>
                                 <span className="font-medium">Country:</span>{' '}
                                 {result.contact.country}
-                              </div>
-                            )}
-                            {result.contact.email && (
-                              <div>
-                                <span className="font-medium">Email:</span>{' '}
-                                {result.contact.email}
                               </div>
                             )}
                             <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -804,9 +808,18 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                         )}
                         {result.supplier && (
                           <div className="text-sm text-gray-700 space-y-1">
-                            <div>
-                              <span className="font-medium">Company Name:</span>{' '}
-                              {result.supplier.company_name}
+                            <div className="bg-gray-50 p-2 rounded border border-gray-200 mb-2">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-semibold text-gray-700 uppercase">Found Match:</span>
+                              </div>
+                              <div className="font-semibold text-gray-900">
+                                {result.supplier.company_name}
+                                {(result.supplier.email || result.supplier.general_email) && (
+                                  <span className="ml-2 text-gray-600">
+                                    ({result.supplier.email || result.supplier.general_email})
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             {result.supplier.contact_person && (
                               <div>
@@ -818,18 +831,6 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
                               <div>
                                 <span className="font-medium">Country:</span>{' '}
                                 {result.supplier.country}
-                              </div>
-                            )}
-                            {result.supplier.email && (
-                              <div>
-                                <span className="font-medium">Email:</span>{' '}
-                                {result.supplier.email}
-                              </div>
-                            )}
-                            {result.supplier.general_email && (
-                              <div>
-                                <span className="font-medium">General Email:</span>{' '}
-                                {result.supplier.general_email}
                               </div>
                             )}
                             {result.supplier.supplier_type && (
