@@ -272,6 +272,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
     if (filterText.trim()) {
       const searchTerm = filterText.toLowerCase().trim();
       filtered = filtered.filter(result => {
+        const searchedName = result.searchedName?.toLowerCase() || '';
         const name = result.contact?.name?.toLowerCase() || '';
         const email = result.contact?.email?.toLowerCase() || '';
         const company = result.contact?.company?.toLowerCase() || '';
@@ -281,6 +282,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
         const country = result.contact?.country?.toLowerCase() || result.supplier?.country?.toLowerCase() || '';
 
         return (
+          searchedName.includes(searchTerm) ||
           name.includes(searchTerm) ||
           email.includes(searchTerm) ||
           company.includes(searchTerm) ||
