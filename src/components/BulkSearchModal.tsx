@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, Upload, Search, Download, AlertCircle, ArrowUpDown, Filter, Plus, Mail } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Upload, Search, Download, AlertCircle, ArrowUpDown, Filter, Plus, Mail, Settings, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ContactWithActivity, Supplier, supabase } from '../lib/supabase';
 import ContactModal from './ContactModal';
@@ -40,12 +40,74 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
   const [filterFoundStatus, setFilterFoundStatus] = useState<'all' | 'found' | 'not-found'>('all');
   const [filterType, setFilterType] = useState<'all' | 'contact' | 'supplier'>('all');
   const [filterContactStatus, setFilterContactStatus] = useState<'all' | 'client' | 'traction' | 'jammed' | 'none'>('all');
+  const [excludedMatchedTerms, setExcludedMatchedTerms] = useState<Set<string>>(new Set());
+
+  const [permanentExcludedTerms, setPermanentExcludedTerms] = useState<string[]>([]);
+  const [showExclusionSettings, setShowExclusionSettings] = useState(false);
+  const [newExcludedTerm, setNewExcludedTerm] = useState('');
 
   const [showContactModal, setShowContactModal] = useState(false);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
   const [prefilledEmail, setPrefilledEmail] = useState('');
   const [prefilledCompanyName, setPrefilledCompanyName] = useState('');
+
+  useEffect(() => {
+    loadExcludedTerms();
+  }, [user]);
+
+  const loadExcludedTerms = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('user_preferences')
+      .select('excluded_search_terms')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (data && data.excluded_search_terms) {
+      setPermanentExcludedTerms(data.excluded_search_terms);
+    }
+  };
+
+  const saveExcludedTerms = async (terms: string[]) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('user_preferences')
+      .upsert({
+        user_id: user.id,
+        excluded_search_terms: terms,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
+      });
+
+    if (error) {
+      console.error('Error saving excluded terms:', error);
+    }
+  };
+
+  const addPermanentExcludedTerm = async () => {
+    if (!newExcludedTerm.trim()) return;
+
+    const term = newExcludedTerm.trim().toLowerCase();
+    if (permanentExcludedTerms.includes(term)) {
+      alert('This term is already in the exclusion list');
+      return;
+    }
+
+    const newTerms = [...permanentExcludedTerms, term];
+    setPermanentExcludedTerms(newTerms);
+    await saveExcludedTerms(newTerms);
+    setNewExcludedTerm('');
+  };
+
+  const removePermanentExcludedTerm = async (term: string) => {
+    const newTerms = permanentExcludedTerms.filter(t => t !== term);
+    setPermanentExcludedTerms(newTerms);
+    await saveExcludedTerms(newTerms);
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -482,6 +544,20 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
       });
     }
 
+    if (excludedMatchedTerms.size > 0) {
+      filtered = filtered.filter(result => {
+        if (!result.matchedTerm) return true;
+        return !excludedMatchedTerms.has(result.matchedTerm.toLowerCase());
+      });
+    }
+
+    if (permanentExcludedTerms.length > 0) {
+      filtered = filtered.filter(result => {
+        if (!result.matchedTerm) return true;
+        return !permanentExcludedTerms.includes(result.matchedTerm.toLowerCase());
+      });
+    }
+
     if (sortType === 'none') {
       return filtered;
     }
@@ -514,6 +590,41 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
     return filtered;
   };
 
+  const getUniqueMatchedTerms = (): Array<{ term: string; count: number; field: string }> => {
+    const termCounts = new Map<string, { count: number; fields: Set<string> }>();
+
+    searchResults.forEach(result => {
+      if (result.matchedTerm && result.matchedField) {
+        const lowerTerm = result.matchedTerm.toLowerCase();
+        const existing = termCounts.get(lowerTerm);
+        if (existing) {
+          existing.count++;
+          existing.fields.add(result.matchedField);
+        } else {
+          termCounts.set(lowerTerm, { count: 1, fields: new Set([result.matchedField]) });
+        }
+      }
+    });
+
+    return Array.from(termCounts.entries())
+      .map(([term, data]) => ({
+        term,
+        count: data.count,
+        field: Array.from(data.fields).join(', ')
+      }))
+      .sort((a, b) => b.count - a.count);
+  };
+
+  const toggleExcludedTerm = (term: string) => {
+    const lowerTerm = term.toLowerCase();
+    const newExcluded = new Set(excludedMatchedTerms);
+    if (newExcluded.has(lowerTerm)) {
+      newExcluded.delete(lowerTerm);
+    } else {
+      newExcluded.add(lowerTerm);
+    }
+    setExcludedMatchedTerms(newExcluded);
+  };
 
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -712,9 +823,23 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
               </div>
 
               <div className="bg-white border-2 border-gray-300 rounded-lg p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Search Type
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Search Type
+                  </label>
+                  <button
+                    onClick={() => setShowExclusionSettings(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Exclusion Settings
+                    {permanentExcludedTerms.length > 0 && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                        {permanentExcludedTerms.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
                 <select
                   value={searchType}
                   onChange={(e) => setSearchType(e.target.value as SearchType)}
@@ -828,6 +953,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                       setFilterFoundStatus('all');
                       setFilterType('all');
                       setFilterContactStatus('all');
+                      setExcludedMatchedTerms(new Set());
                     }}
                     className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
                   >
@@ -908,13 +1034,14 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                     </div>
                   </div>
 
-                  {(filterText || filterFoundStatus !== 'all' || filterType !== 'all' || filterContactStatus !== 'all') && (
+                  {(filterText || filterFoundStatus !== 'all' || filterType !== 'all' || filterContactStatus !== 'all' || excludedMatchedTerms.size > 0) && (
                     <button
                       onClick={() => {
                         setFilterText('');
                         setFilterFoundStatus('all');
                         setFilterType('all');
                         setFilterContactStatus('all');
+                        setExcludedMatchedTerms(new Set());
                       }}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                     >
@@ -923,6 +1050,54 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                   )}
                 </div>
               </div>
+
+              {getUniqueMatchedTerms().length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Filter className="w-4 h-4 text-amber-600" />
+                    <h3 className="font-semibold text-amber-900">Matched Terms ({getUniqueMatchedTerms().length})</h3>
+                    <span className="ml-auto text-xs text-amber-700">
+                      Click to exclude from results
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {getUniqueMatchedTerms().map(({ term, count, field }) => {
+                      const isExcluded = excludedMatchedTerms.has(term.toLowerCase());
+                      const isPermanentlyExcluded = permanentExcludedTerms.includes(term.toLowerCase());
+                      return (
+                        <button
+                          key={term}
+                          onClick={() => toggleExcludedTerm(term)}
+                          disabled={isPermanentlyExcluded}
+                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                            isPermanentlyExcluded
+                              ? 'bg-gray-200 text-gray-500 border-2 border-gray-300 line-through cursor-not-allowed'
+                              : isExcluded
+                              ? 'bg-red-100 text-red-800 border-2 border-red-300 line-through opacity-60'
+                              : 'bg-white text-amber-800 border-2 border-amber-300 hover:bg-amber-100'
+                          }`}
+                          title={isPermanentlyExcluded ? `Permanently excluded in settings. Found in: ${field}` : `Found in: ${field}`}
+                        >
+                          {term} ({count})
+                          {isPermanentlyExcluded && <span className="ml-1">🔒</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {(excludedMatchedTerms.size > 0 || permanentExcludedTerms.length > 0) && (
+                    <div className="mt-3 pt-3 border-t border-amber-200">
+                      <p className="text-xs text-amber-700">
+                        {excludedMatchedTerms.size > 0 && (
+                          <span><strong>{excludedMatchedTerms.size}</strong> term(s) temporarily excluded. </span>
+                        )}
+                        {permanentExcludedTerms.length > 0 && (
+                          <span><strong>{permanentExcludedTerms.length}</strong> term(s) permanently excluded (🔒). </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-2">
                 {getFilteredAndSortedResults().map((result, index) => (
@@ -1141,6 +1316,114 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
           }}
           onSave={handleSupplierSave}
         />
+      )}
+
+      {showExclusionSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="bg-gradient-to-r from-gray-700 to-gray-800 text-white px-6 py-4 rounded-t-xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Settings className="w-6 h-6" />
+                <div>
+                  <h2 className="text-xl font-bold">Search Exclusion Settings</h2>
+                  <p className="text-gray-300 text-sm">Permanently exclude specific terms from all searches</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowExclusionSettings(false)}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-amber-800">
+                    <p className="font-semibold mb-1">About Exclusion Settings:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Terms added here will be permanently excluded from all bulk search results</li>
+                      <li>If a result matches an excluded term, it will not appear in your search results</li>
+                      <li>This is useful for filtering out generic or irrelevant terms</li>
+                      <li>Terms are case-insensitive (e.g., "Marine" = "marine")</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Add New Excluded Term
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newExcludedTerm}
+                    onChange={(e) => setNewExcludedTerm(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        addPermanentExcludedTerm();
+                      }
+                    }}
+                    placeholder="Enter a term to exclude..."
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={addPermanentExcludedTerm}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-3">
+                  Excluded Terms ({permanentExcludedTerms.length})
+                </h3>
+                {permanentExcludedTerms.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Filter className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                    <p>No excluded terms yet</p>
+                    <p className="text-sm">Add terms above to exclude them from searches</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {permanentExcludedTerms.map((term) => (
+                      <div
+                        key={term}
+                        className="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg px-4 py-3"
+                      >
+                        <span className="font-medium text-gray-800">{term}</span>
+                        <button
+                          onClick={() => removePermanentExcludedTerm(term)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-100 p-2 rounded-lg transition-colors"
+                          title="Remove exclusion"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-xl">
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setShowExclusionSettings(false)}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
