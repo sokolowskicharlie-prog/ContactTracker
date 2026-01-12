@@ -311,3 +311,14 @@ export type CustomJammedReason = {
   display_order: number;
   created_at: string;
 };
+
+export type UKPortRegion = {
+  id: string;
+  port_name: string;
+  region_id: string;
+  latitude?: number;
+  longitude?: number;
+  country?: string;
+  created_at: string;
+  region?: UKRegion;
+};

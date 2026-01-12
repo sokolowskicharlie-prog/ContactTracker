@@ -1,6 +1,6 @@
-import { X, Anchor, Truck, Ship, FileText, Fuel, Plus, Edit2, Check, XCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { SupplierPort, CustomFuelType, CustomDeliveryMethod, supabase } from '../lib/supabase';
+import { X, Anchor, Truck, Ship, FileText, Fuel, Plus, Edit2, Check, XCircle, Search } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { SupplierPort, CustomFuelType, CustomDeliveryMethod, UKPortRegion, supabase } from '../lib/supabase';
 
 interface SupplierPortModalProps {
   supplierPort?: SupplierPort;
@@ -35,10 +35,16 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
   const [editingLsmgo, setEditingLsmgo] = useState(false);
   const [editVlsfoValue, setEditVlsfoValue] = useState('');
   const [editLsmgoValue, setEditLsmgoValue] = useState('');
+  const [availablePorts, setAvailablePorts] = useState<UKPortRegion[]>([]);
+  const [showPortSuggestions, setShowPortSuggestions] = useState(false);
+  const [filteredPorts, setFilteredPorts] = useState<UKPortRegion[]>([]);
+  const portInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadCustomTypes();
     loadFuelNames();
+    loadAvailablePorts();
   }, []);
 
   useEffect(() => {
@@ -54,6 +60,44 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
       setSelectedDeliveryMethods((supplierPort.custom_delivery_methods || []).map(dm => dm.id));
     }
   }, [supplierPort]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        portInputRef.current &&
+        !portInputRef.current.contains(event.target as Node)
+      ) {
+        setShowPortSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!portName || portName.includes(';')) {
+      setFilteredPorts([]);
+      setShowPortSuggestions(false);
+      return;
+    }
+
+    const searchTerm = portName.toLowerCase().trim();
+    if (searchTerm.length < 2) {
+      setFilteredPorts([]);
+      setShowPortSuggestions(false);
+      return;
+    }
+
+    const filtered = availablePorts.filter(port =>
+      port.port_name.toLowerCase().includes(searchTerm)
+    ).slice(0, 10);
+
+    setFilteredPorts(filtered);
+    setShowPortSuggestions(filtered.length > 0);
+  }, [portName, availablePorts]);
 
   const loadCustomTypes = async () => {
     try {
@@ -92,6 +136,33 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
     } catch (error) {
       console.error('Error loading fuel names:', error);
     }
+  };
+
+  const loadAvailablePorts = async () => {
+    try {
+      const { data: ports } = await supabase
+        .from('uk_port_regions')
+        .select(`
+          id,
+          port_name,
+          region_id,
+          latitude,
+          longitude,
+          country,
+          created_at,
+          region:uk_regions(id, name)
+        `)
+        .order('port_name');
+
+      setAvailablePorts(ports || []);
+    } catch (error) {
+      console.error('Error loading available ports:', error);
+    }
+  };
+
+  const handlePortSelect = (port: UKPortRegion) => {
+    setPortName(port.port_name);
+    setShowPortSuggestions(false);
   };
 
   const startEditingVlsfo = () => {
@@ -378,20 +449,60 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Port Name{supplierPort ? '' : 's'} *
             </label>
             <div className="relative">
-              <Anchor className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
+                ref={portInputRef}
                 type="text"
                 value={portName}
                 onChange={(e) => setPortName(e.target.value)}
+                onFocus={() => {
+                  if (filteredPorts.length > 0) {
+                    setShowPortSuggestions(true);
+                  }
+                }}
                 required
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder={supplierPort ? "e.g., Singapore" : "e.g., Singapore; Rotterdam; Dubai"}
               />
+              {showPortSuggestions && filteredPorts.length > 0 && (
+                <div
+                  ref={dropdownRef}
+                  className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+                >
+                  {filteredPorts.map((port) => (
+                    <button
+                      key={port.id}
+                      type="button"
+                      onClick={() => handlePortSelect(port)}
+                      className="w-full px-4 py-3 text-left hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">{port.port_name}</div>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-gray-600">
+                            {port.country && (
+                              <span className="flex items-center gap-1">
+                                <Anchor className="w-3 h-3" />
+                                {port.country}
+                              </span>
+                            )}
+                            {port.region && typeof port.region === 'object' && port.region.name && (
+                              <span className="text-gray-500">
+                                ({port.region.name})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             {!supplierPort && (
               <p className="text-xs text-gray-500 mt-1">
