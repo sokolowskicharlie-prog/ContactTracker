@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapPin, Ship, Truck, Anchor, X, Building2, ZoomIn, ZoomOut, Maximize2, CreditCard as Edit3, Save, Lock, Unlock } from 'lucide-react';
+import { MapPin, Ship, Truck, Anchor, X, Building2, ZoomIn, ZoomOut, Maximize2, CreditCard as Edit3, Save, Lock, Unlock, Plus } from 'lucide-react';
 import { supabase, SupplierWithOrders } from '../lib/supabase';
 
+interface Region {
+  id: string;
+  name: string;
+}
+
 interface PortLocation {
+  id?: string;
   port_name: string;
   latitude: number;
   longitude: number;
   region: string;
+  region_id: string;
 }
 
 interface SupplierMapViewProps {
@@ -16,6 +23,7 @@ interface SupplierMapViewProps {
 
 export default function SupplierMapView({ suppliers, onSelectSupplier }: SupplierMapViewProps) {
   const [portLocations, setPortLocations] = useState<PortLocation[]>([]);
+  const [regions, setRegions] = useState<Region[]>([]);
   const [selectedPort, setSelectedPort] = useState<string | null>(null);
   const [hoveredPort, setHoveredPort] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -27,10 +35,14 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isDraggingMap, setIsDraggingMap] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [showAddPort, setShowAddPort] = useState(false);
+  const [newPortName, setNewPortName] = useState('');
+  const [newPortRegion, setNewPortRegion] = useState('');
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     loadPortLocations();
+    loadRegions();
     loadMapWidth();
   }, []);
 
@@ -92,14 +104,30 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     }
   };
 
+  const loadRegions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('uk_regions')
+        .select('id, name')
+        .order('name');
+
+      if (error) throw error;
+      setRegions(data || []);
+    } catch (error) {
+      console.error('Error loading regions:', error);
+    }
+  };
+
   const loadPortLocations = async () => {
     try {
       const { data, error } = await supabase
         .from('uk_port_regions')
         .select(`
+          id,
           port_name,
           latitude,
           longitude,
+          region_id,
           region:uk_regions(name)
         `)
         .not('latitude', 'is', null)
@@ -108,10 +136,12 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
       if (error) throw error;
 
       const locations = (data || []).map((item: any) => ({
+        id: item.id,
         port_name: item.port_name,
         latitude: parseFloat(item.latitude),
         longitude: parseFloat(item.longitude),
         region: item.region?.name || '',
+        region_id: item.region_id || '',
       }));
 
       setPortLocations(locations);
@@ -257,22 +287,95 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const savePortLocations = async () => {
     try {
       for (const port of portLocations) {
-        const { error } = await supabase
-          .from('uk_port_regions')
-          .update({
-            latitude: port.latitude,
-            longitude: port.longitude,
-          })
-          .eq('port_name', port.port_name);
+        if (port.id) {
+          const { error } = await supabase
+            .from('uk_port_regions')
+            .update({
+              latitude: port.latitude,
+              longitude: port.longitude,
+              region_id: port.region_id,
+            })
+            .eq('id', port.id);
 
-        if (error) throw error;
+          if (error) throw error;
+        }
       }
       setHasUnsavedChanges(false);
       alert('Port locations saved successfully!');
+      loadPortLocations();
     } catch (error) {
       console.error('Error saving port locations:', error);
       alert('Failed to save port locations');
     }
+  };
+
+  const handleAddPort = async () => {
+    if (!newPortName.trim() || !newPortRegion) {
+      alert('Please enter a port name and select a region');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('uk_port_regions')
+        .insert({
+          port_name: newPortName.toUpperCase().trim(),
+          region_id: newPortRegion,
+          latitude: 55,
+          longitude: -3,
+        })
+        .select(`
+          id,
+          port_name,
+          latitude,
+          longitude,
+          region_id,
+          region:uk_regions(name)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const newPort: PortLocation = {
+          id: data.id,
+          port_name: data.port_name,
+          latitude: parseFloat(data.latitude),
+          longitude: parseFloat(data.longitude),
+          region: data.region?.name || '',
+          region_id: data.region_id,
+        };
+        setPortLocations([...portLocations, newPort]);
+        setNewPortName('');
+        setNewPortRegion('');
+        setShowAddPort(false);
+        alert('Port added successfully! Drag it to the correct position and save.');
+      }
+    } catch (error: any) {
+      console.error('Error adding port:', error);
+      if (error.code === '23505') {
+        alert('A port with this name already exists');
+      } else {
+        alert('Failed to add port');
+      }
+    }
+  };
+
+  const handleRegionChange = (portName: string, newRegionId: string) => {
+    setPortLocations((prev) =>
+      prev.map((port) => {
+        if (port.port_name === portName) {
+          const newRegion = regions.find((r) => r.id === newRegionId);
+          return {
+            ...port,
+            region_id: newRegionId,
+            region: newRegion?.name || port.region,
+          };
+        }
+        return port;
+      })
+    );
+    setHasUnsavedChanges(true);
   };
 
   return (
@@ -327,6 +430,15 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 Save Changes
               </button>
             )}
+            {isEditMode && (
+              <button
+                onClick={() => setShowAddPort(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                Add Port
+              </button>
+            )}
             <button
               onClick={() => {
                 if (hasUnsavedChanges && !confirm('You have unsaved changes. Discard them?')) {
@@ -334,6 +446,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 }
                 setIsEditMode(!isEditMode);
                 setHasUnsavedChanges(false);
+                setShowAddPort(false);
                 loadPortLocations();
               }}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium ${
@@ -548,22 +661,40 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
 
       {selectedPort && (
         <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col min-w-0">
-          <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-            <div>
+          <div className="p-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-blue-600" />
                 {selectedPort}
               </h3>
+              <button
+                onClick={() => setSelectedPort(null)}
+                className="p-1 hover:bg-gray-200 rounded transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            {isEditMode ? (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Region</label>
+                <select
+                  value={portLocations.find((p) => p.port_name === selectedPort)?.region_id || ''}
+                  onChange={(e) => handleRegionChange(selectedPort, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select a region</option>
+                  {regions.map((region) => (
+                    <option key={region.id} value={region.id}>
+                      {region.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
               <p className="text-sm text-gray-600">
                 {portLocations.find((p) => p.port_name === selectedPort)?.region}
               </p>
-            </div>
-            <button
-              onClick={() => setSelectedPort(null)}
-              className="p-1 hover:bg-gray-200 rounded transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
@@ -626,6 +757,84 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 })}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {showAddPort && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Add New Port</h2>
+                <button
+                  onClick={() => {
+                    setShowAddPort(false);
+                    setNewPortName('');
+                    setNewPortRegion('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Port Name
+                </label>
+                <input
+                  type="text"
+                  value={newPortName}
+                  onChange={(e) => setNewPortName(e.target.value)}
+                  placeholder="Enter port name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Region
+                </label>
+                <select
+                  value={newPortRegion}
+                  onChange={(e) => setNewPortRegion(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select a region</option>
+                  {regions.map((region) => (
+                    <option key={region.id} value={region.id}>
+                      {region.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <p className="text-sm text-gray-600">
+                The port will be added at a default location. You can drag it to the correct position on the map and then save your changes.
+              </p>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowAddPort(false);
+                  setNewPortName('');
+                  setNewPortRegion('');
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddPort}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Add Port
+              </button>
+            </div>
           </div>
         </div>
       )}
