@@ -100,13 +100,15 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
     client: contacts.filter(c => c.is_client).length,
     traction: contacts.filter(c => !c.is_client && c.has_traction).length,
     jammed: contacts.filter(c => !c.is_client && !c.has_traction && c.is_jammed).length,
-    none: contacts.filter(c => !c.is_client && !c.has_traction && !c.is_jammed).length,
+    dead: contacts.filter(c => !c.is_client && !c.has_traction && !c.is_jammed && c.is_dead).length,
+    none: contacts.filter(c => !c.is_client && !c.has_traction && !c.is_jammed && !c.is_dead).length,
   };
 
   const statusData = [
     { label: 'Client', value: statusCounts.client, color: '#16a34a' },
     { label: 'Traction', value: statusCounts.traction, color: '#eab308' },
     { label: 'Jammed', value: statusCounts.jammed, color: '#dc2626' },
+    { label: 'Dead', value: statusCounts.dead, color: '#1f2937' },
     { label: 'None', value: statusCounts.none, color: '#6b7280' },
   ].filter(item => item.value > 0);
 
@@ -295,7 +297,7 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
           </div>
 
           {/* Summary Stats */}
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-green-700">{statusCounts.client}</div>
               <div className="text-sm text-green-600 mt-1">Clients</div>
@@ -307,6 +309,10 @@ export default function StatsModal({ isOpen, onClose, contacts }: StatsModalProp
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-red-700">{statusCounts.jammed}</div>
               <div className="text-sm text-red-600 mt-1">Jammed</div>
+            </div>
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-white">{statusCounts.dead}</div>
+              <div className="text-sm text-gray-300 mt-1">Dead</div>
             </div>
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-gray-700">{statusCounts.none}</div>
