@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell, ChevronDown, FolderOpen, PieChart, Calendar } from 'lucide-react';
+import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell, ChevronDown, FolderOpen, PieChart, Calendar, Map } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import { Workspace, getWorkspaces, getOrCreateDefaultWorkspace } from './lib/workspaces';
 import AuthForm from './components/AuthForm';
@@ -18,6 +18,7 @@ import VesselModal from './components/VesselModal';
 import FuelDealModal from './components/FuelDealModal';
 import SupplierList from './components/SupplierList';
 import SupplierTableView from './components/SupplierTableView';
+import SupplierMapView from './components/SupplierMapView';
 import SupplierModal from './components/SupplierModal';
 import SupplierDetail from './components/SupplierDetail';
 import OrderModal from './components/OrderModal';
@@ -67,7 +68,7 @@ interface SavedNote {
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'contacts' | 'suppliers' | 'tasks' | 'notes' | 'priority' | 'calendar'>('contacts');
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table' | 'map'>('grid');
   const [contacts, setContacts] = useState<ContactWithActivity[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<ContactWithActivity[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -3248,6 +3249,19 @@ function App() {
               >
                 <Table className="w-4 h-4" />
               </button>
+              {currentPage === 'suppliers' && (
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                    viewMode === 'map'
+                      ? 'bg-green-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                  title="Map View"
+                >
+                  <Map className="w-4 h-4" />
+                </button>
+              )}
             </div>
           )}
           {currentPage === 'contacts' || currentPage === 'priority' ? (
@@ -4214,7 +4228,7 @@ function App() {
               onDeleteSupplier={handleDeleteSupplier}
               onEditSupplier={handleEditSupplier}
             />
-          ) : (
+          ) : viewMode === 'table' ? (
             <SupplierTableView
               suppliers={filteredSuppliers}
               onSupplierClick={handleSupplierClick}
@@ -4224,6 +4238,11 @@ function App() {
                 setEditingSupplierPort(port);
                 setShowSupplierPortModal(true);
               }}
+            />
+          ) : (
+            <SupplierMapView
+              suppliers={filteredSuppliers}
+              onSelectSupplier={handleSupplierClick}
             />
           )
         ) : currentPage === 'tasks' ? (
