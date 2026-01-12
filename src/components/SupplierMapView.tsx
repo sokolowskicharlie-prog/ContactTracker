@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapPin, Ship, Truck, Anchor, X, Building2, CreditCard as Edit3, Save, Plus, Trash2, Download, Lock } from 'lucide-react';
+import { MapPin, Ship, Truck, Anchor, X, Building2, CreditCard as Edit3, Save, Plus, Trash2, Download, Lock, Search } from 'lucide-react';
 import { supabase, SupplierWithOrders } from '../lib/supabase';
 
 interface Region {
@@ -39,6 +39,8 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [newPortRegion, setNewPortRegion] = useState('');
   const [availablePorts, setAvailablePorts] = useState<string[]>([]);
   const [selectedPortsToAdd, setSelectedPortsToAdd] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<string[]>([]);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -47,6 +49,25 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     loadMapWidth();
     loadAvailablePorts();
   }, []);
+
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setSearchResults([]);
+      return;
+    }
+
+    const results = portLocations
+      .filter((port) =>
+        port.port_name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .map((port) => port.port_name);
+
+    setSearchResults(results);
+
+    if (results.length === 1) {
+      setSelectedPort(results[0]);
+    }
+  }, [searchTerm, portLocations]);
 
   const loadAvailablePorts = async () => {
     try {
@@ -505,6 +526,39 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
           <div className="flex items-center gap-4 flex-wrap">
             <h3 className="text-lg font-semibold text-gray-900 whitespace-nowrap">UK Ports Map</h3>
             <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search ports..."
+                  className="pl-9 pr-8 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-48"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSearchResults([]);
+                    }}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {searchTerm && searchResults.length > 0 && (
+                <span className="text-xs font-medium px-2 py-1 bg-green-100 text-green-700 rounded-lg whitespace-nowrap">
+                  {searchResults.length} match{searchResults.length !== 1 ? 'es' : ''}
+                </span>
+              )}
+              {searchTerm && searchResults.length === 0 && (
+                <span className="text-xs font-medium px-2 py-1 bg-red-100 text-red-700 rounded-lg whitespace-nowrap">
+                  No matches
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
               <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
                 {[40, 50, 60, 70, 80, 100].map((width) => (
                   <button
@@ -661,6 +715,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 const isSelected = selectedPort === port.port_name;
                 const isHovered = hoveredPort === port.port_name;
                 const isDragging = draggingPort === port.port_name;
+                const isSearchMatch = searchResults.includes(port.port_name);
                 const color = getPortColor(port.port_name);
                 const radiusScale = 1 / zoom;
 
@@ -669,10 +724,10 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                     <circle
                       cx={x}
                       cy={y}
-                      r={(isDragging ? 14 : isSelected ? 12 : isHovered ? 10 : 8) * radiusScale}
-                      fill={isEditMode && (isDragging || isHovered) ? '#3B82F6' : color}
-                      stroke={isEditMode ? '#1D4ED8' : 'white'}
-                      strokeWidth={2 * radiusScale}
+                      r={(isDragging ? 14 : isSelected ? 12 : isHovered ? 10 : isSearchMatch ? 10 : 8) * radiusScale}
+                      fill={isEditMode && (isDragging || isHovered) ? '#3B82F6' : isSearchMatch ? '#10B981' : color}
+                      stroke={isEditMode ? '#1D4ED8' : isSearchMatch ? '#059669' : 'white'}
+                      strokeWidth={isSearchMatch ? 3 * radiusScale : 2 * radiusScale}
                       className={`transition-all duration-200 ${
                         isEditMode ? 'cursor-move' : 'cursor-pointer'
                       }`}
@@ -686,7 +741,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                       onMouseEnter={() => !draggingPort && setHoveredPort(port.port_name)}
                       onMouseLeave={() => setHoveredPort(null)}
                     />
-                    {(isHovered || isSelected) && (
+                    {(isHovered || isSelected || isSearchMatch) && (
                       <text
                         x={x}
                         y={y - 15 * radiusScale}
