@@ -331,8 +331,8 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
         .insert({
           port_name: portNameToAdd.toUpperCase().trim(),
           region_id: newPortRegion,
-          latitude: 55,
-          longitude: -3,
+          latitude: 60,
+          longitude: 1,
         })
         .select(`
           id,
@@ -461,8 +461,8 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
       const newPorts = newPortNames.map((portName) => ({
         port_name: portName,
         region_id: defaultRegion.id,
-        latitude: 55,
-        longitude: -3,
+        latitude: 60,
+        longitude: 1,
       }));
 
       const { data: insertedPorts, error: insertError } = await supabase
