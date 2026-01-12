@@ -578,7 +578,12 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   };
 
   const handleDeletePort = async (portName: string) => {
-    if (!confirm(`Are you sure you want to delete ${portName}? This cannot be undone.`)) {
+    const suppliersAtPort = getSuppliersForPort(portName);
+    const confirmMessage = suppliersAtPort.length > 0
+      ? `Are you sure you want to delete ${portName}? This will remove ${suppliersAtPort.length} supplier association(s) and cannot be undone.`
+      : `Are you sure you want to delete ${portName}? This cannot be undone.`;
+
+    if (!confirm(confirmMessage)) {
       return;
     }
 
@@ -586,18 +591,28 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
       const port = portLocations.find((p) => p.port_name === portName);
       if (!port?.id) return;
 
-      const { error } = await supabase
+      // First delete all supplier_ports associations
+      const { error: supplierPortsError } = await supabase
+        .from('supplier_ports')
+        .delete()
+        .eq('port_name', portName);
+
+      if (supplierPortsError) throw supplierPortsError;
+
+      // Then delete the port from uk_port_regions
+      const { error: portError } = await supabase
         .from('uk_port_regions')
         .delete()
         .eq('id', port.id);
 
-      if (error) throw error;
+      if (portError) throw portError;
 
       setPortLocations((prev) => prev.filter((p) => p.port_name !== portName));
       if (selectedPort === portName) {
         setSelectedPort(null);
       }
-      alert('Port deleted successfully!');
+      alert('Port and all associated suppliers deleted successfully!');
+      window.location.reload();
     } catch (error) {
       console.error('Error deleting port:', error);
       alert('Failed to delete port');
@@ -1089,9 +1104,18 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 </button>
               </div>
             ) : (
-              <p className="text-sm text-gray-600">
-                {portLocations.find((p) => p.port_name === selectedPort)?.region}
-              </p>
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600">
+                  {portLocations.find((p) => p.port_name === selectedPort)?.region}
+                </p>
+                <button
+                  onClick={() => handleDeletePort(selectedPort)}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors text-sm font-medium"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete Port
+                </button>
+              </div>
             )}
           </div>
 
