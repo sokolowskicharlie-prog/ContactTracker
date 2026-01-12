@@ -26,6 +26,7 @@ interface SearchResult {
 }
 
 type SortType = 'none' | 'found-first' | 'not-found-first' | 'alphabetical' | 'priority';
+type SearchType = 'all' | 'email' | 'name' | 'company';
 
 export default function BulkSearchModal({ contacts, onClose, onSelectContact, currentWorkspace, onRefresh }: BulkSearchModalProps) {
   const { user } = useAuth();
@@ -33,6 +34,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [textInput, setTextInput] = useState('');
   const [sortType, setSortType] = useState<SortType>('none');
+  const [searchType, setSearchType] = useState<SearchType>('all');
 
   const [filterText, setFilterText] = useState('');
   const [filterFoundStatus, setFilterFoundStatus] = useState<'all' | 'found' | 'not-found'>('all');
@@ -203,21 +205,21 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
         // Check if ANY of the search words match whole words in any field
         let found = false;
         for (const searchWord of searchWords) {
-          if (matchesWholeWord(contactName, searchWord)) {
+          if ((searchType === 'all' || searchType === 'name') && matchesWholeWord(contactName, searchWord)) {
             foundContact = contact;
             matchedTerm = searchWord;
             matchedField = 'Name';
             found = true;
             break;
           }
-          if (matchesWholeWord(contactEmail, searchWord)) {
+          if ((searchType === 'all' || searchType === 'email') && matchesWholeWord(contactEmail, searchWord)) {
             foundContact = contact;
             matchedTerm = searchWord;
             matchedField = 'Email';
             found = true;
             break;
           }
-          if (matchesWholeWord(contactCompany, searchWord)) {
+          if ((searchType === 'all' || searchType === 'company') && matchesWholeWord(contactCompany, searchWord)) {
             foundContact = contact;
             matchedTerm = searchWord;
             matchedField = 'Company';
@@ -264,12 +266,25 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
 
           // Fetch potential matches from database (cast a wide net for efficiency)
           for (const searchWord of searchWords) {
+            // Build search conditions based on search type
+            const conditions: string[] = [];
+            if (searchType === 'all' || searchType === 'company') {
+              conditions.push(`company_name.ilike.%${searchWord}%`);
+            }
+            if (searchType === 'all' || searchType === 'name') {
+              conditions.push(`contact_person.ilike.%${searchWord}%`);
+            }
+            if (searchType === 'all' || searchType === 'email') {
+              conditions.push(`email.ilike.%${searchWord}%`);
+              conditions.push(`general_email.ilike.%${searchWord}%`);
+            }
+
+            if (conditions.length === 0) continue;
+
             const { data } = await supabase
               .from('suppliers')
               .select('*')
-              .or(
-                `company_name.ilike.%${searchWord}%,contact_person.ilike.%${searchWord}%,email.ilike.%${searchWord}%,general_email.ilike.%${searchWord}%`
-              );
+              .or(conditions.join(','));
 
             if (data && data.length > 0) {
               // Add unique suppliers (avoid duplicates)
@@ -294,28 +309,28 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
 
             let found = false;
             for (const searchWord of searchWords) {
-              if (matchesWholeWord(companyName, searchWord)) {
+              if ((searchType === 'all' || searchType === 'company') && matchesWholeWord(companyName, searchWord)) {
                 foundSupplier = supplier;
                 supplierMatchedTerm = searchWord;
                 supplierMatchedField = 'Company Name';
                 found = true;
                 break;
               }
-              if (matchesWholeWord(contactPerson, searchWord)) {
+              if ((searchType === 'all' || searchType === 'name') && matchesWholeWord(contactPerson, searchWord)) {
                 foundSupplier = supplier;
                 supplierMatchedTerm = searchWord;
                 supplierMatchedField = 'Contact Person';
                 found = true;
                 break;
               }
-              if (matchesWholeWord(email, searchWord)) {
+              if ((searchType === 'all' || searchType === 'email') && matchesWholeWord(email, searchWord)) {
                 foundSupplier = supplier;
                 supplierMatchedTerm = searchWord;
                 supplierMatchedField = 'Email';
                 found = true;
                 break;
               }
-              if (matchesWholeWord(generalEmail, searchWord)) {
+              if ((searchType === 'all' || searchType === 'email') && matchesWholeWord(generalEmail, searchWord)) {
                 foundSupplier = supplier;
                 supplierMatchedTerm = searchWord;
                 supplierMatchedField = 'General Email';
@@ -683,6 +698,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                     <ul className="list-disc list-inside space-y-1">
                       <li>Upload an Excel file with names or emails in the first column</li>
                       <li>Or paste names/emails (one per line) in the text area below</li>
+                      <li>Choose search type: All Fields, Email Only, Name Only, or Company Only</li>
                       <li>Searches both Contacts and Suppliers databases</li>
                       <li>Matches whole words only: "john" matches "John Smith" but NOT "Johnson" or "St. Johns"</li>
                       <li>Generic words are automatically excluded: carriers, marine, holding, shipping, oil, gas, etc.</li>
@@ -693,6 +709,28 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                     </ul>
                   </div>
                 </div>
+              </div>
+
+              <div className="bg-white border-2 border-gray-300 rounded-lg p-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search Type
+                </label>
+                <select
+                  value={searchType}
+                  onChange={(e) => setSearchType(e.target.value as SearchType)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                >
+                  <option value="all">All Fields (Name, Email, Company)</option>
+                  <option value="email">Email Only</option>
+                  <option value="name">Name Only</option>
+                  <option value="company">Company Only</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-2">
+                  {searchType === 'all' && 'Search across all fields including name, email, and company'}
+                  {searchType === 'email' && 'Search only in email addresses'}
+                  {searchType === 'name' && 'Search only in contact/person names'}
+                  {searchType === 'company' && 'Search only in company names'}
+                </p>
               </div>
 
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
@@ -785,6 +823,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                       setSearchNames([]);
                       setTextInput('');
                       setSortType('none');
+                      setSearchType('all');
                       setFilterText('');
                       setFilterFoundStatus('all');
                       setFilterType('all');
