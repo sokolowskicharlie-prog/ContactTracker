@@ -2003,6 +2003,8 @@ function App() {
 
   const handleSaveSupplier = async (supplierData: Partial<Supplier>) => {
     try {
+      let supplierId: string;
+
       if (supplierData.id) {
         const { error } = await supabase
           .from('suppliers')
@@ -2010,14 +2012,47 @@ function App() {
           .eq('id', supplierData.id);
 
         if (error) throw error;
+        supplierId = supplierData.id;
       } else {
-        const { error } = await supabase.from('suppliers').insert([{
+        const { data, error } = await supabase.from('suppliers').insert([{
           user_id: user.id,
           workspace_id: currentWorkspace?.id,
           ...supplierData
-        }]);
+        }]).select();
 
         if (error) throw error;
+        supplierId = data?.[0]?.id;
+      }
+
+      if (supplierData.ports && supplierId) {
+        const portNames = supplierData.ports
+          .split(';')
+          .map(p => p.trim())
+          .filter(p => p.length > 0);
+
+        if (portNames.length > 0) {
+          const { data: existingPorts } = await supabase
+            .from('supplier_ports')
+            .select('port_name')
+            .eq('supplier_id', supplierId);
+
+          const existingPortNames = new Set(existingPorts?.map(p => p.port_name) || []);
+          const newPorts = portNames.filter(name => !existingPortNames.has(name));
+
+          if (newPorts.length > 0) {
+            const portsToInsert = newPorts.map(portName => ({
+              supplier_id: supplierId,
+              port_name: portName,
+              has_truck: true,
+              has_lsmgo: true,
+              has_barge: false,
+              has_expipe: false,
+              has_vlsfo: false,
+            }));
+
+            await supabase.from('supplier_ports').insert(portsToInsert);
+          }
+        }
       }
 
       await loadSuppliers();
