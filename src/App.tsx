@@ -3986,6 +3986,15 @@ function App() {
                 </select>
               </div>
             </div>
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Search suppliers by name, contact, email, type, or port..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -4138,16 +4147,19 @@ function App() {
                 </div>
               </div>
             )}
-            {(filterPort !== 'all' || filterFuelType !== 'all' || filterDeliveryMethod !== 'all') && (
+            {(searchQuery.trim() !== '' || filterPort !== 'all' || filterFuelType !== 'all' || filterDeliveryMethod !== 'all' || filterRegion !== 'all' || filterBusinessClassification !== 'all') && (
               <div className="mt-3 flex items-center gap-2">
                 <span className="text-sm text-gray-600">
                   Showing {filteredSuppliers.length} of {suppliers.length} suppliers
                 </span>
                 <button
                   onClick={() => {
+                    setSearchQuery('');
                     setFilterPort('all');
                     setFilterFuelType('all');
                     setFilterDeliveryMethod('all');
+                    setFilterRegion('all');
+                    setFilterBusinessClassification('all');
                   }}
                   className="text-sm text-green-600 hover:text-green-800 underline"
                 >
