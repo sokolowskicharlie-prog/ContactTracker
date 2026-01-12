@@ -21,6 +21,8 @@ interface SearchResult {
   type?: 'contact' | 'supplier';
   contact?: ContactWithActivity;
   supplier?: Supplier;
+  matchedTerm?: string;
+  matchedField?: string;
 }
 
 type SortType = 'none' | 'found-first' | 'not-found-first' | 'alphabetical' | 'priority';
@@ -170,7 +172,11 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
       }
 
       // Non-domain search: Search in contacts first with whole word matching
-      const foundContact = contacts.find(contact => {
+      let foundContact: ContactWithActivity | undefined;
+      let matchedTerm = '';
+      let matchedField = '';
+
+      for (const contact of contacts) {
         const contactName = contact.name?.toLowerCase() || '';
         const contactEmail = contact.email?.toLowerCase() || '';
         const contactCompany = contact.company?.toLowerCase() || '';
@@ -182,7 +188,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
 
         // If all words were excluded, skip this search
         if (searchWords.length === 0) {
-          return false;
+          continue;
         }
 
         // Helper function to check if any whole word in the field matches the search word exactly
@@ -195,23 +201,42 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
         };
 
         // Check if ANY of the search words match whole words in any field
+        let found = false;
         for (const searchWord of searchWords) {
-          if (matchesWholeWord(contactName, searchWord) ||
-              matchesWholeWord(contactEmail, searchWord) ||
-              matchesWholeWord(contactCompany, searchWord)) {
-            return true;
+          if (matchesWholeWord(contactName, searchWord)) {
+            foundContact = contact;
+            matchedTerm = searchWord;
+            matchedField = 'Name';
+            found = true;
+            break;
+          }
+          if (matchesWholeWord(contactEmail, searchWord)) {
+            foundContact = contact;
+            matchedTerm = searchWord;
+            matchedField = 'Email';
+            found = true;
+            break;
+          }
+          if (matchesWholeWord(contactCompany, searchWord)) {
+            foundContact = contact;
+            matchedTerm = searchWord;
+            matchedField = 'Company';
+            found = true;
+            break;
           }
         }
 
-        return false;
-      });
+        if (found) break;
+      }
 
       if (foundContact) {
         results.push({
           searchedName,
           found: true,
           type: 'contact',
-          contact: foundContact
+          contact: foundContact,
+          matchedTerm,
+          matchedField
         });
         continue;
       }
@@ -256,27 +281,60 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
             }
           }
 
-          // Filter to only include suppliers where whole words match
-          const matchingSuppliers = candidateSuppliers.filter(supplier => {
+          // Find matching supplier and track which term/field matched
+          let foundSupplier: any = null;
+          let supplierMatchedTerm = '';
+          let supplierMatchedField = '';
+
+          for (const supplier of candidateSuppliers) {
             const companyName = supplier.company_name?.toLowerCase() || '';
             const contactPerson = supplier.contact_person?.toLowerCase() || '';
             const email = supplier.email?.toLowerCase() || '';
             const generalEmail = supplier.general_email?.toLowerCase() || '';
 
-            return searchWords.some(searchWord =>
-              matchesWholeWord(companyName, searchWord) ||
-              matchesWholeWord(contactPerson, searchWord) ||
-              matchesWholeWord(email, searchWord) ||
-              matchesWholeWord(generalEmail, searchWord)
-            );
-          });
+            let found = false;
+            for (const searchWord of searchWords) {
+              if (matchesWholeWord(companyName, searchWord)) {
+                foundSupplier = supplier;
+                supplierMatchedTerm = searchWord;
+                supplierMatchedField = 'Company Name';
+                found = true;
+                break;
+              }
+              if (matchesWholeWord(contactPerson, searchWord)) {
+                foundSupplier = supplier;
+                supplierMatchedTerm = searchWord;
+                supplierMatchedField = 'Contact Person';
+                found = true;
+                break;
+              }
+              if (matchesWholeWord(email, searchWord)) {
+                foundSupplier = supplier;
+                supplierMatchedTerm = searchWord;
+                supplierMatchedField = 'Email';
+                found = true;
+                break;
+              }
+              if (matchesWholeWord(generalEmail, searchWord)) {
+                foundSupplier = supplier;
+                supplierMatchedTerm = searchWord;
+                supplierMatchedField = 'General Email';
+                found = true;
+                break;
+              }
+            }
 
-          if (matchingSuppliers.length > 0) {
+            if (found) break;
+          }
+
+          if (foundSupplier) {
             results.push({
               searchedName,
               found: true,
               type: 'supplier',
-              supplier: matchingSuppliers[0]
+              supplier: foundSupplier,
+              matchedTerm: supplierMatchedTerm,
+              matchedField: supplierMatchedField
             });
             continue;
           }
@@ -311,6 +369,8 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
           'Searched Name': result.searchedName,
           'Status': result.found ? 'Found' : 'Not Found',
           'Type': 'Supplier',
+          'Matched Term': result.matchedTerm || '',
+          'Matched Field': result.matchedField || '',
           'Company Name': result.supplier.company_name || '',
           'Contact Person': result.supplier.contact_person || '',
           'Country': result.supplier.country || '',
@@ -327,6 +387,8 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
         'Searched Name': result.searchedName,
         'Status': result.found ? 'Found' : 'Not Found',
         'Type': result.type === 'contact' ? 'Contact' : '',
+        'Matched Term': result.matchedTerm || '',
+        'Matched Field': result.matchedField || '',
         'Company Name': result.contact?.company || '',
         'Contact Person': result.contact?.name || '',
         'Country': result.contact?.country || '',
@@ -836,7 +898,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="space-y-2 mb-3">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 flex-wrap">
                             <span className="text-sm text-gray-600 font-medium">Searched:</span>
                             <span className="font-semibold text-gray-900">
                               {result.searchedName}
@@ -853,6 +915,11 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                             {result.type && (
                               <span className="text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-800">
                                 {result.type === 'contact' ? 'Contact' : 'Supplier'}
+                              </span>
+                            )}
+                            {result.matchedTerm && result.matchedField && (
+                              <span className="text-xs px-2 py-1 rounded-full font-medium bg-amber-100 text-amber-800 border border-amber-300">
+                                Matched: "{result.matchedTerm}" in {result.matchedField}
                               </span>
                             )}
                           </div>
