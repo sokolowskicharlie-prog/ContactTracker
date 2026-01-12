@@ -92,7 +92,7 @@ export default function SupplierList({ suppliers, onSupplierClick, onDeleteSuppl
             {supplier.regions && supplier.regions.length > 0 && (
               <div className="mb-3">
                 <div className="flex flex-wrap gap-1">
-                  {supplier.regions.slice(0, 4).map((region) => (
+                  {supplier.regions.map((region) => (
                     <span
                       key={region.id}
                       className="inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full"
@@ -100,11 +100,6 @@ export default function SupplierList({ suppliers, onSupplierClick, onDeleteSuppl
                       {region.name}
                     </span>
                   ))}
-                  {supplier.regions.length > 4 && (
-                    <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                      +{supplier.regions.length - 4} more
-                    </span>
-                  )}
                 </div>
               </div>
             )}

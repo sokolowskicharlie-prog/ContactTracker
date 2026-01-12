@@ -195,7 +195,7 @@ export default function SupplierTableView({
                       )}
                       {supplier.regions && supplier.regions.length > 0 && (
                         <div className="flex flex-wrap gap-1 ml-4">
-                          {supplier.regions.slice(0, 3).map((region) => (
+                          {supplier.regions.map((region) => (
                             <span
                               key={region.id}
                               className="inline-block px-1.5 py-0.5 bg-blue-50 text-blue-700 text-xs rounded"
@@ -203,9 +203,6 @@ export default function SupplierTableView({
                               {region.name}
                             </span>
                           ))}
-                          {supplier.regions.length > 3 && (
-                            <span className="text-xs text-gray-500">+{supplier.regions.length - 3}</span>
-                          )}
                         </div>
                       )}
                     </div>
