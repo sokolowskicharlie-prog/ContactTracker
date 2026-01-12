@@ -38,13 +38,56 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [showAddPort, setShowAddPort] = useState(false);
   const [newPortName, setNewPortName] = useState('');
   const [newPortRegion, setNewPortRegion] = useState('');
+  const [availablePorts, setAvailablePorts] = useState<string[]>([]);
+  const [selectedPortToAdd, setSelectedPortToAdd] = useState('');
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     loadPortLocations();
     loadRegions();
     loadMapWidth();
+    loadAvailablePorts();
   }, []);
+
+  const loadAvailablePorts = async () => {
+    try {
+      const { data: supplierPortsData } = await supabase
+        .from('supplier_ports')
+        .select('port_name');
+
+      const { data: suppliersData } = await supabase
+        .from('suppliers')
+        .select('ports');
+
+      const portsSet = new Set<string>();
+
+      if (supplierPortsData) {
+        supplierPortsData.forEach(item => {
+          if (item.port_name) {
+            portsSet.add(item.port_name.trim());
+          }
+        });
+      }
+
+      if (suppliersData) {
+        suppliersData.forEach(supplier => {
+          if (supplier.ports) {
+            const legacyPorts = supplier.ports.split(';').map(p => p.trim()).filter(p => p.length > 0);
+            legacyPorts.forEach(port => portsSet.add(port));
+          }
+        });
+      }
+
+      const existingPortNames = new Set(portLocations.map(p => p.port_name.toUpperCase()));
+      const availableToAdd = Array.from(portsSet)
+        .filter(port => !existingPortNames.has(port.toUpperCase()))
+        .sort();
+
+      setAvailablePorts(availableToAdd);
+    } catch (error) {
+      console.error('Error loading available ports:', error);
+    }
+  };
 
   const loadMapWidth = async () => {
     try {
@@ -275,8 +318,10 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   };
 
   const handleAddPort = async () => {
-    if (!newPortName.trim() || !newPortRegion) {
-      alert('Please enter a port name and select a region');
+    const portNameToAdd = selectedPortToAdd || newPortName.trim();
+
+    if (!portNameToAdd || !newPortRegion) {
+      alert('Please select or enter a port name and select a region');
       return;
     }
 
@@ -284,7 +329,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
       const { data, error } = await supabase
         .from('uk_port_regions')
         .insert({
-          port_name: newPortName.toUpperCase().trim(),
+          port_name: portNameToAdd.toUpperCase().trim(),
           region_id: newPortRegion,
           latitude: 55,
           longitude: -3,
@@ -313,7 +358,9 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
         setPortLocations([...portLocations, newPort]);
         setNewPortName('');
         setNewPortRegion('');
+        setSelectedPortToAdd('');
         setShowAddPort(false);
+        loadAvailablePorts();
         alert('Port added successfully! Drag it to the correct position and save.');
       }
     } catch (error: any) {
@@ -816,6 +863,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                     setShowAddPort(false);
                     setNewPortName('');
                     setNewPortRegion('');
+                    setSelectedPortToAdd('');
                   }}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
@@ -827,13 +875,47 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Port Name
+                  Select Existing Port
+                </label>
+                <select
+                  value={selectedPortToAdd}
+                  onChange={(e) => {
+                    setSelectedPortToAdd(e.target.value);
+                    if (e.target.value) {
+                      setNewPortName('');
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select from existing ports...</option>
+                  {availablePorts.map((port) => (
+                    <option key={port} value={port}>
+                      {port}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex-1 border-t border-gray-300"></div>
+                <span className="text-sm text-gray-500">OR</span>
+                <div className="flex-1 border-t border-gray-300"></div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Enter New Port Name
                 </label>
                 <input
                   type="text"
                   value={newPortName}
-                  onChange={(e) => setNewPortName(e.target.value)}
-                  placeholder="Enter port name"
+                  onChange={(e) => {
+                    setNewPortName(e.target.value);
+                    if (e.target.value) {
+                      setSelectedPortToAdd('');
+                    }
+                  }}
+                  placeholder="Type a new port name"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
@@ -867,6 +949,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                   setShowAddPort(false);
                   setNewPortName('');
                   setNewPortRegion('');
+                  setSelectedPortToAdd('');
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >

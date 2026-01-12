@@ -78,6 +78,7 @@ function App() {
   const [suppliers, setSuppliers] = useState<SupplierWithOrders[]>([]);
   const [filteredSuppliers, setFilteredSuppliers] = useState<SupplierWithOrders[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSupplierSearch, setSelectedSupplierSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showCallModal, setShowCallModal] = useState(false);
@@ -594,16 +595,9 @@ function App() {
   useEffect(() => {
     let filtered = [...suppliers];
 
-    if (searchQuery.trim() !== '') {
-      const query = searchQuery.toLowerCase();
+    if (selectedSupplierSearch) {
       filtered = filtered.filter(
-        (supplier) =>
-          supplier.company_name.toLowerCase().includes(query) ||
-          supplier.contact_person?.toLowerCase().includes(query) ||
-          supplier.email?.toLowerCase().includes(query) ||
-          supplier.supplier_type?.toLowerCase().includes(query) ||
-          supplier.ports_detailed?.some(port => port.port_name.toLowerCase().includes(query)) ||
-          supplier.ports?.toLowerCase().includes(query)
+        (supplier) => supplier.id === selectedSupplierSearch
       );
     }
 
@@ -674,7 +668,7 @@ function App() {
     });
 
     setFilteredSuppliers(filtered);
-  }, [suppliers, searchQuery, filterPort, filterFuelType, filterDeliveryMethod, filterRegion, filterBusinessClassification, supplierSortBy]);
+  }, [suppliers, selectedSupplierSearch, filterPort, filterFuelType, filterDeliveryMethod, filterRegion, filterBusinessClassification, supplierSortBy]);
 
   useEffect(() => {
     let filtered = [...tasks];
@@ -3987,13 +3981,25 @@ function App() {
               </div>
             </div>
             <div className="mb-4">
-              <input
-                type="text"
-                placeholder="Search suppliers by name, contact, email, type, or port..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <select
+                  value={selectedSupplierSearch}
+                  onChange={(e) => setSelectedSupplierSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none"
+                >
+                  <option value="">All Suppliers</option>
+                  {suppliers
+                    .sort((a, b) => a.company_name.localeCompare(b.company_name))
+                    .map((supplier) => (
+                      <option key={supplier.id} value={supplier.id}>
+                        {supplier.company_name}
+                        {supplier.country ? ` - ${supplier.country}` : ''}
+                      </option>
+                    ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
