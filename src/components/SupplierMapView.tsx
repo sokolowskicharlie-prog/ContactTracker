@@ -87,31 +87,6 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     return '#EF4444';
   };
 
-  const getUKOutline = () => {
-    const coastline = [
-      [50.05, -5.71], [49.96, -6.20], [50.10, -5.50], [50.37, -4.75], [50.55, -4.20],
-      [50.68, -3.50], [50.80, -3.05], [50.82, -2.20], [50.96, -1.50], [51.13, -0.40],
-      [51.28, 0.50], [51.46, 1.10], [51.86, 1.30], [52.50, 1.75], [53.10, 1.20],
-      [53.45, 0.30], [53.75, -0.08], [54.00, -0.50], [54.45, -1.20], [54.99, -1.45],
-      [55.45, -1.60], [55.75, -2.00], [55.92, -3.20], [56.48, -3.00], [57.30, -2.10],
-      [57.65, -1.80], [58.20, -3.10], [58.60, -3.05], [58.63, -4.00], [58.44, -4.50],
-      [58.00, -5.10], [57.58, -5.80], [57.35, -6.28], [56.60, -6.25], [56.12, -5.70],
-      [55.31, -6.30], [55.00, -7.30], [54.98, -8.20], [54.42, -8.60], [54.20, -9.50],
-      [54.05, -10.00], [53.90, -9.80], [53.42, -9.60], [53.35, -8.80], [53.28, -7.80],
-      [53.26, -6.50], [53.20, -5.60], [53.26, -4.80], [53.38, -4.10], [53.25, -4.60],
-      [52.93, -4.50], [52.50, -4.70], [52.12, -4.90], [51.87, -5.35], [51.58, -5.10],
-      [51.20, -5.50], [50.68, -5.00], [50.35, -5.40], [50.05, -5.71]
-    ];
-
-    let pathData = '';
-    coastline.forEach((point, index) => {
-      const { x, y } = latLngToSVG(point[0], point[1]);
-      pathData += `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)},${y.toFixed(1)} `;
-    });
-    pathData += 'Z';
-    return pathData;
-  };
-
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(prev * 1.3, 5));
   };
@@ -202,7 +177,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
         </div>
 
         <div
-          className="relative flex-1 overflow-hidden bg-gradient-to-b from-sky-100 to-blue-50 rounded-lg"
+          className="relative flex-1 overflow-hidden bg-white rounded-lg"
           style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
         >
           <svg
@@ -216,12 +191,13 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
             onWheel={handleWheel}
           >
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-              <path
-                d={getUKOutline()}
-                fill="#E8F5E9"
-                stroke="#2E7D32"
-                strokeWidth="2"
-                className="transition-colors"
+              <image
+                href="/image copy copy.png"
+                x="0"
+                y="0"
+                width="800"
+                height="1000"
+                preserveAspectRatio="xMidYMid meet"
               />
 
               {portLocations.map((port) => {
