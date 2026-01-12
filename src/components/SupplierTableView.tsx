@@ -22,6 +22,7 @@ export default function SupplierTableView({
     type: 120,
     contactPerson: 150,
     contactInfo: 200,
+    location: 150,
     ports: 200,
     fuelTypes: 200,
     orders: 100,
@@ -96,6 +97,13 @@ export default function SupplierTableView({
                   onMouseDown={(e) => handleMouseDown(e, 'contactInfo')}
                 />
               </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative" style={{ width: columnWidths.location }}>
+                Location
+                <div
+                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-green-500 transition-colors"
+                  onMouseDown={(e) => handleMouseDown(e, 'location')}
+                />
+              </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative" style={{ width: columnWidths.ports }}>
                 Ports
                 <div
@@ -132,7 +140,7 @@ export default function SupplierTableView({
           <tbody className="bg-white divide-y divide-gray-200">
             {suppliers.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                   No suppliers found
                 </td>
               </tr>
@@ -167,6 +175,19 @@ export default function SupplierTableView({
                             {[supplier.general_email, supplier.email].filter(Boolean).join('; ')}
                           </span>
                         </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3" style={{ width: columnWidths.location }}>
+                    <div className="flex flex-col gap-1 text-sm text-gray-600">
+                      {supplier.country && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{supplier.country}</span>
+                        </div>
+                      )}
+                      {supplier.region && (
+                        <span className="text-xs text-gray-500 ml-4 truncate">{supplier.region}</span>
                       )}
                     </div>
                   </td>

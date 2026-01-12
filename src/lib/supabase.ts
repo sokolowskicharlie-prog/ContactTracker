@@ -143,6 +143,7 @@ export type Supplier = {
   website?: string;
   address?: string;
   country?: string;
+  region?: string;
   supplier_type?: string;
   business_classification?: string;
   products_services?: string;

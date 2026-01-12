@@ -77,7 +77,7 @@ export default function SupplierList({ suppliers, onSupplierClick, onDeleteSuppl
               {supplier.country && (
                 <div className="flex items-center text-sm text-gray-600">
                   <MapPin className="w-4 h-4 mr-2 text-gray-400" />
-                  {supplier.country}
+                  {supplier.country}{supplier.region && ` - ${supplier.region}`}
                 </div>
               )}
             </div>

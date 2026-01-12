@@ -174,6 +174,7 @@ function App() {
   const [filterPort, setFilterPort] = useState<string>('all');
   const [filterFuelType, setFilterFuelType] = useState<string>('all');
   const [filterDeliveryMethod, setFilterDeliveryMethod] = useState<string>('all');
+  const [filterRegion, setFilterRegion] = useState<string>('all');
   const [tasks, setTasks] = useState<TaskWithRelated[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<TaskWithRelated[]>([]);
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -636,10 +637,16 @@ function App() {
       });
     }
 
+    if (filterRegion !== 'all') {
+      filtered = filtered.filter((supplier) => {
+        return supplier.region === filterRegion;
+      });
+    }
+
     filtered.sort((a, b) => a.company_name.localeCompare(b.company_name));
 
     setFilteredSuppliers(filtered);
-  }, [suppliers, searchQuery, filterPort, filterFuelType, filterDeliveryMethod]);
+  }, [suppliers, searchQuery, filterPort, filterFuelType, filterDeliveryMethod, filterRegion]);
 
   useEffect(() => {
     let filtered = [...tasks];
@@ -3858,7 +3865,28 @@ function App() {
               <Filter className="w-5 h-5 text-gray-600" />
               <h3 className="font-medium text-gray-900">Filter Suppliers</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Region
+                </label>
+                <select
+                  value={filterRegion}
+                  onChange={(e) => setFilterRegion(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                >
+                  <option value="all">All Regions</option>
+                  {Array.from(new Set(
+                    suppliers
+                      .map(s => s.region)
+                      .filter(Boolean)
+                  )).sort().map((region) => (
+                    <option key={region} value={region}>
+                      {region}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Port

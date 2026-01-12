@@ -30,6 +30,21 @@ const BUSINESS_CLASSIFICATIONS = [
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'SGD', 'JPY', 'CNY', 'AED', 'INR'];
 
+const UK_REGIONS = [
+  'Scotland',
+  'Wales',
+  'Northern Ireland',
+  'North East England',
+  'North West England',
+  'Yorkshire and the Humber',
+  'East Midlands',
+  'West Midlands',
+  'East of England',
+  'London',
+  'South East England',
+  'South West England',
+];
+
 interface CustomCountry {
   id: string;
   name: string;
@@ -45,6 +60,7 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
   const [website, setWebsite] = useState('');
   const [address, setAddress] = useState('');
   const [country, setCountry] = useState('');
+  const [region, setRegion] = useState('');
   const [supplierType, setSupplierType] = useState('');
   const [businessClassification, setBusinessClassification] = useState('');
   const [productsServices, setProductsServices] = useState('');
@@ -87,6 +103,7 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
       setWebsite(supplier.website || '');
       setAddress(supplier.address || '');
       setCountry(supplier.country || '');
+      setRegion(supplier.region || '');
       setSupplierType(supplier.supplier_type || '');
       setBusinessClassification(supplier.business_classification || '');
       setProductsServices(supplier.products_services || '');
@@ -160,6 +177,7 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
       website: website.trim() || null,
       address: address.trim() || null,
       country: country.trim() || null,
+      region: region.trim() || null,
       supplier_type: supplierType || null,
       business_classification: businessClassification || null,
       products_services: productsServices.trim() || null,
@@ -299,6 +317,9 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
                       setShowAddCountry(true);
                     } else {
                       setCountry(selectedCountry);
+                      if (selectedCountry !== 'United Kingdom') {
+                        setRegion('');
+                      }
                     }
                   }}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
@@ -322,6 +343,29 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
                 </select>
               </div>
             </div>
+
+            {country === 'United Kingdom' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Region (UK)
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <select
+                    value={region}
+                    onChange={(e) => setRegion(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                  >
+                    <option value="">Select region</option>
+                    {UK_REGIONS.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
