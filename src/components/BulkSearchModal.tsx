@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Upload, Search, Download, AlertCircle, ArrowUpDown, Filter, Plus, Mail, Settings, Trash2 } from 'lucide-react';
+import { X, Upload, Search, Download, AlertCircle, ArrowUpDown, Filter, Plus, Mail, Settings, Trash2, Lock } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ContactWithActivity, Supplier, supabase } from '../lib/supabase';
 import ContactModal from './ContactModal';
@@ -1143,7 +1143,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                     <Filter className="w-4 h-4 text-amber-600" />
                     <h3 className="font-semibold text-amber-900">Matched Terms ({getUniqueMatchedTerms().length})</h3>
                     <span className="ml-auto text-xs text-amber-700">
-                      Click to exclude from results
+                      Click to temporarily exclude, lock to permanently exclude
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1151,22 +1151,43 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                       const isExcluded = excludedMatchedTerms.has(term.toLowerCase());
                       const isPermanentlyExcluded = permanentExcludedTerms.includes(term.toLowerCase());
                       return (
-                        <button
-                          key={term}
-                          onClick={() => toggleExcludedTerm(term)}
-                          disabled={isPermanentlyExcluded}
-                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                            isPermanentlyExcluded
-                              ? 'bg-gray-200 text-gray-500 border-2 border-gray-300 line-through cursor-not-allowed'
-                              : isExcluded
-                              ? 'bg-red-100 text-red-800 border-2 border-red-300 line-through opacity-60'
-                              : 'bg-white text-amber-800 border-2 border-amber-300 hover:bg-amber-100'
-                          }`}
-                          title={isPermanentlyExcluded ? `Permanently excluded in settings. Found in: ${field}` : `Found in: ${field}`}
-                        >
-                          {term} ({count})
-                          {isPermanentlyExcluded && <span className="ml-1">🔒</span>}
-                        </button>
+                        <div key={term} className="flex items-center gap-1">
+                          <button
+                            onClick={() => toggleExcludedTerm(term)}
+                            disabled={isPermanentlyExcluded}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                              isPermanentlyExcluded
+                                ? 'bg-gray-200 text-gray-500 border-2 border-gray-300 line-through cursor-not-allowed'
+                                : isExcluded
+                                ? 'bg-red-100 text-red-800 border-2 border-red-300 line-through opacity-60'
+                                : 'bg-white text-amber-800 border-2 border-amber-300 hover:bg-amber-100'
+                            }`}
+                            title={isPermanentlyExcluded ? `Permanently excluded in settings. Found in: ${field}` : `Found in: ${field}`}
+                          >
+                            {term} ({count})
+                            {isPermanentlyExcluded && <span className="ml-1">🔒</span>}
+                          </button>
+                          {!isPermanentlyExcluded && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const termLower = term.trim().toLowerCase();
+                                if (permanentExcludedTerms.includes(termLower)) {
+                                  return;
+                                }
+                                const newTerms = [...permanentExcludedTerms, termLower];
+                                const success = await saveExcludedTerms(newTerms);
+                                if (success) {
+                                  setPermanentExcludedTerms(newTerms);
+                                }
+                              }}
+                              className="p-1.5 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                              title="Permanently exclude this term from all future searches"
+                            >
+                              <Lock className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -1223,29 +1244,51 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                               const isPermanentlyExcluded = permanentExcludedTerms.some(t => t.toLowerCase() === termLower);
 
                               return (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleExcludedTerm(result.matchedTerm!);
-                                  }}
-                                  className={`text-xs px-2 py-1 rounded-full font-medium border transition-colors cursor-pointer ${
-                                    isPermanentlyExcluded
-                                      ? 'bg-gray-400 text-white border-gray-500 cursor-not-allowed'
-                                      : isExcluded
-                                      ? 'bg-red-100 text-red-800 border-red-300 hover:bg-red-200'
-                                      : 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200 hover:border-amber-400'
-                                  }`}
-                                  title={
-                                    isPermanentlyExcluded
-                                      ? 'Permanently excluded (manage in settings)'
-                                      : isExcluded
-                                      ? 'Click to include this term'
-                                      : 'Click to exclude this term from results'
-                                  }
-                                  disabled={isPermanentlyExcluded}
-                                >
-                                  {isExcluded || isPermanentlyExcluded ? '✕ ' : ''}Matched: "{result.matchedTerm}" in {result.matchedField}
-                                </button>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleExcludedTerm(result.matchedTerm!);
+                                    }}
+                                    className={`text-xs px-2 py-1 rounded-full font-medium border transition-colors cursor-pointer ${
+                                      isPermanentlyExcluded
+                                        ? 'bg-gray-400 text-white border-gray-500 cursor-not-allowed'
+                                        : isExcluded
+                                        ? 'bg-red-100 text-red-800 border-red-300 hover:bg-red-200'
+                                        : 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200 hover:border-amber-400'
+                                    }`}
+                                    title={
+                                      isPermanentlyExcluded
+                                        ? 'Permanently excluded (manage in settings)'
+                                        : isExcluded
+                                        ? 'Click to include this term'
+                                        : 'Click to exclude this term from results'
+                                    }
+                                    disabled={isPermanentlyExcluded}
+                                  >
+                                    {isExcluded || isPermanentlyExcluded ? '✕ ' : ''}Matched: "{result.matchedTerm}" in {result.matchedField}
+                                  </button>
+                                  {!isPermanentlyExcluded && (
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const term = result.matchedTerm!.trim().toLowerCase();
+                                        if (permanentExcludedTerms.includes(term)) {
+                                          return;
+                                        }
+                                        const newTerms = [...permanentExcludedTerms, term];
+                                        const success = await saveExcludedTerms(newTerms);
+                                        if (success) {
+                                          setPermanentExcludedTerms(newTerms);
+                                        }
+                                      }}
+                                      className="p-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                                      title="Permanently exclude this term from all future searches"
+                                    >
+                                      <Lock className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
                               );
                             })()}
                           </div>
