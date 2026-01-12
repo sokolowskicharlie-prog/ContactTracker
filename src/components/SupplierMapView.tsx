@@ -335,8 +335,8 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   };
 
   const handleAddPort = async () => {
-    if (selectedPortsToAdd.length === 0 || !newPortRegion) {
-      alert('Please select at least one port and a region');
+    if (selectedPortsToAdd.length === 0) {
+      alert('Please select at least one port');
       return;
     }
 
@@ -347,7 +347,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
       for (const portName of selectedPortsToAdd) {
         const portToInsert = {
           port_name: portName.toUpperCase().trim(),
-          region_id: newPortRegion,
+          region_id: newPortRegion || null,
           latitude: 60,
           longitude: 1,
         };
@@ -1021,14 +1021,14 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Region
+                  Region <span className="text-gray-500 font-normal">(optional)</span>
                 </label>
                 <select
                   value={newPortRegion}
                   onChange={(e) => setNewPortRegion(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="">Select a region</option>
+                  <option value="">Select a region (optional)</option>
                   {regions.map((region) => (
                     <option key={region.id} value={region.id}>
                       {region.name}
