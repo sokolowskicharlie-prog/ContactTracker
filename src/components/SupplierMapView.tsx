@@ -988,7 +988,12 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                       onClick={(e) => {
                         if (!isEditMode) {
                           e.stopPropagation();
-                          setSelectedPort(isSelected ? null : port.port_name);
+                          if (isGreyedOut) {
+                            setSearchTerm('');
+                            setSelectedPort(port.port_name);
+                          } else {
+                            setSelectedPort(isSelected ? null : port.port_name);
+                          }
                         }
                       }}
                       onMouseDown={(e) => handlePortMouseDown(e, port.port_name)}
