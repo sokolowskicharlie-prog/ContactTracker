@@ -1,4 +1,4 @@
-import { X, Building2, User, Mail, Phone, Globe, MapPin, Package, DollarSign, FileText, Star, Anchor, Ship, Truck } from 'lucide-react';
+import { X, Building2, User, Mail, Phone, Globe, MapPin, Package, DollarSign, FileText, Star, Anchor, Ship, Truck, Briefcase } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Supplier } from '../lib/supabase';
 
@@ -21,6 +21,12 @@ const SUPPLIER_TYPES = [
   'Other',
 ];
 
+const BUSINESS_CLASSIFICATIONS = [
+  'Trader',
+  'Supplier',
+  'Trader/Supplier',
+];
+
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'SGD', 'JPY', 'CNY', 'AED', 'INR'];
 
 export default function SupplierModal({ supplier, onClose, onSave }: SupplierModalProps) {
@@ -32,6 +38,7 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
   const [address, setAddress] = useState('');
   const [country, setCountry] = useState('');
   const [supplierType, setSupplierType] = useState('');
+  const [businessClassification, setBusinessClassification] = useState('');
   const [productsServices, setProductsServices] = useState('');
   const [paymentTerms, setPaymentTerms] = useState('');
   const [currency, setCurrency] = useState('USD');
@@ -54,6 +61,7 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
       setAddress(supplier.address || '');
       setCountry(supplier.country || '');
       setSupplierType(supplier.supplier_type || '');
+      setBusinessClassification(supplier.business_classification || '');
       setProductsServices(supplier.products_services || '');
       setPaymentTerms(supplier.payment_terms || '');
       setCurrency(supplier.currency || 'USD');
@@ -94,6 +102,7 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
       address: address.trim() || null,
       country: country.trim() || null,
       supplier_type: supplierType || null,
+      business_classification: businessClassification || null,
       products_services: productsServices.trim() || null,
       payment_terms: paymentTerms.trim() || null,
       currency: currency || null,
@@ -246,6 +255,27 @@ export default function SupplierModal({ supplier, onClose, onSave }: SupplierMod
                 >
                   <option value="">Select type</option>
                   {SUPPLIER_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Business Classification
+              </label>
+              <div className="relative">
+                <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <select
+                  value={businessClassification}
+                  onChange={(e) => setBusinessClassification(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                >
+                  <option value="">Select classification</option>
+                  {BUSINESS_CLASSIFICATIONS.map((type) => (
                     <option key={type} value={type}>
                       {type}
                     </option>

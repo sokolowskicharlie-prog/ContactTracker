@@ -115,11 +115,19 @@ export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAdd
             <Building2 className="w-6 h-6 text-blue-600" />
             <div>
               <h2 className="text-2xl font-bold text-gray-900">{supplier.company_name}</h2>
-              {supplier.supplier_type && (
-                <span className="inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full mt-1">
-                  {supplier.supplier_type}
-                </span>
-              )}
+              <div className="flex gap-2 mt-1">
+                {supplier.supplier_type && (
+                  <span className="inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">
+                    {supplier.supplier_type}
+                  </span>
+                )}
+                {supplier.business_classification && (
+                  <span className="inline-block px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full flex items-center gap-1">
+                    <Briefcase className="w-3 h-3" />
+                    {supplier.business_classification}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">

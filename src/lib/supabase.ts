@@ -140,6 +140,7 @@ export type Supplier = {
   address?: string;
   country?: string;
   supplier_type?: string;
+  business_classification?: string;
   products_services?: string;
   payment_terms?: string;
   currency?: string;
@@ -148,6 +149,9 @@ export type Supplier = {
   general_email?: string;
   notes?: string;
   rating?: number;
+  default_has_barge?: boolean;
+  default_has_truck?: boolean;
+  default_has_expipe?: boolean;
   created_at: string;
   updated_at: string;
 };
