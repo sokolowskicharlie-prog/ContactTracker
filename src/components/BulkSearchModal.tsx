@@ -5,11 +5,14 @@ import { ContactWithActivity, Supplier, supabase } from '../lib/supabase';
 import ContactModal from './ContactModal';
 import SupplierModal from './SupplierModal';
 import { useAuth } from '../lib/auth';
+import { Workspace } from '../lib/workspaces';
 
 interface BulkSearchModalProps {
   contacts: ContactWithActivity[];
   onClose: () => void;
   onSelectContact: (contact: ContactWithActivity) => void;
+  currentWorkspace: Workspace | null;
+  onRefresh?: () => void;
 }
 
 interface SearchResult {
@@ -22,7 +25,7 @@ interface SearchResult {
 
 type SortType = 'none' | 'found-first' | 'not-found-first' | 'alphabetical' | 'priority';
 
-export default function BulkSearchModal({ contacts, onClose, onSelectContact }: BulkSearchModalProps) {
+export default function BulkSearchModal({ contacts, onClose, onSelectContact, currentWorkspace, onRefresh }: BulkSearchModalProps) {
   const { user } = useAuth();
   const [searchNames, setSearchNames] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -413,8 +416,9 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
   const handleCreateNewContact = (result: SearchResult) => {
     const searchedText = result.searchedName.trim();
     const isEmail = isValidEmail(searchedText);
+    const extractedName = isEmail ? extractCompanyNameFromEmail(searchedText) : searchedText.toUpperCase();
     setPrefilledEmail(isEmail ? searchedText : '');
-    setPrefilledCompanyName(isEmail ? extractCompanyNameFromEmail(searchedText) : searchedText);
+    setPrefilledCompanyName(extractedName);
     setSelectedResult(result);
     setShowContactModal(true);
   };
@@ -422,8 +426,9 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
   const handleCreateNewSupplier = (result: SearchResult) => {
     const searchedText = result.searchedName.trim();
     const isEmail = isValidEmail(searchedText);
+    const extractedName = isEmail ? extractCompanyNameFromEmail(searchedText) : searchedText.toUpperCase();
     setPrefilledEmail(isEmail ? searchedText : '');
-    setPrefilledCompanyName(isEmail ? extractCompanyNameFromEmail(searchedText) : searchedText);
+    setPrefilledCompanyName(extractedName);
     setSelectedResult(result);
     setShowSupplierModal(true);
   };
@@ -437,7 +442,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
     try {
       const { data: newContact, error } = await supabase
         .from('contacts')
-        .insert([{ ...contact, user_id: user.id }])
+        .insert([{ ...contact, user_id: user.id, workspace_id: currentWorkspace?.id }])
         .select()
         .single();
 
@@ -466,6 +471,10 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
         selectedResult.contact = newContact as ContactWithActivity;
         setSearchResults([...searchResults]);
       }
+
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (error) {
       console.error('Error creating contact:', error);
       alert('Failed to create contact');
@@ -481,7 +490,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
     try {
       const { data: newSupplier, error } = await supabase
         .from('suppliers')
-        .insert([{ ...supplier, user_id: user.id }])
+        .insert([{ ...supplier, user_id: user.id, workspace_id: currentWorkspace?.id }])
         .select()
         .single();
 
@@ -495,6 +504,10 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact }: 
         selectedResult.type = 'supplier';
         selectedResult.supplier = newSupplier;
         setSearchResults([...searchResults]);
+      }
+
+      if (onRefresh) {
+        onRefresh();
       }
     } catch (error) {
       console.error('Error creating supplier:', error);

@@ -4327,6 +4327,8 @@ function App() {
           contacts={contacts}
           onClose={() => setShowBulkSearchModal(false)}
           onSelectContact={handleContactClick}
+          currentWorkspace={currentWorkspace}
+          onRefresh={loadContacts}
         />
       )}
 
