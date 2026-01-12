@@ -81,8 +81,11 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
     }
   };
 
-  const saveExcludedTerms = async (terms: string[]) => {
-    if (!user) return;
+  const saveExcludedTerms = async (terms: string[]): Promise<boolean> => {
+    if (!user) {
+      alert('User not logged in. Please refresh the page.');
+      return false;
+    }
 
     try {
       const { error } = await supabase
@@ -97,7 +100,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
 
       if (error) {
         console.error('Error saving excluded terms:', error);
-        alert('Failed to save excluded terms. Please try again.');
+        alert(`Failed to save excluded terms: ${error.message}`);
         return false;
       }
       return true;
