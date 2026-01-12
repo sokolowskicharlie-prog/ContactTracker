@@ -342,28 +342,32 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
 
   const handlePortMouseUp = async () => {
     if (draggingPort) {
-      // Auto-save the port position when drag is complete
       const portToSave = portLocations.find(p => p.port_name === draggingPort);
       if (portToSave && portToSave.id) {
         try {
+          const updateData: any = {
+            latitude: portToSave.latitude,
+            longitude: portToSave.longitude,
+          };
+
+          if (portToSave.region_id !== undefined) {
+            updateData.region_id = portToSave.region_id;
+          }
+
           const { error } = await supabase
             .from('uk_port_regions')
-            .update({
-              latitude: portToSave.latitude,
-              longitude: portToSave.longitude,
-              region_id: portToSave.region_id,
-            })
+            .update(updateData)
             .eq('id', portToSave.id);
 
           if (error) {
             console.error('Error saving port location:', error);
-            alert('Failed to save port location');
+            alert(`Failed to save port location: ${error.message}`);
           } else {
             setHasUnsavedChanges(false);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error saving port location:', error);
-          alert('Failed to save port location');
+          alert(`Failed to save port location: ${error?.message || 'Unknown error'}`);
         }
       }
     }
@@ -394,24 +398,28 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     try {
       for (const port of portLocations) {
         if (port.id) {
+          const updateData: any = {
+            latitude: port.latitude,
+            longitude: port.longitude,
+          };
+
+          if (port.region_id !== undefined) {
+            updateData.region_id = port.region_id;
+          }
+
           const { error } = await supabase
             .from('uk_port_regions')
-            .update({
-              latitude: port.latitude,
-              longitude: port.longitude,
-              region_id: port.region_id,
-            })
+            .update(updateData)
             .eq('id', port.id);
 
           if (error) throw error;
         }
       }
       setHasUnsavedChanges(false);
-      alert('Port locations saved successfully!');
       loadPortLocations();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving port locations:', error);
-      alert('Failed to save port locations');
+      alert(`Failed to save port locations: ${error?.message || 'Unknown error'}`);
     }
   };
 
