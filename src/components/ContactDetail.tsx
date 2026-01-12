@@ -996,7 +996,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                 Contact Persons ({contact.contact_persons.length})
               </h3>
               <div className="space-y-3">
-                {contact.contact_persons
+                {(contact.contact_persons || [])
                   .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
                   .map((person) => (
                     <div
@@ -1075,7 +1075,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                 </button>
               </div>
               <div className="space-y-3">
-                {contact.vessels.map((vessel) => (
+                {(contact.vessels || []).map((vessel) => (
                   <div
                     key={vessel.id}
                     className="bg-white border border-gray-200 rounded-lg p-4"
@@ -1179,7 +1179,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                 </button>
               </div>
               <div className="space-y-3">
-                {contact.fuel_deals
+                {(contact.fuel_deals || [])
                   .sort((a, b) => new Date(b.deal_date).getTime() - new Date(a.deal_date).getTime())
                   .map((deal) => (
                   <div
@@ -1392,7 +1392,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Call History ({contact.calls.length})
+                  Call History ({contact.calls?.length || 0})
                 </h3>
                 <button
                   onClick={onLogCall}
@@ -1403,9 +1403,9 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                 </button>
               </div>
 
-            {contact.calls.length > 0 ? (
+            {contact.calls && contact.calls.length > 0 ? (
               <div className="space-y-3">
-                {contact.calls
+                {(contact.calls || [])
                   .sort((a, b) => new Date(b.call_date).getTime() - new Date(a.call_date).getTime())
                   .map((call) => (
                     <div
@@ -1477,7 +1477,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Email History ({contact.emails.length})
+                  Email History ({contact.emails?.length || 0})
                 </h3>
                 <button
                   onClick={onLogEmail}
@@ -1488,9 +1488,9 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                 </button>
               </div>
 
-              {contact.emails.length > 0 ? (
+              {contact.emails && contact.emails.length > 0 ? (
                 <div className="space-y-3">
-                  {contact.emails
+                  {(contact.emails || [])
                     .sort((a, b) => new Date(b.email_date).getTime() - new Date(a.email_date).getTime())
                     .map((email) => (
                       <div
