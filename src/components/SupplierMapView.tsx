@@ -14,6 +14,7 @@ interface PortLocation {
   longitude: number;
   region: string;
   region_id: string;
+  country: string;
 }
 
 interface SupplierMapViewProps {
@@ -172,6 +173,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
           latitude,
           longitude,
           region_id,
+          country,
           region:uk_regions(name)
         `)
         .not('latitude', 'is', null)
@@ -186,6 +188,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
         longitude: parseFloat(item.longitude),
         region: item.region?.name || '',
         region_id: item.region_id || '',
+        country: item.country || 'United Kingdom',
       }));
 
       setPortLocations(locations);
@@ -200,6 +203,14 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
         (port) => port.port_name.toLowerCase() === portName.toLowerCase()
       )
     );
+  };
+
+  const getPortDisplayName = (port: PortLocation) => {
+    const isUKOrIreland = port.country === 'United Kingdom' || port.country === 'Ireland';
+    if (isUKOrIreland && port.region) {
+      return `${port.port_name}, ${port.region}`;
+    }
+    return `${port.port_name}, ${port.country}`;
   };
 
   const latLngToSVG = (lat: number, lng: number) => {
@@ -349,6 +360,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
         region_id: newPortRegion,
         latitude: 60,
         longitude: 1,
+        country: 'United Kingdom',
       }));
 
       const { data, error } = await supabase
@@ -360,6 +372,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
           latitude,
           longitude,
           region_id,
+          country,
           region:uk_regions(name)
         `);
 
@@ -373,6 +386,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
           longitude: parseFloat(port.longitude),
           region: port.region?.name || '',
           region_id: port.region_id,
+          country: port.country || 'United Kingdom',
         }));
         setPortLocations([...portLocations, ...newPorts]);
         setNewPortRegion('');
@@ -481,6 +495,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
         region_id: defaultRegion.id,
         latitude: 60,
         longitude: 1,
+        country: 'United Kingdom',
       }));
 
       const { data: insertedPorts, error: insertError } = await supabase
@@ -492,6 +507,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
           latitude,
           longitude,
           region_id,
+          country,
           region:uk_regions(name)
         `);
 
@@ -505,6 +521,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
           longitude: parseFloat(port.longitude),
           region: port.region?.name || '',
           region_id: port.region_id,
+          country: port.country || 'United Kingdom',
         }));
 
         setPortLocations([...portLocations, ...formattedPorts]);
@@ -758,7 +775,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                         strokeWidth={3 * radiusScale}
                         paintOrder="stroke"
                       >
-                        {port.port_name}
+                        {getPortDisplayName(port)}
                       </text>
                     )}
                     {supplierCount > 0 && (
@@ -842,7 +859,12 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               </div>
             ) : (
               <p className="text-sm text-gray-600">
-                {portLocations.find((p) => p.port_name === selectedPort)?.region}
+                {(() => {
+                  const port = portLocations.find((p) => p.port_name === selectedPort);
+                  if (!port) return '';
+                  const isUKOrIreland = port.country === 'United Kingdom' || port.country === 'Ireland';
+                  return isUKOrIreland ? port.region : port.country;
+                })()}
               </p>
             )}
           </div>
