@@ -19,6 +19,13 @@ interface EmailType {
   display_order: number;
 }
 
+interface CustomCountry {
+  id: string;
+  name: string;
+  timezone: string;
+  display_order: number;
+}
+
 interface ContactModalProps {
   contact?: ContactWithActivity;
   onClose: () => void;
@@ -46,6 +53,10 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
   const [contactPersons, setContactPersons] = useState<Partial<ContactPerson>[]>([]);
   const [phoneTypes, setPhoneTypes] = useState<PhoneType[]>([]);
   const [emailTypes, setEmailTypes] = useState<EmailType[]>([]);
+  const [customCountries, setCustomCountries] = useState<CustomCountry[]>([]);
+  const [showAddCountry, setShowAddCountry] = useState(false);
+  const [newCountryName, setNewCountryName] = useState('');
+  const [newCountryTimezone, setNewCountryTimezone] = useState('GMT+0');
 
   useEffect(() => {
     const fetchPhoneTypes = async () => {
@@ -70,8 +81,20 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       }
     };
 
+    const fetchCustomCountries = async () => {
+      const { data, error } = await supabase
+        .from('custom_countries')
+        .select('*')
+        .order('display_order');
+
+      if (!error && data) {
+        setCustomCountries(data);
+      }
+    };
+
     fetchPhoneTypes();
     fetchEmailTypes();
+    fetchCustomCountries();
   }, []);
 
   useEffect(() => {
@@ -154,6 +177,41 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
     }
     setContactPersons(updated);
   };
+
+  const handleAddCountry = async () => {
+    if (!newCountryName.trim()) return;
+
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
+
+    const { error } = await supabase
+      .from('custom_countries')
+      .insert({
+        user_id: userData.user.id,
+        name: newCountryName.trim(),
+        timezone: newCountryTimezone,
+        display_order: customCountries.length,
+      });
+
+    if (!error) {
+      const { data } = await supabase
+        .from('custom_countries')
+        .select('*')
+        .order('display_order');
+
+      if (data) {
+        setCustomCountries(data);
+      }
+
+      setCountry(newCountryName.trim());
+      setTimezone(newCountryTimezone);
+      setNewCountryName('');
+      setNewCountryTimezone('GMT+0');
+      setShowAddCountry(false);
+    }
+  };
+
+  const allCountries = [...COUNTRIES, ...customCountries.map(c => c.name)];
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -404,10 +462,17 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
                 value={country}
                 onChange={(e) => {
                   const selectedCountry = e.target.value;
-                  setCountry(selectedCountry);
-                  const autoTimezone = getTimezoneForCountry(selectedCountry);
-                  if (autoTimezone) {
-                    setTimezone(autoTimezone);
+                  if (selectedCountry === '__ADD_NEW__') {
+                    setShowAddCountry(true);
+                  } else {
+                    setCountry(selectedCountry);
+                    const autoTimezone = getTimezoneForCountry(selectedCountry);
+                    const customCountry = customCountries.find(c => c.name === selectedCountry);
+                    if (customCountry) {
+                      setTimezone(customCountry.timezone);
+                    } else if (autoTimezone) {
+                      setTimezone(autoTimezone);
+                    }
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -418,6 +483,16 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
                     {c}
                   </option>
                 ))}
+                {customCountries.length > 0 && (
+                  <optgroup label="Custom Countries">
+                    {customCountries.map((c) => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                <option value="__ADD_NEW__">+ Add New Country</option>
               </select>
             </div>
           </div>
@@ -634,6 +709,63 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
           </div>
         </form>
       </div>
+
+      {showAddCountry && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Country</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Country Name
+                </label>
+                <input
+                  type="text"
+                  value={newCountryName}
+                  onChange={(e) => setNewCountryName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter country name"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Timezone
+                </label>
+                <select
+                  value={newCountryTimezone}
+                  onChange={(e) => setNewCountryTimezone(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {TIMEZONES.map((tz) => (
+                    <option key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowAddCountry(false);
+                    setNewCountryName('');
+                    setNewCountryTimezone('GMT+0');
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddCountry}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Add Country
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
