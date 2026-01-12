@@ -719,16 +719,18 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 const isHovered = hoveredPort === port.port_name;
                 const isDragging = draggingPort === port.port_name;
                 const isSearchMatch = searchResults.includes(port.port_name);
+                const hasActiveSearch = searchTerm.trim() !== '';
+                const isGreyedOut = hasActiveSearch && !isSearchMatch;
                 const color = getPortColor(port.port_name);
                 const radiusScale = 1 / zoom;
 
                 return (
-                  <g key={port.port_name}>
+                  <g key={port.port_name} style={{ opacity: isGreyedOut ? 0.25 : 1 }}>
                     <circle
                       cx={x}
                       cy={y}
                       r={(isDragging ? 14 : isSelected ? 12 : isHovered ? 10 : isSearchMatch ? 10 : 8) * radiusScale}
-                      fill={isEditMode && (isDragging || isHovered) ? '#3B82F6' : isSearchMatch ? '#10B981' : color}
+                      fill={isGreyedOut ? '#9CA3AF' : isEditMode && (isDragging || isHovered) ? '#3B82F6' : isSearchMatch ? '#10B981' : color}
                       stroke={isEditMode ? '#1D4ED8' : isSearchMatch ? '#059669' : 'white'}
                       strokeWidth={isSearchMatch ? 3 * radiusScale : 2 * radiusScale}
                       className={`transition-all duration-200 ${
