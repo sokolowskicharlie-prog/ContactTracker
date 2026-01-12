@@ -920,14 +920,15 @@ function App() {
     }
   };
 
-  const handleUpdateContactStatus = async (contactId: string, statusField: 'is_jammed' | 'has_traction' | 'is_client', value: boolean) => {
+  const handleUpdateContactStatus = async (contactId: string, statusField: 'is_jammed' | 'has_traction' | 'is_client' | 'is_dead', value: boolean) => {
     try {
       const updateData: any = { [statusField]: value };
 
       if (value) {
         const dateField = statusField === 'is_jammed' ? 'jammed_date'
           : statusField === 'has_traction' ? 'traction_date'
-          : 'client_date';
+          : statusField === 'is_client' ? 'client_date'
+          : 'dead_date';
         updateData[dateField] = new Date().toISOString();
       }
 

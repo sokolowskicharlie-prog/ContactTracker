@@ -29,9 +29,11 @@ export type Contact = {
   is_jammed?: boolean;
   has_traction?: boolean;
   is_client?: boolean;
+  is_dead?: boolean;
   jammed_date?: string;
   traction_date?: string;
   client_date?: string;
+  dead_date?: string;
   follow_up_date?: string;
   jammed_note?: string;
   jammed_additional_note?: string;
@@ -39,6 +41,8 @@ export type Contact = {
   client_additional_note?: string;
   traction_note?: string;
   traction_additional_note?: string;
+  dead_note?: string;
+  dead_additional_note?: string;
   priority_rank?: number;
   last_called?: string;
   last_emailed?: string;

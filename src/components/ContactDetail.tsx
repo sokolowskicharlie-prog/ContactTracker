@@ -1,4 +1,4 @@
-import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, CreditCard as Edit2, StickyNote, AlertTriangle, Package } from 'lucide-react';
+import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, CreditCard as Edit2, StickyNote, AlertTriangle, Package, Skull } from 'lucide-react';
 import { ContactWithActivity, Vessel, FuelDeal, Call, Email, TaskWithRelated, CustomJammedReason, supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 
@@ -30,7 +30,7 @@ interface ContactDetailProps {
   onAddFuelDeal: () => void;
   onEditFuelDeal: (deal: FuelDeal) => void;
   onDeleteFuelDeal: (dealId: string) => void;
-  onUpdateStatus: (statusField: 'is_jammed' | 'has_traction' | 'is_client', value: boolean) => void;
+  onUpdateStatus: (statusField: 'is_jammed' | 'has_traction' | 'is_client' | 'is_dead', value: boolean) => void;
   onAddTask: () => void;
   onToggleTaskComplete: (taskId: string, completed: boolean) => void;
   onEditTask: (task: TaskWithRelated) => void;
@@ -41,20 +41,23 @@ interface ContactDetailProps {
 }
 
 export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, onEditContact, onLogCall, onLogEmail, onEditCall, onEditEmail, onDeleteCall, onDeleteEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask, onEditNote, onDeleteNote, onConvertToSupplier }: ContactDetailProps) {
-  const [expandedStatusNote, setExpandedStatusNote] = useState<'jammed' | 'client' | 'traction' | null>(null);
+  const [expandedStatusNote, setExpandedStatusNote] = useState<'jammed' | 'client' | 'traction' | 'dead' | null>(null);
   const [isEditingStatusNote, setIsEditingStatusNote] = useState(false);
   const [statusNoteValue, setStatusNoteValue] = useState('');
   const [jammedReason, setJammedReason] = useState('');
   const [tractionReason, setTractionReason] = useState('');
   const [clientReason, setClientReason] = useState('');
+  const [deadReason, setDeadReason] = useState('');
   const [jammedAdditionalNote, setJammedAdditionalNote] = useState('');
   const [tractionAdditionalNote, setTractionAdditionalNote] = useState('');
   const [clientAdditionalNote, setClientAdditionalNote] = useState('');
+  const [deadAdditionalNote, setDeadAdditionalNote] = useState('');
   const [priorityRank, setPriorityRank] = useState<string>(contact.priority_rank?.toString() || '');
   const [followUpDate, setFollowUpDate] = useState(contact.follow_up_date || '');
   const [customJammedReasons, setCustomJammedReasons] = useState<CustomJammedReason[]>([]);
   const [customTractionReasons, setCustomTractionReasons] = useState<CustomJammedReason[]>([]);
   const [customClientReasons, setCustomClientReasons] = useState<CustomJammedReason[]>([]);
+  const [customDeadReasons, setCustomDeadReasons] = useState<CustomJammedReason[]>([]);
   const [isAddingNewReason, setIsAddingNewReason] = useState(false);
   const [newReasonText, setNewReasonText] = useState('');
 
@@ -77,9 +80,17 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
     'Other'
   ];
 
+  const defaultDeadReasons = [
+    'No longer in business',
+    'Unresponsive',
+    'Not interested',
+    'Other'
+  ];
+
   const jammedReasons = [...defaultJammedReasons, ...customJammedReasons.map(r => r.reason)];
   const tractionReasons = [...defaultTractionReasons, ...customTractionReasons.map(r => r.reason)];
   const clientReasons = [...defaultClientReasons, ...customClientReasons.map(r => r.reason)];
+  const deadReasons = [...defaultDeadReasons, ...customDeadReasons.map(r => r.reason)];
 
   useEffect(() => {
     loadCustomReasons();
@@ -100,15 +111,17 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
       setCustomJammedReasons(data.filter(r => r.reason_type === 'jammed'));
       setCustomTractionReasons(data.filter(r => r.reason_type === 'traction'));
       setCustomClientReasons(data.filter(r => r.reason_type === 'client'));
+      setCustomDeadReasons(data.filter(r => r.reason_type === 'dead'));
     }
   };
 
-  const addNewCustomReason = async (reasonType: 'jammed' | 'traction' | 'client') => {
+  const addNewCustomReason = async (reasonType: 'jammed' | 'traction' | 'client' | 'dead') => {
     if (!newReasonText.trim()) return;
 
     const currentReasons = reasonType === 'jammed' ? customJammedReasons :
                            reasonType === 'traction' ? customTractionReasons :
-                           customClientReasons;
+                           reasonType === 'client' ? customClientReasons :
+                           customDeadReasons;
 
     const maxOrder = currentReasons.length > 0
       ? Math.max(...currentReasons.map(r => r.display_order))
@@ -140,16 +153,19 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
       } else if (reasonType === 'traction') {
         setCustomTractionReasons([...customTractionReasons, data]);
         setTractionReason(data.reason);
-      } else {
+      } else if (reasonType === 'client') {
         setCustomClientReasons([...customClientReasons, data]);
         setClientReason(data.reason);
+      } else {
+        setCustomDeadReasons([...customDeadReasons, data]);
+        setDeadReason(data.reason);
       }
       setNewReasonText('');
       setIsAddingNewReason(false);
     }
   };
 
-  const toggleStatusNote = (type: 'jammed' | 'client' | 'traction') => {
+  const toggleStatusNote = (type: 'jammed' | 'client' | 'traction' | 'dead') => {
     if (expandedStatusNote === type) {
       setExpandedStatusNote(null);
       setIsEditingStatusNote(false);
@@ -187,11 +203,20 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
           setClientReason('');
         }
         setClientAdditionalNote(contact.client_additional_note || '');
+      } else if (type === 'dead') {
+        if (deadReasons.includes(currentNote)) {
+          setDeadReason(currentNote);
+        } else if (currentNote) {
+          setDeadReason('Other');
+        } else {
+          setDeadReason('');
+        }
+        setDeadAdditionalNote(contact.dead_additional_note || '');
       }
     }
   };
 
-  const saveStatusNote = async (type: 'jammed' | 'client' | 'traction') => {
+  const saveStatusNote = async (type: 'jammed' | 'client' | 'traction' | 'dead') => {
     let noteValue = statusNoteValue;
 
     if (type === 'jammed' && jammedReason && jammedReason !== 'Other') {
@@ -200,6 +225,8 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
       noteValue = tractionReason;
     } else if (type === 'client' && clientReason && clientReason !== 'Other') {
       noteValue = clientReason;
+    } else if (type === 'dead' && deadReason && deadReason !== 'Other') {
+      noteValue = deadReason;
     }
 
     const updatedContact: any = {
@@ -213,6 +240,8 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
       updatedContact.traction_additional_note = tractionAdditionalNote;
     } else if (type === 'client') {
       updatedContact.client_additional_note = clientAdditionalNote;
+    } else if (type === 'dead') {
+      updatedContact.dead_additional_note = deadAdditionalNote;
     }
 
     await onEditContact(updatedContact);
@@ -459,6 +488,33 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                   <span className="text-xs text-gray-500 ml-1">Marked: {formatShortDate(contact.jammed_date)}</span>
                 )}
               </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => onUpdateStatus('is_dead', !contact.is_dead)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                      contact.is_dead
+                        ? 'bg-gray-800 text-white border border-gray-900'
+                        : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Skull className="w-4 h-4" />
+                    Dead
+                  </button>
+                  {contact.is_dead && (
+                    <button
+                      onClick={() => toggleStatusNote('dead')}
+                      className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                      title="Add/edit dead note"
+                    >
+                      <StickyNote className="w-4 h-4 text-gray-600" />
+                    </button>
+                  )}
+                </div>
+                {contact.is_dead && contact.dead_date && (
+                  <span className="text-xs text-gray-500 ml-1">Marked: {formatShortDate(contact.dead_date)}</span>
+                )}
+              </div>
             </div>
 
             {/* Expandable Status Note Section */}
@@ -467,10 +523,12 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {expandedStatusNote === 'traction' && <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
                   {expandedStatusNote === 'client' && <Check className="w-4 h-4 text-green-600" />}
-                  {expandedStatusNote === 'jammed' && <AlertTriangle className="w-4 h-4 text-red-600" />}
+                  {expandedStatusNote === 'jammed' && <XCircle className="w-4 h-4 text-red-600" />}
+                  {expandedStatusNote === 'dead' && <Skull className="w-4 h-4 text-gray-700" />}
                   {expandedStatusNote === 'traction' && 'Traction Note'}
                   {expandedStatusNote === 'client' && 'Client Note'}
                   {expandedStatusNote === 'jammed' && 'Jammed Reason'}
+                  {expandedStatusNote === 'dead' && 'Dead Reason'}
                 </label>
 
                 {isEditingStatusNote ? (
@@ -760,6 +818,101 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                           </div>
                         )}
                       </>
+                    ) : expandedStatusNote === 'dead' ? (
+                      <>
+                        <select
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={deadReason}
+                          onChange={(e) => {
+                            setDeadReason(e.target.value);
+                            if (e.target.value !== 'Other') {
+                              setStatusNoteValue(e.target.value);
+                            } else {
+                              setStatusNoteValue('');
+                            }
+                          }}
+                        >
+                          <option value="">Select a reason...</option>
+                          {deadReasons.map((reason) => (
+                            <option key={reason} value={reason}>
+                              {reason}
+                            </option>
+                          ))}
+                        </select>
+
+                        {!isAddingNewReason ? (
+                          <button
+                            type="button"
+                            onClick={() => setIsAddingNewReason(true)}
+                            className="mt-2 w-full px-3 py-2 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add Custom Reason
+                          </button>
+                        ) : (
+                          <div className="mt-2 space-y-2">
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Enter new reason..."
+                              value={newReasonText}
+                              onChange={(e) => setNewReasonText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  addNewCustomReason('dead');
+                                } else if (e.key === 'Escape') {
+                                  setIsAddingNewReason(false);
+                                  setNewReasonText('');
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => addNewCustomReason('dead')}
+                                className="flex-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                Add
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsAddingNewReason(false);
+                                  setNewReasonText('');
+                                }}
+                                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {deadReason === 'Other' && (
+                          <textarea
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-3"
+                            rows={3}
+                            placeholder="Enter custom reason..."
+                            value={statusNoteValue}
+                            onChange={(e) => setStatusNoteValue(e.target.value)}
+                          />
+                        )}
+
+                        {deadReason && (
+                          <div className="mt-3">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Additional Notes</label>
+                            <textarea
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              rows={2}
+                              placeholder="Add any additional details..."
+                              value={deadAdditionalNote}
+                              onChange={(e) => setDeadAdditionalNote(e.target.value)}
+                            />
+                          </div>
+                        )}
+                      </>
                     ) : null}
 
                     <div className="flex gap-2 mt-3">
@@ -787,7 +940,8 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                       )}
                       {(expandedStatusNote === 'jammed' && contact.jammed_additional_note) ||
                        (expandedStatusNote === 'traction' && contact.traction_additional_note) ||
-                       (expandedStatusNote === 'client' && contact.client_additional_note) ? (
+                       (expandedStatusNote === 'client' && contact.client_additional_note) ||
+                       (expandedStatusNote === 'dead' && contact.dead_additional_note) ? (
                         <div>
                           <label className="block text-xs font-medium text-gray-600 mb-1">Additional Notes</label>
                           <div className="bg-white rounded-lg p-3 border border-gray-200">
@@ -795,6 +949,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                               {expandedStatusNote === 'jammed' && contact.jammed_additional_note}
                               {expandedStatusNote === 'traction' && contact.traction_additional_note}
                               {expandedStatusNote === 'client' && contact.client_additional_note}
+                              {expandedStatusNote === 'dead' && contact.dead_additional_note}
                             </p>
                           </div>
                         </div>
@@ -881,7 +1036,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                   <div className="text-sm text-gray-700 bg-red-50 p-3 rounded-lg border border-red-200">
                     <div className="flex items-center justify-between">
                       <span className="font-medium flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3 text-red-600" />
+                        <XCircle className="w-3 h-3 text-red-600" />
                         Jammed:
                       </span>
                       <button
@@ -900,6 +1055,33 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                       <div className="mt-2 pt-2 border-t border-red-200">
                         <p className="text-xs font-medium text-gray-500 mb-1">Additional Notes:</p>
                         <p className="text-gray-600 whitespace-pre-wrap">{contact.jammed_additional_note}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {contact.dead_note && contact.is_dead && (
+                  <div className="text-sm text-gray-700 bg-gray-100 p-3 rounded-lg border border-gray-300">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium flex items-center gap-1">
+                        <Skull className="w-3 h-3 text-gray-700" />
+                        Dead:
+                      </span>
+                      <button
+                        onClick={() => {
+                          setExpandedStatusNote('dead');
+                          setIsEditingStatusNote(true);
+                        }}
+                        className="p-1 hover:bg-gray-200 rounded transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-3 h-3 text-gray-700" />
+                      </button>
+                    </div>
+                    <p className="mt-1 text-gray-600">{contact.dead_note}</p>
+                    {contact.dead_additional_note && (
+                      <div className="mt-2 pt-2 border-t border-gray-300">
+                        <p className="text-xs font-medium text-gray-500 mb-1">Additional Notes:</p>
+                        <p className="text-gray-600 whitespace-pre-wrap">{contact.dead_additional_note}</p>
                       </div>
                     )}
                   </div>
