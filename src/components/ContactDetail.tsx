@@ -169,6 +169,15 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
     }
   };
 
+  const handleStatusToggle = (type: 'jammed' | 'client' | 'traction' | 'dead', currentValue: boolean) => {
+    if (!currentValue) {
+      toggleStatusNote(type);
+      onUpdateStatus(type === 'jammed' ? 'is_jammed' : type === 'traction' ? 'has_traction' : type === 'client' ? 'is_client' : 'is_dead', true);
+    } else {
+      onUpdateStatus(type === 'jammed' ? 'is_jammed' : type === 'traction' ? 'has_traction' : type === 'client' ? 'is_client' : 'is_dead', false);
+    }
+  };
+
   const toggleStatusNote = (type: 'jammed' | 'client' | 'traction' | 'dead') => {
     if (expandedStatusNote === type) {
       setExpandedStatusNote(null);
@@ -414,7 +423,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => onUpdateStatus('has_traction', !contact.has_traction)}
+                    onClick={() => handleStatusToggle('traction', contact.has_traction)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
                       contact.has_traction
                         ? 'bg-yellow-400 text-yellow-900 border border-yellow-500'
@@ -441,7 +450,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => onUpdateStatus('is_client', !contact.is_client)}
+                    onClick={() => handleStatusToggle('client', contact.is_client)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
                       contact.is_client
                         ? 'bg-green-500 text-white border border-green-600'
@@ -468,7 +477,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => onUpdateStatus('is_jammed', !contact.is_jammed)}
+                    onClick={() => handleStatusToggle('jammed', contact.is_jammed)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
                       contact.is_jammed
                         ? 'bg-red-500 text-white border border-red-600'
@@ -495,7 +504,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => onUpdateStatus('is_dead', !contact.is_dead)}
+                    onClick={() => handleStatusToggle('dead', contact.is_dead)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
                       contact.is_dead
                         ? 'bg-gray-800 text-white border border-gray-900'

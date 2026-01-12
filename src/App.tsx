@@ -923,13 +923,24 @@ function App() {
   const handleUpdateContactStatus = async (contactId: string, statusField: 'is_jammed' | 'has_traction' | 'is_client' | 'is_dead', value: boolean) => {
     try {
       const updateData: any = { [statusField]: value };
+      const dateField = statusField === 'is_jammed' ? 'jammed_date'
+        : statusField === 'has_traction' ? 'traction_date'
+        : statusField === 'is_client' ? 'client_date'
+        : 'dead_date';
 
       if (value) {
-        const dateField = statusField === 'is_jammed' ? 'jammed_date'
-          : statusField === 'has_traction' ? 'traction_date'
-          : statusField === 'is_client' ? 'client_date'
-          : 'dead_date';
         updateData[dateField] = new Date().toISOString();
+      } else {
+        updateData[dateField] = null;
+      }
+
+      const updatedContacts = contacts.map(c =>
+        c.id === contactId ? { ...c, ...updateData } : c
+      );
+      setContacts(updatedContacts);
+
+      if (selectedContact?.id === contactId) {
+        setSelectedContact({ ...selectedContact, ...updateData });
       }
 
       const { error } = await supabase
@@ -938,14 +949,9 @@ function App() {
         .eq('id', contactId);
 
       if (error) throw error;
-      await loadContacts();
-
-      const updatedContact = contacts.find(c => c.id === contactId);
-      if (updatedContact && selectedContact?.id === contactId) {
-        setSelectedContact(updatedContact);
-      }
     } catch (error) {
       console.error('Error updating contact status:', error);
+      await loadContacts();
     }
   };
 
@@ -1279,6 +1285,12 @@ function App() {
 
   const handleUpdateContact = async (contact: ContactWithActivity) => {
     try {
+      const updatedContacts = contacts.map(c =>
+        c.id === contact.id ? contact : c
+      );
+      setContacts(updatedContacts);
+      setSelectedContact(contact);
+
       const { error } = await supabase
         .from('contacts')
         .update({
@@ -1296,12 +1308,9 @@ function App() {
         .eq('id', contact.id);
 
       if (error) throw error;
-
-      setSelectedContact(contact);
-
-      await loadContacts();
     } catch (error) {
       console.error('Error updating contact:', error);
+      await loadContacts();
     }
   };
 
