@@ -150,15 +150,19 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
       if (reasonType === 'jammed') {
         setCustomJammedReasons([...customJammedReasons, data]);
         setJammedReason(data.reason);
+        setStatusNoteValue(data.reason);
       } else if (reasonType === 'traction') {
         setCustomTractionReasons([...customTractionReasons, data]);
         setTractionReason(data.reason);
+        setStatusNoteValue(data.reason);
       } else if (reasonType === 'client') {
         setCustomClientReasons([...customClientReasons, data]);
         setClientReason(data.reason);
+        setStatusNoteValue(data.reason);
       } else {
         setCustomDeadReasons([...customDeadReasons, data]);
         setDeadReason(data.reason);
+        setStatusNoteValue(data.reason);
       }
       setNewReasonText('');
       setIsAddingNewReason(false);
