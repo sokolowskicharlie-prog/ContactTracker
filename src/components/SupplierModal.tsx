@@ -10,7 +10,7 @@ interface SupplierModalProps {
 }
 
 const SUPPLIER_TYPES = [
-  'Fuel Supplier',
+  'Supplier',
   'Provisions',
   'Ship Supplies',
   'Spare Parts',
