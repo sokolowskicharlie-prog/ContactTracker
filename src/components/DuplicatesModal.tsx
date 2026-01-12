@@ -91,6 +91,37 @@ export default function DuplicatesModal({ contacts, onClose, onDelete }: Duplica
     }
   };
 
+  const handleDeleteAllOldest = async () => {
+    const totalToDelete = duplicateGroups.length;
+    const idsToDelete = duplicateGroups.map(group => group.contacts[group.contacts.length - 1].id);
+
+    if (!confirm(`Are you sure you want to delete ${totalToDelete} OLDEST duplicates? This will keep the newest contact for each duplicate name.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .in('id', idsToDelete);
+
+      if (error) {
+        console.error('Error deleting contacts:', error);
+        alert(`Error deleting duplicates: ${error.message}`);
+        return;
+      }
+
+      alert(`Successfully deleted ${totalToDelete} oldest duplicate(s)`);
+      onClose();
+    } catch (error) {
+      console.error('Error deleting oldest duplicates:', error);
+      alert('An error occurred while deleting duplicates. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -133,7 +164,7 @@ export default function DuplicatesModal({ contacts, onClose, onDelete }: Duplica
                 <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-yellow-800">
                   <p className="font-medium mb-1">Review duplicates carefully</p>
-                  <p>Contacts are sorted with the newest first. Keep the most relevant contact and delete the duplicates.</p>
+                  <p>Contacts are sorted with the newest first. You can delete duplicates individually, or use the bulk actions below to delete all oldest or all newest duplicates at once.</p>
                 </div>
               </div>
 
@@ -164,6 +195,11 @@ export default function DuplicatesModal({ contacts, onClose, onDelete }: Duplica
                               {index === 0 && (
                                 <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
                                   Newest
+                                </span>
+                              )}
+                              {index === group.contacts.length - 1 && group.contacts.length > 1 && (
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                                  Oldest
                                 </span>
                               )}
                               <span className="text-sm text-gray-500">
@@ -232,14 +268,24 @@ export default function DuplicatesModal({ contacts, onClose, onDelete }: Duplica
         <div className="border-t border-gray-200 px-6 py-4">
           <div className="flex gap-3">
             {duplicateGroups.length > 0 && (
-              <button
-                onClick={handleDeleteAllNewest}
-                disabled={isDeleting}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                {isDeleting ? 'Deleting...' : 'Delete All Newest'}
-              </button>
+              <>
+                <button
+                  onClick={handleDeleteAllOldest}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {isDeleting ? 'Deleting...' : 'Delete All Oldest'}
+                </button>
+                <button
+                  onClick={handleDeleteAllNewest}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {isDeleting ? 'Deleting...' : 'Delete All Newest'}
+                </button>
+              </>
             )}
             <button
               onClick={onClose}
