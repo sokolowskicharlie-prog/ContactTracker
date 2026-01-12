@@ -19,9 +19,6 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [selectedPort, setSelectedPort] = useState<string | null>(null);
   const [hoveredPort, setHoveredPort] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggingPort, setDraggingPort] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -179,27 +176,6 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const handleResetView = () => {
     if (isZoomLocked) return;
     setZoom(1);
-    setPan({ x: 0, y: 0 });
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 0 && !isEditMode) {
-      setIsPanning(true);
-      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isPanning) {
-      setPan({
-        x: e.clientX - panStart.x,
-        y: e.clientY - panStart.y,
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsPanning(false);
   };
 
   const handleWheel = (e: React.WheelEvent) => {
@@ -220,8 +196,10 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     if (draggingPort && svgRef.current) {
       const svg = svgRef.current;
       const rect = svg.getBoundingClientRect();
-      const svgX = ((e.clientX - rect.left - pan.x) / zoom) / (rect.width / 800);
-      const svgY = ((e.clientY - rect.top - pan.y) / zoom) / (rect.height / 1000);
+      const centerOffsetX = (rect.width - rect.width * zoom) / 2;
+      const centerOffsetY = (rect.height - rect.height * zoom) / 2;
+      const svgX = ((e.clientX - rect.left - centerOffsetX) / zoom) / (rect.width / 800);
+      const svgY = ((e.clientY - rect.top - centerOffsetY) / zoom) / (rect.height / 1000);
 
       const { lat, lng } = svgToLatLng(svgX, svgY);
 
@@ -267,9 +245,9 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
         className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col transition-all duration-300"
         style={{ width: `${mapWidth}%`, maxHeight: '100%' }}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 flex-shrink-0">
-          <div className="flex items-center gap-4">
-            <h3 className="text-lg font-semibold text-gray-900">UK Ports Map</h3>
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 flex-shrink-0 flex-wrap gap-3">
+          <div className="flex items-center gap-4 flex-wrap">
+            <h3 className="text-lg font-semibold text-gray-900 whitespace-nowrap">UK Ports Map</h3>
             <div className="flex items-center gap-2">
               <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
                 {[40, 50, 60, 70, 80].map((width) => (
@@ -303,7 +281,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               />
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             {hasUnsavedChanges && isEditMode && (
               <button
                 onClick={savePortLocations}
@@ -378,20 +356,20 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 <ZoomIn className="w-4 h-4 text-gray-600" />
               </button>
             </div>
-            <div className="flex items-center gap-4 text-xs">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 text-xs flex-wrap">
+              <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-gray-300"></div>
-                <span className="text-gray-600">No suppliers</span>
+                <span className="text-gray-600 whitespace-nowrap">No suppliers</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                 <span className="text-gray-600">1-2</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-orange-500"></div>
                 <span className="text-gray-600">3-5</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
                 <span className="text-gray-600">6+</span>
               </div>
@@ -408,12 +386,12 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               maxWidth: 'calc(100% - 2rem)',
               maxHeight: 'calc(100% - 2rem)',
               aspectRatio: '0.8',
-              cursor: draggingPort ? 'grabbing' : isPanning ? 'grabbing' : isEditMode ? 'default' : 'grab'
+              cursor: draggingPort ? 'grabbing' : isEditMode ? 'default' : 'default'
             }}
           >
             {isEditMode && (
-              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-10 text-sm font-medium">
-                Edit Mode: Drag ports to reposition them
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-10 text-sm font-medium max-w-xs text-center">
+                Edit Mode: Drag ports to reposition
               </div>
             )}
             <svg
@@ -421,22 +399,13 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               viewBox="0 0 800 1000"
               className="w-full h-full"
               preserveAspectRatio="xMidYMid meet"
-            onMouseDown={handleMouseDown}
-            onMouseMove={(e) => {
-              handleMouseMove(e);
-              handlePortDrag(e);
-            }}
-            onMouseUp={() => {
-              handleMouseUp();
-              handlePortMouseUp();
-            }}
-            onMouseLeave={() => {
-              handleMouseUp();
-              handlePortMouseUp();
-            }}
-            onWheel={handleWheel}
-          >
-            <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+              onMouseMove={handlePortDrag}
+              onMouseUp={handlePortMouseUp}
+              onMouseLeave={handlePortMouseUp}
+              onWheel={handleWheel}
+              style={{ transformOrigin: 'center center' }}
+            >
+              <g transform={`translate(400, 500) scale(${zoom}) translate(-400, -500)`}>
               <image
                 href="/image copy copy.png"
                 x="0"
@@ -474,7 +443,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                         }
                       }}
                       onMouseDown={(e) => handlePortMouseDown(e, port.port_name)}
-                      onMouseEnter={() => !isPanning && !draggingPort && setHoveredPort(port.port_name)}
+                      onMouseEnter={() => !draggingPort && setHoveredPort(port.port_name)}
                       onMouseLeave={() => setHoveredPort(null)}
                     />
                     {(isHovered || isSelected) && (
@@ -517,8 +486,12 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                   Locked
                 </span>
               )}
-              <span>|</span>
-              <span>{isEditMode ? 'Drag ports to move them' : 'Drag to pan'}</span>
+              {isEditMode && (
+                <>
+                  <span>|</span>
+                  <span>Drag ports to reposition</span>
+                </>
+              )}
             </div>
           </div>
         </div>
