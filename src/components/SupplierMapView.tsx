@@ -98,10 +98,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
         });
       }
 
-      const existingPortNames = new Set(portLocations.map(p => p.port_name.toUpperCase()));
-      const availableToAdd = Array.from(portsSet)
-        .filter(port => !existingPortNames.has(port.toUpperCase()))
-        .sort();
+      const availableToAdd = Array.from(portsSet).sort();
 
       setAvailablePorts(availableToAdd);
     } catch (error) {
@@ -344,50 +341,71 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     }
 
     try {
-      const portsToInsert = selectedPortsToAdd.map((portName) => ({
-        port_name: portName.toUpperCase().trim(),
-        region_id: newPortRegion,
-        latitude: 60,
-        longitude: 1,
-      }));
+      const addedPorts: PortLocation[] = [];
+      const skippedPorts: string[] = [];
 
-      const { data, error } = await supabase
-        .from('uk_port_regions')
-        .insert(portsToInsert)
-        .select(`
-          id,
-          port_name,
-          latitude,
-          longitude,
-          region_id,
-          region:uk_regions(name)
-        `);
+      for (const portName of selectedPortsToAdd) {
+        const portToInsert = {
+          port_name: portName.toUpperCase().trim(),
+          region_id: newPortRegion,
+          latitude: 60,
+          longitude: 1,
+        };
 
-      if (error) throw error;
+        const { data, error } = await supabase
+          .from('uk_port_regions')
+          .insert([portToInsert])
+          .select(`
+            id,
+            port_name,
+            latitude,
+            longitude,
+            region_id,
+            region:uk_regions(name)
+          `)
+          .single();
 
-      if (data) {
-        const newPorts: PortLocation[] = data.map((port: any) => ({
-          id: port.id,
-          port_name: port.port_name,
-          latitude: parseFloat(port.latitude),
-          longitude: parseFloat(port.longitude),
-          region: port.region?.name || '',
-          region_id: port.region_id,
-        }));
-        setPortLocations([...portLocations, ...newPorts]);
-        setNewPortRegion('');
-        setSelectedPortsToAdd([]);
-        setShowAddPort(false);
-        loadAvailablePorts();
-        alert(`${selectedPortsToAdd.length} port(s) added successfully! Drag them to the correct positions and save.`);
+        if (error) {
+          if (error.code === '23505') {
+            skippedPorts.push(portName);
+          } else {
+            throw error;
+          }
+        } else if (data) {
+          addedPorts.push({
+            id: data.id,
+            port_name: data.port_name,
+            latitude: parseFloat(data.latitude),
+            longitude: parseFloat(data.longitude),
+            region: data.region?.name || '',
+            region_id: data.region_id,
+          });
+        }
+      }
+
+      if (addedPorts.length > 0) {
+        setPortLocations([...portLocations, ...addedPorts]);
+      }
+
+      setNewPortRegion('');
+      setSelectedPortsToAdd([]);
+      setShowAddPort(false);
+      loadAvailablePorts();
+
+      let message = '';
+      if (addedPorts.length > 0) {
+        message += `${addedPorts.length} port(s) added successfully! Drag them to the correct positions and save.`;
+      }
+      if (skippedPorts.length > 0) {
+        if (message) message += '\n\n';
+        message += `${skippedPorts.length} port(s) already exist on the map and were skipped: ${skippedPorts.join(', ')}`;
+      }
+      if (message) {
+        alert(message);
       }
     } catch (error: any) {
       console.error('Error adding port:', error);
-      if (error.code === '23505') {
-        alert('One or more ports already exist');
-      } else {
-        alert('Failed to add ports');
-      }
+      alert('Failed to add ports: ' + (error.message || 'Unknown error'));
     }
   };
 
@@ -938,7 +956,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                       Select Ports ({selectedPortsToAdd.length} selected)
                     </label>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      Only showing ports not yet on the map
+                      Ports already on the map will be skipped if selected
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -963,31 +981,39 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 <div className="border border-gray-300 rounded-lg max-h-60 overflow-y-auto">
                   {availablePorts.length === 0 ? (
                     <div className="text-sm text-gray-500 p-4 text-center space-y-1">
-                      <p className="font-medium">All ports already on map</p>
-                      <p className="text-xs">Only ports not yet on the map are shown here</p>
+                      <p className="font-medium">No ports found</p>
+                      <p className="text-xs">No ports are available from your supplier data</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-200">
-                      {availablePorts.map((port) => (
-                        <label
-                          key={port}
-                          className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedPortsToAdd.includes(port)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedPortsToAdd([...selectedPortsToAdd, port]);
-                              } else {
-                                setSelectedPortsToAdd(selectedPortsToAdd.filter((p) => p !== port));
-                              }
-                            }}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                          />
-                          <span className="text-sm text-gray-900">{port}</span>
-                        </label>
-                      ))}
+                      {availablePorts.map((port) => {
+                        const existsOnMap = portLocations.some(p => p.port_name.toUpperCase() === port.toUpperCase());
+                        return (
+                          <label
+                            key={port}
+                            className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedPortsToAdd.includes(port)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedPortsToAdd([...selectedPortsToAdd, port]);
+                                } else {
+                                  setSelectedPortsToAdd(selectedPortsToAdd.filter((p) => p !== port));
+                                }
+                              }}
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                            />
+                            <span className="text-sm text-gray-900 flex-1">{port}</span>
+                            {existsOnMap && (
+                              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                Already on map
+                              </span>
+                            )}
+                          </label>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
