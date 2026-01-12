@@ -398,6 +398,11 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
                 Tip: Add multiple ports at once by separating them with semicolons (;)
               </p>
             )}
+            {supplierPort?.region && (
+              <p className="text-xs text-gray-600 mt-1">
+                Region: <span className="font-medium">{supplierPort.region}</span>
+              </p>
+            )}
           </div>
 
           <div>

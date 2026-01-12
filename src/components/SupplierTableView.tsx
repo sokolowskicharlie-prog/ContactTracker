@@ -216,24 +216,29 @@ export default function SupplierTableView({
                             const hasTruck = port.has_truck || supplier.default_has_truck;
                             const hasExpipe = port.has_expipe || supplier.default_has_expipe;
                             return (
-                              <div key={port.id} className="flex items-center gap-1">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (onEditPort) {
-                                      onEditPort(port);
-                                    }
-                                  }}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-xs hover:bg-blue-100 transition-colors cursor-pointer"
-                                >
-                                  <MapPin className="w-3 h-3" />
-                                  {port.port_name}
-                                </button>
-                                <div className="flex gap-0.5">
-                                  {hasBarge && <Ship className="w-3 h-3 text-blue-600" title="Barge" />}
-                                  {hasTruck && <Truck className="w-3 h-3 text-green-600" title="Truck" />}
-                                  {hasExpipe && <Anchor className="w-3 h-3 text-orange-600" title="Ex-Pipe" />}
+                              <div key={port.id} className="flex flex-col gap-0.5">
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (onEditPort) {
+                                        onEditPort(port);
+                                      }
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-xs hover:bg-blue-100 transition-colors cursor-pointer"
+                                  >
+                                    <MapPin className="w-3 h-3" />
+                                    {port.port_name}
+                                  </button>
+                                  <div className="flex gap-0.5">
+                                    {hasBarge && <Ship className="w-3 h-3 text-blue-600" title="Barge" />}
+                                    {hasTruck && <Truck className="w-3 h-3 text-green-600" title="Truck" />}
+                                    {hasExpipe && <Anchor className="w-3 h-3 text-orange-600" title="Ex-Pipe" />}
+                                  </div>
                                 </div>
+                                {port.region && (
+                                  <span className="text-xs text-gray-500 ml-5">{port.region}</span>
+                                )}
                               </div>
                             );
                           })}

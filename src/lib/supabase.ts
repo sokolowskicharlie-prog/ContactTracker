@@ -206,6 +206,7 @@ export type SupplierPort = {
   has_vlsfo: boolean;
   has_lsmgo: boolean;
   notes?: string;
+  region?: string;
   created_at: string;
   updated_at: string;
   custom_fuel_types?: CustomFuelType[];

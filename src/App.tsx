@@ -1304,20 +1304,35 @@ function App() {
 
       if (supplierRegionsError) throw supplierRegionsError;
 
+      const { data: portRegionsData, error: portRegionsError } = await supabase
+        .from('uk_port_regions')
+        .select(`
+          port_name,
+          region:uk_regions(name)
+        `);
+
+      if (portRegionsError) throw portRegionsError;
+
       const suppliersWithOrders: SupplierWithOrders[] = (suppliersData || []).map((supplier) => {
         const supplierOrders = (ordersData || []).filter((order) => order.supplier_id === supplier.id);
         const supplierContacts = (contactsData || []).filter((contact) => contact.supplier_id === supplier.id);
-        const supplierPorts = (portsData || []).filter((port) => port.supplier_id === supplier.id).map((port) => ({
-          ...port,
-          custom_fuel_types: (portFuelTypesData || [])
-            .filter((pft: any) => pft.port_id === port.id)
-            .map((pft: any) => pft.fuel_type)
-            .filter(Boolean),
-          custom_delivery_methods: (portDeliveryMethodsData || [])
-            .filter((pdm: any) => pdm.port_id === port.id)
-            .map((pdm: any) => pdm.delivery_method)
-            .filter(Boolean),
-        }));
+        const supplierPorts = (portsData || []).filter((port) => port.supplier_id === supplier.id).map((port) => {
+          const portRegionData = (portRegionsData || []).find((pr: any) =>
+            pr.port_name.toLowerCase() === port.port_name.toLowerCase()
+          );
+          return {
+            ...port,
+            region: portRegionData?.region?.name,
+            custom_fuel_types: (portFuelTypesData || [])
+              .filter((pft: any) => pft.port_id === port.id)
+              .map((pft: any) => pft.fuel_type)
+              .filter(Boolean),
+            custom_delivery_methods: (portDeliveryMethodsData || [])
+              .filter((pdm: any) => pdm.port_id === port.id)
+              .map((pdm: any) => pdm.delivery_method)
+              .filter(Boolean),
+          };
+        });
         const supplierRegions = (supplierRegionsData || [])
           .filter((sr: any) => sr.supplier_id === supplier.id)
           .map((sr: any) => sr.region)

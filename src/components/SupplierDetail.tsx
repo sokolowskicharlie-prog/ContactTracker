@@ -355,9 +355,14 @@ export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAdd
                     className="bg-white border border-gray-200 rounded-lg p-4"
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Anchor className="w-5 h-5 text-blue-600" />
-                        <h4 className="font-semibold text-gray-900">{port.port_name}</h4>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <Anchor className="w-5 h-5 text-blue-600" />
+                          <h4 className="font-semibold text-gray-900">{port.port_name}</h4>
+                        </div>
+                        {port.region && (
+                          <span className="text-xs text-gray-500 ml-7">{port.region}</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1">
                         <button
