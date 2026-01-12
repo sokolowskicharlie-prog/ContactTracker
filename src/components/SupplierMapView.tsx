@@ -24,6 +24,9 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [mapWidth, setMapWidth] = useState(60);
   const [isZoomLocked, setIsZoomLocked] = useState(false);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isDraggingMap, setIsDraggingMap] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -164,22 +167,23 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   };
 
   const handleZoomIn = () => {
-    if (isZoomLocked) return;
+    if (!isZoomLocked) return;
     setZoom((prev) => Math.min(prev * 1.3, 5));
   };
 
   const handleZoomOut = () => {
-    if (isZoomLocked) return;
+    if (!isZoomLocked) return;
     setZoom((prev) => Math.max(prev / 1.3, 0.5));
   };
 
   const handleResetView = () => {
-    if (isZoomLocked) return;
+    if (!isZoomLocked) return;
     setZoom(1);
+    setPanOffset({ x: 0, y: 0 });
   };
 
   const handleWheel = (e: React.WheelEvent) => {
-    if (isZoomLocked) return;
+    if (!isZoomLocked) return;
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     setZoom((prev) => Math.max(0.5, Math.min(5, prev * delta)));
@@ -216,6 +220,26 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
 
   const handlePortMouseUp = () => {
     setDraggingPort(null);
+  };
+
+  const handleMapMouseDown = (e: React.MouseEvent) => {
+    if (isZoomLocked && !isEditMode && !draggingPort) {
+      setIsDraggingMap(true);
+      setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+    }
+  };
+
+  const handleMapMouseMove = (e: React.MouseEvent) => {
+    if (isDraggingMap) {
+      setPanOffset({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y,
+      });
+    }
+  };
+
+  const handleMapMouseUp = () => {
+    setIsDraggingMap(false);
   };
 
   const savePortLocations = async () => {
@@ -317,7 +341,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                     ? 'bg-blue-600 hover:bg-blue-700'
                     : 'hover:bg-white'
                 }`}
-                title={isZoomLocked ? 'Unlock Zoom' : 'Lock Zoom'}
+                title={isZoomLocked ? 'Disable Pan & Zoom' : 'Enable Pan & Zoom'}
               >
                 {isZoomLocked ? (
                   <Lock className="w-4 h-4 text-white" />
@@ -327,9 +351,9 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               </button>
               <button
                 onClick={handleZoomOut}
-                disabled={isZoomLocked}
+                disabled={!isZoomLocked}
                 className={`p-1.5 hover:bg-white rounded transition-colors ${
-                  isZoomLocked ? 'opacity-40 cursor-not-allowed' : ''
+                  !isZoomLocked ? 'opacity-40 cursor-not-allowed' : ''
                 }`}
                 title="Zoom Out"
               >
@@ -337,9 +361,9 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               </button>
               <button
                 onClick={handleResetView}
-                disabled={isZoomLocked}
+                disabled={!isZoomLocked}
                 className={`p-1.5 hover:bg-white rounded transition-colors ${
-                  isZoomLocked ? 'opacity-40 cursor-not-allowed' : ''
+                  !isZoomLocked ? 'opacity-40 cursor-not-allowed' : ''
                 }`}
                 title="Reset View"
               >
@@ -347,9 +371,9 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               </button>
               <button
                 onClick={handleZoomIn}
-                disabled={isZoomLocked}
+                disabled={!isZoomLocked}
                 className={`p-1.5 hover:bg-white rounded transition-colors ${
-                  isZoomLocked ? 'opacity-40 cursor-not-allowed' : ''
+                  !isZoomLocked ? 'opacity-40 cursor-not-allowed' : ''
                 }`}
                 title="Zoom In"
               >
@@ -386,7 +410,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               maxWidth: 'calc(100% - 2rem)',
               maxHeight: 'calc(100% - 2rem)',
               aspectRatio: '0.8',
-              cursor: draggingPort ? 'grabbing' : isEditMode ? 'default' : 'default'
+              cursor: draggingPort ? 'grabbing' : isDraggingMap ? 'grabbing' : isZoomLocked && !isEditMode ? 'grab' : isEditMode ? 'default' : 'default'
             }}
           >
             {isEditMode && (
@@ -399,13 +423,23 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               viewBox="0 0 800 1000"
               className="w-full h-full"
               preserveAspectRatio="xMidYMid meet"
-              onMouseMove={handlePortDrag}
-              onMouseUp={handlePortMouseUp}
-              onMouseLeave={handlePortMouseUp}
+              onMouseDown={handleMapMouseDown}
+              onMouseMove={(e) => {
+                handleMapMouseMove(e);
+                handlePortDrag(e);
+              }}
+              onMouseUp={() => {
+                handleMapMouseUp();
+                handlePortMouseUp();
+              }}
+              onMouseLeave={() => {
+                handleMapMouseUp();
+                handlePortMouseUp();
+              }}
               onWheel={handleWheel}
               style={{ transformOrigin: 'center center' }}
             >
-              <g transform={`translate(400, 500) scale(${zoom}) translate(-400, -500)`}>
+              <g transform={`translate(${400 + panOffset.x / zoom}, ${500 + panOffset.y / zoom}) scale(${zoom}) translate(-400, -500)`}>
               <image
                 href="/image copy copy.png"
                 x="0"
@@ -481,10 +515,13 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
             <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm text-xs text-gray-600 flex items-center gap-2">
               <span>Zoom: {(zoom * 100).toFixed(0)}%</span>
               {isZoomLocked && (
-                <span className="flex items-center gap-1 text-blue-600 font-medium">
-                  <Lock className="w-3 h-3" />
-                  Locked
-                </span>
+                <>
+                  <span>|</span>
+                  <span className="flex items-center gap-1 text-blue-600 font-medium">
+                    <Lock className="w-3 h-3" />
+                    Pan & Zoom Enabled
+                  </span>
+                </>
               )}
               {isEditMode && (
                 <>
