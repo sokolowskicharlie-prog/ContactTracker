@@ -2643,13 +2643,14 @@ function App() {
 
   const handleCopyAllEmails = () => {
     const emails = filteredContacts
+      .filter(c => !c.is_dead)
       .map(c => c.email)
       .filter(Boolean)
       .join('; ');
 
     if (emails) {
       navigator.clipboard.writeText(emails).then(() => {
-        alert(`Copied ${filteredContacts.filter(c => c.email).length} email addresses to clipboard!`);
+        alert(`Copied ${filteredContacts.filter(c => c.email && !c.is_dead).length} email addresses to clipboard!`);
       }).catch(() => {
         alert('Failed to copy emails. Please try again.');
       });
