@@ -83,6 +83,15 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
     performSearch(names);
   };
 
+  // Generic words to exclude from search
+  const EXCLUDED_WORDS = new Set([
+    'carriers', 'marine', 'holding', 'shipping', 'maritime', 'logistics',
+    'transport', 'services', 'international', 'global', 'trading', 'company',
+    'corporation', 'limited', 'group', 'agency', 'agencies', 'solutions',
+    'enterprises', 'industries', 'oil', 'gas', 'energy', 'bunker', 'fuel',
+    'supply', 'petroleum', 'ltd', 'inc', 'corp', 'llc', 'gmbh', 'sa', 'co'
+  ]);
+
   const performSearch = async (names: string[]) => {
     const results: SearchResult[] = [];
 
@@ -160,30 +169,36 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
         continue;
       }
 
-      // Non-domain search: Search in contacts first with true partial matching
+      // Non-domain search: Search in contacts first with whole word matching
       const foundContact = contacts.find(contact => {
         const contactName = contact.name?.toLowerCase() || '';
         const contactEmail = contact.email?.toLowerCase() || '';
         const contactCompany = contact.company?.toLowerCase() || '';
 
-        // Split search term into individual words for multi-word matching
-        const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
+        // Split search term into individual words and filter out excluded generic words
+        const searchWords = searchTerm
+          .split(/\s+/)
+          .filter(w => w.length > 0 && !EXCLUDED_WORDS.has(w));
 
-        // Helper function to check if any word in the field starts with the search word
-        const startsWithAnyWord = (field: string, searchWord: string) => {
+        // If all words were excluded, skip this search
+        if (searchWords.length === 0) {
+          return false;
+        }
+
+        // Helper function to check if any whole word in the field matches the search word exactly
+        const matchesWholeWord = (field: string, searchWord: string) => {
           if (!field) return false;
-          // Check if the entire field starts with the search word
-          if (field.startsWith(searchWord)) return true;
-          // Check if any word within the field starts with the search word
-          const fieldWords = field.split(/[\s\-_.@,;]+/); // Split on common separators
-          return fieldWords.some(fw => fw.startsWith(searchWord));
+          // Split field into words using common separators
+          const fieldWords = field.split(/[\s\-_.@,;]+/).map(w => w.toLowerCase());
+          // Check if any word exactly matches the search word
+          return fieldWords.some(fw => fw === searchWord);
         };
 
-        // Check if ANY of the search words match the beginning of words in any field
+        // Check if ANY of the search words match whole words in any field
         for (const searchWord of searchWords) {
-          if (startsWithAnyWord(contactName, searchWord) ||
-              startsWithAnyWord(contactEmail, searchWord) ||
-              startsWithAnyWord(contactCompany, searchWord)) {
+          if (matchesWholeWord(contactName, searchWord) ||
+              matchesWholeWord(contactEmail, searchWord) ||
+              matchesWholeWord(contactCompany, searchWord)) {
             return true;
           }
         }
@@ -201,65 +216,70 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
         continue;
       }
 
-      // If not found in contacts, search in suppliers with true partial matching
+      // If not found in contacts, search in suppliers with whole word matching
       try {
-        // Split search term into words for multi-word matching
-        const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
-        let candidateSuppliers: any[] = [];
+        // Split search term into words and filter out excluded generic words
+        const searchWords = searchTerm
+          .split(/\s+/)
+          .filter(w => w.length > 0 && !EXCLUDED_WORDS.has(w));
 
-        // Helper function to check if any word in the field starts with the search word
-        const startsWithAnyWord = (field: string, searchWord: string) => {
-          if (!field) return false;
-          const lowerField = field.toLowerCase();
-          // Check if the entire field starts with the search word
-          if (lowerField.startsWith(searchWord)) return true;
-          // Check if any word within the field starts with the search word
-          const fieldWords = lowerField.split(/[\s\-_.@,;]+/); // Split on common separators
-          return fieldWords.some(fw => fw.startsWith(searchWord));
-        };
+        // If all words were excluded, skip this search
+        if (searchWords.length > 0) {
+          let candidateSuppliers: any[] = [];
 
-        // Fetch potential matches from database (cast a wide net for efficiency)
-        for (const searchWord of searchWords) {
-          const { data } = await supabase
-            .from('suppliers')
-            .select('*')
-            .or(
-              `company_name.ilike.%${searchWord}%,contact_person.ilike.%${searchWord}%,email.ilike.%${searchWord}%,general_email.ilike.%${searchWord}%`
-            );
+          // Helper function to check if any whole word in the field matches the search word exactly
+          const matchesWholeWord = (field: string, searchWord: string) => {
+            if (!field) return false;
+            const lowerField = field.toLowerCase();
+            // Split field into words using common separators
+            const fieldWords = lowerField.split(/[\s\-_.@,;]+/);
+            // Check if any word exactly matches the search word
+            return fieldWords.some(fw => fw === searchWord);
+          };
 
-          if (data && data.length > 0) {
-            // Add unique suppliers (avoid duplicates)
-            data.forEach(supplier => {
-              if (!candidateSuppliers.find(s => s.id === supplier.id)) {
-                candidateSuppliers.push(supplier);
-              }
-            });
+          // Fetch potential matches from database (cast a wide net for efficiency)
+          for (const searchWord of searchWords) {
+            const { data } = await supabase
+              .from('suppliers')
+              .select('*')
+              .or(
+                `company_name.ilike.%${searchWord}%,contact_person.ilike.%${searchWord}%,email.ilike.%${searchWord}%,general_email.ilike.%${searchWord}%`
+              );
+
+            if (data && data.length > 0) {
+              // Add unique suppliers (avoid duplicates)
+              data.forEach(supplier => {
+                if (!candidateSuppliers.find(s => s.id === supplier.id)) {
+                  candidateSuppliers.push(supplier);
+                }
+              });
+            }
           }
-        }
 
-        // Filter to only include suppliers where words actually start with the search terms
-        const matchingSuppliers = candidateSuppliers.filter(supplier => {
-          const companyName = supplier.company_name?.toLowerCase() || '';
-          const contactPerson = supplier.contact_person?.toLowerCase() || '';
-          const email = supplier.email?.toLowerCase() || '';
-          const generalEmail = supplier.general_email?.toLowerCase() || '';
+          // Filter to only include suppliers where whole words match
+          const matchingSuppliers = candidateSuppliers.filter(supplier => {
+            const companyName = supplier.company_name?.toLowerCase() || '';
+            const contactPerson = supplier.contact_person?.toLowerCase() || '';
+            const email = supplier.email?.toLowerCase() || '';
+            const generalEmail = supplier.general_email?.toLowerCase() || '';
 
-          return searchWords.some(searchWord =>
-            startsWithAnyWord(companyName, searchWord) ||
-            startsWithAnyWord(contactPerson, searchWord) ||
-            startsWithAnyWord(email, searchWord) ||
-            startsWithAnyWord(generalEmail, searchWord)
-          );
-        });
-
-        if (matchingSuppliers.length > 0) {
-          results.push({
-            searchedName,
-            found: true,
-            type: 'supplier',
-            supplier: matchingSuppliers[0]
+            return searchWords.some(searchWord =>
+              matchesWholeWord(companyName, searchWord) ||
+              matchesWholeWord(contactPerson, searchWord) ||
+              matchesWholeWord(email, searchWord) ||
+              matchesWholeWord(generalEmail, searchWord)
+            );
           });
-          continue;
+
+          if (matchingSuppliers.length > 0) {
+            results.push({
+              searchedName,
+              found: true,
+              type: 'supplier',
+              supplier: matchingSuppliers[0]
+            });
+            continue;
+          }
         }
       } catch (error) {
         console.error('Error searching suppliers:', error);
@@ -602,8 +622,9 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                       <li>Upload an Excel file with names or emails in the first column</li>
                       <li>Or paste names/emails (one per line) in the text area below</li>
                       <li>Searches both Contacts and Suppliers databases</li>
-                      <li>Matches beginning of words only: "john" matches "Johnson" or "John Smith" but NOT "St. Johns"</li>
-                      <li>Multi-word searches find contacts where ANY word starts with the search terms</li>
+                      <li>Matches whole words only: "john" matches "John Smith" but NOT "Johnson" or "St. Johns"</li>
+                      <li>Generic words are automatically excluded: carriers, marine, holding, shipping, oil, gas, etc.</li>
+                      <li>Multi-word searches find contacts where ANY word matches exactly</li>
                       <li>When you enter a full email (e.g., ukbrokers@wfscorp.com), it automatically extracts and searches for ALL contacts and suppliers with that domain (@wfscorp.com)</li>
                       <li>Each matching contact or supplier is shown as a separate result</li>
                       <li>Export results to Excel when done</li>
