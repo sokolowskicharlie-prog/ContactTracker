@@ -1,4 +1,4 @@
-import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, CreditCard as Edit2, StickyNote, AlertTriangle } from 'lucide-react';
+import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, CreditCard as Edit2, StickyNote, AlertTriangle, Package } from 'lucide-react';
 import { ContactWithActivity, Vessel, FuelDeal, Call, Email, TaskWithRelated, CustomJammedReason, supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 
@@ -37,9 +37,10 @@ interface ContactDetailProps {
   onDeleteTask: (taskId: string) => void;
   onEditNote: (note: SavedNote) => void;
   onDeleteNote: (noteId: string) => void;
+  onConvertToSupplier: () => void;
 }
 
-export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, onEditContact, onLogCall, onLogEmail, onEditCall, onEditEmail, onDeleteCall, onDeleteEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask, onEditNote, onDeleteNote }: ContactDetailProps) {
+export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, onEditContact, onLogCall, onLogEmail, onEditCall, onEditEmail, onDeleteCall, onDeleteEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask, onEditNote, onDeleteNote, onConvertToSupplier }: ContactDetailProps) {
   const [expandedStatusNote, setExpandedStatusNote] = useState<'jammed' | 'client' | 'traction' | null>(null);
   const [isEditingStatusNote, setIsEditingStatusNote] = useState(false);
   const [statusNoteValue, setStatusNoteValue] = useState('');
@@ -311,6 +312,13 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                 title="Edit contact"
               >
                 <Edit2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={onConvertToSupplier}
+                className="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
+                title="Convert to supplier"
+              >
+                <Package className="w-4 h-4" />
               </button>
             </div>
             {/* Priority Rank */}

@@ -1981,6 +1981,110 @@ function App() {
     }
   };
 
+  const handleConvertContactToSupplier = async () => {
+    if (!selectedContact || !user) return;
+
+    try {
+      const address = [
+        selectedContact.city,
+        selectedContact.post_code
+      ].filter(Boolean).join(', ');
+
+      const supplierData: Partial<Supplier> = {
+        company_name: selectedContact.company || selectedContact.name,
+        contact_person: selectedContact.name,
+        email: selectedContact.email || undefined,
+        phone: selectedContact.phone || undefined,
+        website: selectedContact.website || undefined,
+        address: address || undefined,
+        country: selectedContact.country || undefined,
+        notes: selectedContact.notes || undefined,
+      };
+
+      const { data: newSupplier, error } = await supabase
+        .from('suppliers')
+        .insert([{
+          user_id: user.id,
+          workspace_id: currentWorkspace?.id,
+          ...supplierData
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const supplierWithOrders: SupplierWithOrders = {
+        ...newSupplier,
+        supplier_orders: []
+      };
+
+      setShowContactDetail(false);
+      setSelectedContact(undefined);
+      setCurrentPage('suppliers');
+
+      await loadSuppliers();
+
+      setSelectedSupplier(supplierWithOrders);
+      setShowSupplierDetail(true);
+    } catch (error) {
+      console.error('Error converting contact to supplier:', error);
+    }
+  };
+
+  const handleConvertSupplierToContact = async () => {
+    if (!selectedSupplier || !user) return;
+
+    try {
+      const contactData: Partial<Contact> = {
+        name: selectedSupplier.contact_person || selectedSupplier.company_name,
+        company: selectedSupplier.company_name,
+        email: selectedSupplier.email || undefined,
+        phone: selectedSupplier.phone || undefined,
+        website: selectedSupplier.website || undefined,
+        country: selectedSupplier.country || undefined,
+        notes: selectedSupplier.notes || undefined,
+      };
+
+      const { data: newContact, error } = await supabase
+        .from('contacts')
+        .insert([{
+          user_id: user.id,
+          workspace_id: currentWorkspace?.id,
+          ...contactData
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const contactWithActivity: ContactWithActivity = {
+        ...newContact,
+        calls: [],
+        emails: [],
+        contact_persons: [],
+        vessels: [],
+        fuel_deals: [],
+        tasks: [],
+        total_calls: 0,
+        total_emails: 0,
+        total_deals: 0,
+        total_tasks: 0,
+        pending_tasks: 0,
+      };
+
+      setShowSupplierDetail(false);
+      setSelectedSupplier(undefined);
+      setCurrentPage('contacts');
+
+      await loadContacts();
+
+      setSelectedContact(contactWithActivity);
+      setShowContactDetail(true);
+    } catch (error) {
+      console.error('Error converting supplier to contact:', error);
+    }
+  };
+
   const handleSupplierClick = (supplier: SupplierWithOrders) => {
     setSelectedSupplier(supplier);
     setShowSupplierDetail(true);
@@ -3999,6 +4103,7 @@ function App() {
           onDeleteTask={handleDeleteTask}
           onEditNote={handleEditSavedNote}
           onDeleteNote={handleDeleteSavedNote}
+          onConvertToSupplier={handleConvertContactToSupplier}
         />
       )}
 
@@ -4133,6 +4238,7 @@ function App() {
           onToggleTaskComplete={handleToggleTaskComplete}
           onEditTask={handleEditTask}
           onDeleteTask={handleDeleteTask}
+          onConvertToContact={handleConvertSupplierToContact}
         />
       )}
 

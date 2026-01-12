@@ -1,4 +1,4 @@
-import { X, Building2, User, Mail, Phone, Globe, MapPin, Package, DollarSign, FileText, Star, Plus, Edit, Trash2, Calendar, Truck, Hash, Anchor, Smartphone, Briefcase, MessageCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, Ship, Fuel, Copy } from 'lucide-react';
+import { X, Building2, User, Mail, Phone, Globe, MapPin, Package, DollarSign, FileText, Star, Plus, Edit, Trash2, Calendar, Truck, Hash, Anchor, Smartphone, Briefcase, MessageCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, Ship, Fuel, Copy, Users } from 'lucide-react';
 import { SupplierWithOrders, SupplierOrder, SupplierContact, SupplierPort, TaskWithRelated } from '../lib/supabase';
 
 interface SupplierDetailProps {
@@ -20,9 +20,10 @@ interface SupplierDetailProps {
   onToggleTaskComplete: (taskId: string, completed: boolean) => void;
   onEditTask: (task: TaskWithRelated) => void;
   onDeleteTask: (taskId: string) => void;
+  onConvertToContact: () => void;
 }
 
-export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAddOrder, onEditOrder, onDeleteOrder, onAddContact, onEditContact, onDeleteContact, onAddPort, onEditPort, onDeletePort, onCheckPortDuplicates, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask }: SupplierDetailProps) {
+export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAddOrder, onEditOrder, onDeleteOrder, onAddContact, onEditContact, onDeleteContact, onAddPort, onEditPort, onDeletePort, onCheckPortDuplicates, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask, onConvertToContact }: SupplierDetailProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -137,6 +138,13 @@ export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAdd
               title="Edit supplier details"
             >
               <Edit className="w-5 h-5" />
+            </button>
+            <button
+              onClick={onConvertToContact}
+              className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+              title="Convert to contact"
+            >
+              <Users className="w-5 h-5" />
             </button>
             <button
               onClick={onClose}
