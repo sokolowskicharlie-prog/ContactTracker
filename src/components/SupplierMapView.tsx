@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapPin, Ship, Truck, Anchor, X, Building2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { MapPin, Ship, Truck, Anchor, X, Building2, ZoomIn, ZoomOut, Maximize2, Edit3, Save } from 'lucide-react';
 import { supabase, SupplierWithOrders } from '../lib/supabase';
 
 interface PortLocation {
@@ -22,6 +22,9 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [draggingPort, setDraggingPort] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -79,6 +82,21 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     return { x, y };
   };
 
+  const svgToLatLng = (x: number, y: number) => {
+    const minLat = 49.5;
+    const maxLat = 61;
+    const minLng = -8;
+    const maxLng = 2;
+
+    const mapWidth = 800;
+    const mapHeight = 1000;
+
+    const lng = (x / mapWidth) * (maxLng - minLng) + minLng;
+    const lat = ((mapHeight - y) / mapHeight) * (maxLat - minLat) + minLat;
+
+    return { lat, lng };
+  };
+
   const getPortColor = (portName: string) => {
     const supplierCount = getSuppliersForPort(portName).length;
     if (supplierCount === 0) return '#D1D5DB';
@@ -101,7 +119,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 0) {
+    if (e.button === 0 && !isEditMode) {
       setIsPanning(true);
       setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
     }
@@ -126,12 +144,91 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     setZoom((prev) => Math.max(0.5, Math.min(5, prev * delta)));
   };
 
+  const handlePortMouseDown = (e: React.MouseEvent, portName: string) => {
+    if (isEditMode) {
+      e.stopPropagation();
+      setDraggingPort(portName);
+    }
+  };
+
+  const handlePortDrag = (e: React.MouseEvent) => {
+    if (draggingPort && svgRef.current) {
+      const svg = svgRef.current;
+      const rect = svg.getBoundingClientRect();
+      const svgX = ((e.clientX - rect.left - pan.x) / zoom) / (rect.width / 800);
+      const svgY = ((e.clientY - rect.top - pan.y) / zoom) / (rect.height / 1000);
+
+      const { lat, lng } = svgToLatLng(svgX, svgY);
+
+      setPortLocations((prev) =>
+        prev.map((port) =>
+          port.port_name === draggingPort
+            ? { ...port, latitude: lat, longitude: lng }
+            : port
+        )
+      );
+      setHasUnsavedChanges(true);
+    }
+  };
+
+  const handlePortMouseUp = () => {
+    setDraggingPort(null);
+  };
+
+  const savePortLocations = async () => {
+    try {
+      for (const port of portLocations) {
+        const { error } = await supabase
+          .from('uk_port_regions')
+          .update({
+            latitude: port.latitude,
+            longitude: port.longitude,
+          })
+          .eq('port_name', port.port_name);
+
+        if (error) throw error;
+      }
+      setHasUnsavedChanges(false);
+      alert('Port locations saved successfully!');
+    } catch (error) {
+      console.error('Error saving port locations:', error);
+      alert('Failed to save port locations');
+    }
+  };
+
   return (
     <div className="flex gap-4 h-full">
       <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-4 overflow-hidden flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">UK Ports Map</h3>
           <div className="flex items-center gap-4">
+            {hasUnsavedChanges && isEditMode && (
+              <button
+                onClick={savePortLocations}
+                className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                <Save className="w-4 h-4" />
+                Save Changes
+              </button>
+            )}
+            <button
+              onClick={() => {
+                if (hasUnsavedChanges && !confirm('You have unsaved changes. Discard them?')) {
+                  return;
+                }
+                setIsEditMode(!isEditMode);
+                setHasUnsavedChanges(false);
+                loadPortLocations();
+              }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium ${
+                isEditMode
+                  ? 'bg-red-100 hover:bg-red-200 text-red-700'
+                  : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+              }`}
+            >
+              <Edit3 className="w-4 h-4" />
+              {isEditMode ? 'Exit Edit Mode' : 'Edit Mode'}
+            </button>
             <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
               <button
                 onClick={handleZoomOut}
@@ -178,16 +275,32 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
 
         <div
           className="relative flex-1 overflow-hidden bg-white rounded-lg"
-          style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
+          style={{
+            cursor: draggingPort ? 'grabbing' : isPanning ? 'grabbing' : isEditMode ? 'default' : 'grab'
+          }}
         >
+          {isEditMode && (
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-10 text-sm font-medium">
+              Edit Mode: Drag ports to reposition them
+            </div>
+          )}
           <svg
             ref={svgRef}
             viewBox="0 0 800 1000"
             className="w-full h-full"
             onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            onMouseMove={(e) => {
+              handleMouseMove(e);
+              handlePortDrag(e);
+            }}
+            onMouseUp={() => {
+              handleMouseUp();
+              handlePortMouseUp();
+            }}
+            onMouseLeave={() => {
+              handleMouseUp();
+              handlePortMouseUp();
+            }}
             onWheel={handleWheel}
           >
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
@@ -205,6 +318,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 const supplierCount = getSuppliersForPort(port.port_name).length;
                 const isSelected = selectedPort === port.port_name;
                 const isHovered = hoveredPort === port.port_name;
+                const isDragging = draggingPort === port.port_name;
                 const color = getPortColor(port.port_name);
                 const radiusScale = 1 / zoom;
 
@@ -213,16 +327,21 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                     <circle
                       cx={x}
                       cy={y}
-                      r={(isSelected ? 12 : isHovered ? 10 : 8) * radiusScale}
-                      fill={color}
-                      stroke="white"
+                      r={(isDragging ? 14 : isSelected ? 12 : isHovered ? 10 : 8) * radiusScale}
+                      fill={isEditMode && (isDragging || isHovered) ? '#3B82F6' : color}
+                      stroke={isEditMode ? '#1D4ED8' : 'white'}
                       strokeWidth={2 * radiusScale}
-                      className="cursor-pointer transition-all duration-200"
+                      className={`transition-all duration-200 ${
+                        isEditMode ? 'cursor-move' : 'cursor-pointer'
+                      }`}
                       onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedPort(isSelected ? null : port.port_name);
+                        if (!isEditMode) {
+                          e.stopPropagation();
+                          setSelectedPort(isSelected ? null : port.port_name);
+                        }
                       }}
-                      onMouseEnter={() => !isPanning && setHoveredPort(port.port_name)}
+                      onMouseDown={(e) => handlePortMouseDown(e, port.port_name)}
+                      onMouseEnter={() => !isPanning && !draggingPort && setHoveredPort(port.port_name)}
                       onMouseLeave={() => setHoveredPort(null)}
                     />
                     {(isHovered || isSelected) && (
@@ -258,7 +377,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
             </g>
           </svg>
           <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm text-xs text-gray-600">
-            Zoom: {(zoom * 100).toFixed(0)}% | Drag to pan
+            Zoom: {(zoom * 100).toFixed(0)}% | {isEditMode ? 'Drag ports to move them' : 'Drag to pan'}
           </div>
         </div>
       </div>
