@@ -478,7 +478,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               })}
             </g>
             </svg>
-            <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm text-xs text-gray-600 flex items-center gap-2">
+            <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm text-xs text-gray-600 flex items-center gap-2">
               <span>Zoom: {(zoom * 100).toFixed(0)}%</span>
               {isZoomLocked && (
                 <span className="flex items-center gap-1 text-blue-600 font-medium">
