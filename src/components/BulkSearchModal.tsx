@@ -1131,11 +1131,37 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                                 {result.type === 'contact' ? 'Contact' : 'Supplier'}
                               </span>
                             )}
-                            {result.matchedTerm && result.matchedField && (
-                              <span className="text-xs px-2 py-1 rounded-full font-medium bg-amber-100 text-amber-800 border border-amber-300">
-                                Matched: "{result.matchedTerm}" in {result.matchedField}
-                              </span>
-                            )}
+                            {result.matchedTerm && result.matchedField && (() => {
+                              const termLower = result.matchedTerm!.toLowerCase();
+                              const isExcluded = excludedMatchedTerms.has(termLower);
+                              const isPermanentlyExcluded = permanentExcludedTerms.some(t => t.toLowerCase() === termLower);
+
+                              return (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleExcludedTerm(result.matchedTerm!);
+                                  }}
+                                  className={`text-xs px-2 py-1 rounded-full font-medium border transition-colors cursor-pointer ${
+                                    isPermanentlyExcluded
+                                      ? 'bg-gray-400 text-white border-gray-500 cursor-not-allowed'
+                                      : isExcluded
+                                      ? 'bg-red-100 text-red-800 border-red-300 hover:bg-red-200'
+                                      : 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200 hover:border-amber-400'
+                                  }`}
+                                  title={
+                                    isPermanentlyExcluded
+                                      ? 'Permanently excluded (manage in settings)'
+                                      : isExcluded
+                                      ? 'Click to include this term'
+                                      : 'Click to exclude this term from results'
+                                  }
+                                  disabled={isPermanentlyExcluded}
+                                >
+                                  {isExcluded || isPermanentlyExcluded ? '✕ ' : ''}Matched: "{result.matchedTerm}" in {result.matchedField}
+                                </button>
+                              );
+                            })()}
                           </div>
                         </div>
                         {result.contact && (
