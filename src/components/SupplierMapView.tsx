@@ -25,11 +25,49 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggingPort, setDraggingPort] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [mapWidth, setMapWidth] = useState(60);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     loadPortLocations();
+    loadMapWidth();
   }, []);
+
+  const loadMapWidth = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('map_width')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data?.map_width) {
+        setMapWidth(data.map_width);
+      }
+    } catch (error) {
+      console.error('Error loading map width:', error);
+    }
+  };
+
+  const saveMapWidth = async (width: number) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({ map_width: width })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error saving map width:', error);
+    }
+  };
 
   const loadPortLocations = async () => {
     try {
@@ -198,9 +236,46 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
 
   return (
     <div className="flex gap-4 h-full">
-      <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-4 overflow-hidden flex flex-col">
+      <div
+        className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 overflow-hidden flex flex-col transition-all duration-300"
+        style={{ width: `${mapWidth}%` }}
+      >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">UK Ports Map</h3>
+          <div className="flex items-center gap-4">
+            <h3 className="text-lg font-semibold text-gray-900">UK Ports Map</h3>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                {[40, 50, 60, 70, 80].map((width) => (
+                  <button
+                    key={width}
+                    onClick={() => {
+                      setMapWidth(width);
+                      saveMapWidth(width);
+                    }}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      mapWidth === width
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-transparent text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {width}%
+                  </button>
+                ))}
+              </div>
+              <input
+                type="range"
+                min="30"
+                max="90"
+                value={mapWidth}
+                onChange={(e) => {
+                  const width = Number(e.target.value);
+                  setMapWidth(width);
+                  saveMapWidth(width);
+                }}
+                className="w-20 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              />
+            </div>
+          </div>
           <div className="flex items-center gap-4">
             {hasUnsavedChanges && isEditMode && (
               <button
@@ -383,7 +458,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
       </div>
 
       {selectedPort && (
-        <div className="w-96 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+        <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col min-w-0">
           <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
