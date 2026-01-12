@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapPin, Ship, Truck, Anchor, X, Building2, ZoomIn, ZoomOut, Maximize2, CreditCard as Edit3, Save, Lock, Unlock, Plus, Trash2, Download } from 'lucide-react';
+import { MapPin, Ship, Truck, Anchor, X, Building2, CreditCard as Edit3, Save, Plus, Trash2, Download } from 'lucide-react';
 import { supabase, SupplierWithOrders } from '../lib/supabase';
 
 interface Region {
@@ -82,25 +82,6 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
       if (error) throw error;
     } catch (error) {
       console.error('Error saving map width:', error);
-    }
-  };
-
-  const toggleZoomLock = async () => {
-    const newLockState = !isZoomLocked;
-    setIsZoomLocked(newLockState);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase
-        .from('user_preferences')
-        .update({ map_zoom_locked: newLockState })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error saving zoom lock:', error);
     }
   };
 
@@ -194,22 +175,6 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     if (supplierCount < 3) return '#3B82F6';
     if (supplierCount < 6) return '#F59E0B';
     return '#EF4444';
-  };
-
-  const handleZoomIn = () => {
-    if (!isZoomLocked) return;
-    setZoom((prev) => Math.min(prev * 1.3, 5));
-  };
-
-  const handleZoomOut = () => {
-    if (!isZoomLocked) return;
-    setZoom((prev) => Math.max(prev / 1.3, 0.5));
-  };
-
-  const handleResetView = () => {
-    if (!isZoomLocked) return;
-    setZoom(1);
-    setPanOffset({ x: 0, y: 0 });
   };
 
   const handleWheel = (e: React.WheelEvent) => {
@@ -575,53 +540,6 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               <Edit3 className="w-4 h-4" />
               {isEditMode ? 'Exit Edit Mode' : 'Edit Mode'}
             </button>
-            <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
-              <button
-                onClick={toggleZoomLock}
-                className={`p-1.5 rounded transition-colors ${
-                  isZoomLocked
-                    ? 'bg-blue-600 hover:bg-blue-700'
-                    : 'hover:bg-white'
-                }`}
-                title={isZoomLocked ? 'Disable Pan & Zoom' : 'Enable Pan & Zoom'}
-              >
-                {isZoomLocked ? (
-                  <Lock className="w-4 h-4 text-white" />
-                ) : (
-                  <Unlock className="w-4 h-4 text-gray-600" />
-                )}
-              </button>
-              <button
-                onClick={handleZoomOut}
-                disabled={!isZoomLocked}
-                className={`p-1.5 hover:bg-white rounded transition-colors ${
-                  !isZoomLocked ? 'opacity-40 cursor-not-allowed' : ''
-                }`}
-                title="Zoom Out"
-              >
-                <ZoomOut className="w-4 h-4 text-gray-600" />
-              </button>
-              <button
-                onClick={handleResetView}
-                disabled={!isZoomLocked}
-                className={`p-1.5 hover:bg-white rounded transition-colors ${
-                  !isZoomLocked ? 'opacity-40 cursor-not-allowed' : ''
-                }`}
-                title="Reset View"
-              >
-                <Maximize2 className="w-4 h-4 text-gray-600" />
-              </button>
-              <button
-                onClick={handleZoomIn}
-                disabled={!isZoomLocked}
-                className={`p-1.5 hover:bg-white rounded transition-colors ${
-                  !isZoomLocked ? 'opacity-40 cursor-not-allowed' : ''
-                }`}
-                title="Zoom In"
-              >
-                <ZoomIn className="w-4 h-4 text-gray-600" />
-              </button>
-            </div>
             <div className="flex items-center gap-3 text-xs flex-wrap">
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-gray-300"></div>
