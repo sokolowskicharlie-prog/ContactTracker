@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapPin, Ship, Truck, Anchor, X, Building2, ZoomIn, ZoomOut, Maximize2, Edit3, Save } from 'lucide-react';
+import { MapPin, Ship, Truck, Anchor, X, Building2, ZoomIn, ZoomOut, Maximize2, Edit3, Save, Lock, Unlock } from 'lucide-react';
 import { supabase, SupplierWithOrders } from '../lib/supabase';
 
 interface PortLocation {
@@ -26,6 +26,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [draggingPort, setDraggingPort] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [mapWidth, setMapWidth] = useState(60);
+  const [isZoomLocked, setIsZoomLocked] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -40,13 +41,16 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
 
       const { data, error } = await supabase
         .from('user_preferences')
-        .select('map_width')
+        .select('map_width, map_zoom_locked')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (error) throw error;
       if (data?.map_width) {
         setMapWidth(data.map_width);
+      }
+      if (data?.map_zoom_locked !== undefined) {
+        setIsZoomLocked(data.map_zoom_locked);
       }
     } catch (error) {
       console.error('Error loading map width:', error);
@@ -66,6 +70,25 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
       if (error) throw error;
     } catch (error) {
       console.error('Error saving map width:', error);
+    }
+  };
+
+  const toggleZoomLock = async () => {
+    const newLockState = !isZoomLocked;
+    setIsZoomLocked(newLockState);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({ map_zoom_locked: newLockState })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error saving zoom lock:', error);
     }
   };
 
@@ -144,14 +167,17 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   };
 
   const handleZoomIn = () => {
+    if (isZoomLocked) return;
     setZoom((prev) => Math.min(prev * 1.3, 5));
   };
 
   const handleZoomOut = () => {
+    if (isZoomLocked) return;
     setZoom((prev) => Math.max(prev / 1.3, 0.5));
   };
 
   const handleResetView = () => {
+    if (isZoomLocked) return;
     setZoom(1);
     setPan({ x: 0, y: 0 });
   };
@@ -177,6 +203,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   };
 
   const handleWheel = (e: React.WheelEvent) => {
+    if (isZoomLocked) return;
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     setZoom((prev) => Math.max(0.5, Math.min(5, prev * delta)));
@@ -306,22 +333,46 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
             </button>
             <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
               <button
+                onClick={toggleZoomLock}
+                className={`p-1.5 rounded transition-colors ${
+                  isZoomLocked
+                    ? 'bg-blue-600 hover:bg-blue-700'
+                    : 'hover:bg-white'
+                }`}
+                title={isZoomLocked ? 'Unlock Zoom' : 'Lock Zoom'}
+              >
+                {isZoomLocked ? (
+                  <Lock className="w-4 h-4 text-white" />
+                ) : (
+                  <Unlock className="w-4 h-4 text-gray-600" />
+                )}
+              </button>
+              <button
                 onClick={handleZoomOut}
-                className="p-1.5 hover:bg-white rounded transition-colors"
+                disabled={isZoomLocked}
+                className={`p-1.5 hover:bg-white rounded transition-colors ${
+                  isZoomLocked ? 'opacity-40 cursor-not-allowed' : ''
+                }`}
                 title="Zoom Out"
               >
                 <ZoomOut className="w-4 h-4 text-gray-600" />
               </button>
               <button
                 onClick={handleResetView}
-                className="p-1.5 hover:bg-white rounded transition-colors"
+                disabled={isZoomLocked}
+                className={`p-1.5 hover:bg-white rounded transition-colors ${
+                  isZoomLocked ? 'opacity-40 cursor-not-allowed' : ''
+                }`}
                 title="Reset View"
               >
                 <Maximize2 className="w-4 h-4 text-gray-600" />
               </button>
               <button
                 onClick={handleZoomIn}
-                className="p-1.5 hover:bg-white rounded transition-colors"
+                disabled={isZoomLocked}
+                className={`p-1.5 hover:bg-white rounded transition-colors ${
+                  isZoomLocked ? 'opacity-40 cursor-not-allowed' : ''
+                }`}
                 title="Zoom In"
               >
                 <ZoomIn className="w-4 h-4 text-gray-600" />
@@ -451,8 +502,16 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               })}
             </g>
           </svg>
-          <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm text-xs text-gray-600">
-            Zoom: {(zoom * 100).toFixed(0)}% | {isEditMode ? 'Drag ports to move them' : 'Drag to pan'}
+          <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm text-xs text-gray-600 flex items-center gap-2">
+            <span>Zoom: {(zoom * 100).toFixed(0)}%</span>
+            {isZoomLocked && (
+              <span className="flex items-center gap-1 text-blue-600 font-medium">
+                <Lock className="w-3 h-3" />
+                Locked
+              </span>
+            )}
+            <span>|</span>
+            <span>{isEditMode ? 'Drag ports to move them' : 'Drag to pan'}</span>
           </div>
         </div>
       </div>
