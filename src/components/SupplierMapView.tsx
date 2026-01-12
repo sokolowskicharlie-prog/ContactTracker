@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { MapPin, Ship, Truck, Anchor, X, Building2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { MapPin, Ship, Truck, Anchor, X, Building2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { supabase, SupplierWithOrders } from '../lib/supabase';
 
 interface PortLocation {
@@ -18,6 +18,11 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [portLocations, setPortLocations] = useState<PortLocation[]>([]);
   const [selectedPort, setSelectedPort] = useState<string | null>(null);
   const [hoveredPort, setHoveredPort] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     loadPortLocations();
@@ -82,96 +87,203 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     return '#EF4444';
   };
 
+  const getUKOutline = () => {
+    const coastline = [
+      [50.05, -5.71], [49.96, -6.20], [50.10, -5.50], [50.37, -4.75], [50.55, -4.20],
+      [50.68, -3.50], [50.80, -3.05], [50.82, -2.20], [50.96, -1.50], [51.13, -0.40],
+      [51.28, 0.50], [51.46, 1.10], [51.86, 1.30], [52.50, 1.75], [53.10, 1.20],
+      [53.45, 0.30], [53.75, -0.08], [54.00, -0.50], [54.45, -1.20], [54.99, -1.45],
+      [55.45, -1.60], [55.75, -2.00], [55.92, -3.20], [56.48, -3.00], [57.30, -2.10],
+      [57.65, -1.80], [58.20, -3.10], [58.60, -3.05], [58.63, -4.00], [58.44, -4.50],
+      [58.00, -5.10], [57.58, -5.80], [57.35, -6.28], [56.60, -6.25], [56.12, -5.70],
+      [55.31, -6.30], [55.00, -7.30], [54.98, -8.20], [54.42, -8.60], [54.20, -9.50],
+      [54.05, -10.00], [53.90, -9.80], [53.42, -9.60], [53.35, -8.80], [53.28, -7.80],
+      [53.26, -6.50], [53.20, -5.60], [53.26, -4.80], [53.38, -4.10], [53.25, -4.60],
+      [52.93, -4.50], [52.50, -4.70], [52.12, -4.90], [51.87, -5.35], [51.58, -5.10],
+      [51.20, -5.50], [50.68, -5.00], [50.35, -5.40], [50.05, -5.71]
+    ];
+
+    let pathData = '';
+    coastline.forEach((point, index) => {
+      const { x, y } = latLngToSVG(point[0], point[1]);
+      pathData += `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)},${y.toFixed(1)} `;
+    });
+    pathData += 'Z';
+    return pathData;
+  };
+
+  const handleZoomIn = () => {
+    setZoom((prev) => Math.min(prev * 1.3, 5));
+  };
+
+  const handleZoomOut = () => {
+    setZoom((prev) => Math.max(prev / 1.3, 0.5));
+  };
+
+  const handleResetView = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0) {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isPanning) {
+      setPan({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y,
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoom((prev) => Math.max(0.5, Math.min(5, prev * delta)));
+  };
+
   return (
     <div className="flex gap-4 h-full">
-      <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-4 overflow-hidden">
+      <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-4 overflow-hidden flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">UK Ports Map</h3>
-          <div className="flex items-center gap-4 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-gray-300"></div>
-              <span className="text-gray-600">No suppliers</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
+              <button
+                onClick={handleZoomOut}
+                className="p-1.5 hover:bg-white rounded transition-colors"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-4 h-4 text-gray-600" />
+              </button>
+              <button
+                onClick={handleResetView}
+                className="p-1.5 hover:bg-white rounded transition-colors"
+                title="Reset View"
+              >
+                <Maximize2 className="w-4 h-4 text-gray-600" />
+              </button>
+              <button
+                onClick={handleZoomIn}
+                className="p-1.5 hover:bg-white rounded transition-colors"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-4 h-4 text-gray-600" />
+              </button>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-              <span className="text-gray-600">1-2</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-              <span className="text-gray-600">3-5</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <span className="text-gray-600">6+</span>
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-gray-300"></div>
+                <span className="text-gray-600">No suppliers</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                <span className="text-gray-600">1-2</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                <span className="text-gray-600">3-5</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span className="text-gray-600">6+</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="relative w-full h-full overflow-auto">
+        <div
+          className="relative flex-1 overflow-hidden bg-gradient-to-b from-sky-100 to-blue-50 rounded-lg"
+          style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
+        >
           <svg
+            ref={svgRef}
             viewBox="0 0 800 1000"
-            className="w-full h-auto"
-            style={{ minHeight: '600px' }}
+            className="w-full h-full"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onWheel={handleWheel}
           >
-            <image
-              href="/image copy.png"
-              x="0"
-              y="0"
-              width="800"
-              height="1000"
-              preserveAspectRatio="xMidYMid slice"
-            />
+            <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+              <path
+                d={getUKOutline()}
+                fill="#E8F5E9"
+                stroke="#2E7D32"
+                strokeWidth="2"
+                className="transition-colors"
+              />
 
-            {portLocations.map((port) => {
-              const { x, y } = latLngToSVG(port.latitude, port.longitude);
-              const supplierCount = getSuppliersForPort(port.port_name).length;
-              const isSelected = selectedPort === port.port_name;
-              const isHovered = hoveredPort === port.port_name;
-              const color = getPortColor(port.port_name);
+              {portLocations.map((port) => {
+                const { x, y } = latLngToSVG(port.latitude, port.longitude);
+                const supplierCount = getSuppliersForPort(port.port_name).length;
+                const isSelected = selectedPort === port.port_name;
+                const isHovered = hoveredPort === port.port_name;
+                const color = getPortColor(port.port_name);
+                const radiusScale = 1 / zoom;
 
-              return (
-                <g key={port.port_name}>
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r={isSelected ? 12 : isHovered ? 10 : 8}
-                    fill={color}
-                    stroke="white"
-                    strokeWidth="2"
-                    className="cursor-pointer transition-all duration-200"
-                    onClick={() => setSelectedPort(isSelected ? null : port.port_name)}
-                    onMouseEnter={() => setHoveredPort(port.port_name)}
-                    onMouseLeave={() => setHoveredPort(null)}
-                  />
-                  {(isHovered || isSelected) && (
-                    <text
-                      x={x}
-                      y={y - 15}
-                      textAnchor="middle"
-                      className="text-xs font-semibold pointer-events-none"
-                      fill="#1F2937"
+                return (
+                  <g key={port.port_name}>
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r={(isSelected ? 12 : isHovered ? 10 : 8) * radiusScale}
+                      fill={color}
                       stroke="white"
-                      strokeWidth="3"
-                      paintOrder="stroke"
-                    >
-                      {port.port_name}
-                    </text>
-                  )}
-                  {supplierCount > 0 && (
-                    <text
-                      x={x}
-                      y={y + 5}
-                      textAnchor="middle"
-                      className="text-xs font-bold pointer-events-none"
-                      fill="white"
-                    >
-                      {supplierCount}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
+                      strokeWidth={2 * radiusScale}
+                      className="cursor-pointer transition-all duration-200"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedPort(isSelected ? null : port.port_name);
+                      }}
+                      onMouseEnter={() => !isPanning && setHoveredPort(port.port_name)}
+                      onMouseLeave={() => setHoveredPort(null)}
+                    />
+                    {(isHovered || isSelected) && (
+                      <text
+                        x={x}
+                        y={y - 15 * radiusScale}
+                        textAnchor="middle"
+                        fontSize={12 * radiusScale}
+                        className="font-semibold pointer-events-none"
+                        fill="#1F2937"
+                        stroke="white"
+                        strokeWidth={3 * radiusScale}
+                        paintOrder="stroke"
+                      >
+                        {port.port_name}
+                      </text>
+                    )}
+                    {supplierCount > 0 && (
+                      <text
+                        x={x}
+                        y={y + 5 * radiusScale}
+                        textAnchor="middle"
+                        fontSize={10 * radiusScale}
+                        className="font-bold pointer-events-none"
+                        fill="white"
+                      >
+                        {supplierCount}
+                      </text>
+                    )}
+                  </g>
+                );
+              })}
+            </g>
           </svg>
+          <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm text-xs text-gray-600">
+            Zoom: {(zoom * 100).toFixed(0)}% | Drag to pan
+          </div>
         </div>
       </div>
 
