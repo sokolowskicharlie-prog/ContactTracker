@@ -1291,6 +1291,15 @@ function App() {
 
       if (portDeliveryMethodsError) throw portDeliveryMethodsError;
 
+      const { data: supplierRegionsData, error: supplierRegionsError } = await supabase
+        .from('supplier_regions')
+        .select(`
+          supplier_id,
+          region:uk_regions(id, name, created_at)
+        `);
+
+      if (supplierRegionsError) throw supplierRegionsError;
+
       const suppliersWithOrders: SupplierWithOrders[] = (suppliersData || []).map((supplier) => {
         const supplierOrders = (ordersData || []).filter((order) => order.supplier_id === supplier.id);
         const supplierContacts = (contactsData || []).filter((contact) => contact.supplier_id === supplier.id);
@@ -1305,12 +1314,17 @@ function App() {
             .map((pdm: any) => pdm.delivery_method)
             .filter(Boolean),
         }));
+        const supplierRegions = (supplierRegionsData || [])
+          .filter((sr: any) => sr.supplier_id === supplier.id)
+          .map((sr: any) => sr.region)
+          .filter(Boolean);
 
         return {
           ...supplier,
           orders: supplierOrders,
           contacts: supplierContacts,
           ports_detailed: supplierPorts,
+          regions: supplierRegions,
           total_orders: supplierOrders.length,
           last_order_date: supplierOrders[0]?.order_date,
         };

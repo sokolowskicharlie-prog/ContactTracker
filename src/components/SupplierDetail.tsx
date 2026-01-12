@@ -217,6 +217,25 @@ export default function SupplierDetail({ supplier, tasks, onClose, onEdit, onAdd
                 </div>
               )}
 
+              {supplier.regions && supplier.regions.length > 0 && (
+                <div className="flex items-start text-gray-700">
+                  <MapPin className="w-5 h-5 mr-3 text-gray-400 mt-1" />
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">UK Regions</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {supplier.regions.map((region) => (
+                        <span
+                          key={region.id}
+                          className="inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full"
+                        >
+                          {region.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {supplier.address && (
                 <div className="flex items-start text-gray-700">
                   <MapPin className="w-5 h-5 mr-3 text-gray-400 mt-1" />

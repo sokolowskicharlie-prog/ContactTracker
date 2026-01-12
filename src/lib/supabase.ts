@@ -134,6 +134,12 @@ export type ContactWithActivity = Contact & {
   days_until_due?: number;
 };
 
+export type UKRegion = {
+  id: string;
+  name: string;
+  created_at: string;
+};
+
 export type Supplier = {
   id: string;
   company_name: string;
@@ -224,6 +230,7 @@ export type SupplierWithOrders = Supplier & {
   orders: SupplierOrder[];
   contacts: SupplierContact[];
   ports_detailed: SupplierPort[];
+  regions: UKRegion[];
   total_orders: number;
   last_order_date?: string;
 };

@@ -193,8 +193,20 @@ export default function SupplierTableView({
                           <span className="truncate">{supplier.country}</span>
                         </div>
                       )}
-                      {supplier.region && (
-                        <span className="text-xs text-gray-500 ml-4 truncate">{supplier.region}</span>
+                      {supplier.regions && supplier.regions.length > 0 && (
+                        <div className="flex flex-wrap gap-1 ml-4">
+                          {supplier.regions.slice(0, 3).map((region) => (
+                            <span
+                              key={region.id}
+                              className="inline-block px-1.5 py-0.5 bg-blue-50 text-blue-700 text-xs rounded"
+                            >
+                              {region.name}
+                            </span>
+                          ))}
+                          {supplier.regions.length > 3 && (
+                            <span className="text-xs text-gray-500">+{supplier.regions.length - 3}</span>
+                          )}
+                        </div>
                       )}
                     </div>
                   </td>
