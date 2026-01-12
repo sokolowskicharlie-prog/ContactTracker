@@ -160,7 +160,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
         continue;
       }
 
-      // Non-domain search: Search in contacts first with flexible matching
+      // Non-domain search: Search in contacts first with true partial matching
       const foundContact = contacts.find(contact => {
         const contactName = contact.name?.toLowerCase() || '';
         const contactEmail = contact.email?.toLowerCase() || '';
@@ -171,35 +171,21 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
 
         // Helper function to check if any word in the field starts with the search word
         const startsWithAnyWord = (field: string, searchWord: string) => {
-          const fieldWords = field.split(/\s+/);
+          if (!field) return false;
+          // Check if the entire field starts with the search word
+          if (field.startsWith(searchWord)) return true;
+          // Check if any word within the field starts with the search word
+          const fieldWords = field.split(/[\s\-_.@,;]+/); // Split on common separators
           return fieldWords.some(fw => fw.startsWith(searchWord));
         };
 
-        // Check for various types of matches
+        // Check if ANY of the search words match the beginning of words in any field
         for (const searchWord of searchWords) {
-          // Direct substring match (original behavior)
-          if (contactName.includes(searchWord) ||
-              contactEmail.includes(searchWord) ||
-              contactCompany.includes(searchWord)) {
-            return true;
-          }
-
-          // Beginning of word match (e.g., "john" matches "Johnson")
           if (startsWithAnyWord(contactName, searchWord) ||
               startsWithAnyWord(contactEmail, searchWord) ||
               startsWithAnyWord(contactCompany, searchWord)) {
             return true;
           }
-        }
-
-        // Reverse lookup: check if contact name is contained in search term
-        if (contactName && searchTerm.includes(contactName) && contactName.length > 2) {
-          return true;
-        }
-
-        // Exact email match
-        if (contactEmail && searchTerm === contactEmail) {
-          return true;
         }
 
         return false;
@@ -215,13 +201,24 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
         continue;
       }
 
-      // If not found in contacts, search in suppliers with flexible matching
+      // If not found in contacts, search in suppliers with true partial matching
       try {
         // Split search term into words for multi-word matching
         const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
-        let suppliers: any[] = [];
+        let candidateSuppliers: any[] = [];
 
-        // Search for each word in the search term
+        // Helper function to check if any word in the field starts with the search word
+        const startsWithAnyWord = (field: string, searchWord: string) => {
+          if (!field) return false;
+          const lowerField = field.toLowerCase();
+          // Check if the entire field starts with the search word
+          if (lowerField.startsWith(searchWord)) return true;
+          // Check if any word within the field starts with the search word
+          const fieldWords = lowerField.split(/[\s\-_.@,;]+/); // Split on common separators
+          return fieldWords.some(fw => fw.startsWith(searchWord));
+        };
+
+        // Fetch potential matches from database (cast a wide net for efficiency)
         for (const searchWord of searchWords) {
           const { data } = await supabase
             .from('suppliers')
@@ -233,19 +230,34 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
           if (data && data.length > 0) {
             // Add unique suppliers (avoid duplicates)
             data.forEach(supplier => {
-              if (!suppliers.find(s => s.id === supplier.id)) {
-                suppliers.push(supplier);
+              if (!candidateSuppliers.find(s => s.id === supplier.id)) {
+                candidateSuppliers.push(supplier);
               }
             });
           }
         }
 
-        if (suppliers.length > 0) {
+        // Filter to only include suppliers where words actually start with the search terms
+        const matchingSuppliers = candidateSuppliers.filter(supplier => {
+          const companyName = supplier.company_name?.toLowerCase() || '';
+          const contactPerson = supplier.contact_person?.toLowerCase() || '';
+          const email = supplier.email?.toLowerCase() || '';
+          const generalEmail = supplier.general_email?.toLowerCase() || '';
+
+          return searchWords.some(searchWord =>
+            startsWithAnyWord(companyName, searchWord) ||
+            startsWithAnyWord(contactPerson, searchWord) ||
+            startsWithAnyWord(email, searchWord) ||
+            startsWithAnyWord(generalEmail, searchWord)
+          );
+        });
+
+        if (matchingSuppliers.length > 0) {
           results.push({
             searchedName,
             found: true,
             type: 'supplier',
-            supplier: suppliers[0]
+            supplier: matchingSuppliers[0]
           });
           continue;
         }
@@ -590,8 +602,8 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                       <li>Upload an Excel file with names or emails in the first column</li>
                       <li>Or paste names/emails (one per line) in the text area below</li>
                       <li>Searches both Contacts and Suppliers databases</li>
-                      <li>Supports partial matching: searches match if they contain the search term or if any word begins with it (e.g., "john" matches "Johnson" or "John Smith")</li>
-                      <li>Multi-word searches find contacts containing ANY of the search terms</li>
+                      <li>Matches beginning of words only: "john" matches "Johnson" or "John Smith" but NOT "St. Johns"</li>
+                      <li>Multi-word searches find contacts where ANY word starts with the search terms</li>
                       <li>When you enter a full email (e.g., ukbrokers@wfscorp.com), it automatically extracts and searches for ALL contacts and suppliers with that domain (@wfscorp.com)</li>
                       <li>Each matching contact or supplier is shown as a separate result</li>
                       <li>Export results to Excel when done</li>
