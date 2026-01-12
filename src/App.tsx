@@ -1285,9 +1285,11 @@ function App() {
           traction_note: contact.traction_note,
           client_note: contact.client_note,
           jammed_note: contact.jammed_note,
+          dead_note: contact.dead_note,
           jammed_additional_note: contact.jammed_additional_note,
           traction_additional_note: contact.traction_additional_note,
           client_additional_note: contact.client_additional_note,
+          dead_additional_note: contact.dead_additional_note,
           priority_rank: contact.priority_rank,
           follow_up_date: contact.follow_up_date,
         })
