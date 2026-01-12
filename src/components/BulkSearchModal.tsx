@@ -986,7 +986,19 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                 <div className="flex items-center gap-2 mb-3">
                   <Filter className="w-4 h-4 text-gray-600" />
                   <h3 className="font-semibold text-gray-800">Filter Results</h3>
-                  <span className="ml-auto text-sm text-gray-600">
+                  <button
+                    onClick={() => setShowExclusionSettings(true)}
+                    className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Exclusion Settings
+                    {permanentExcludedTerms.length > 0 && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                        {permanentExcludedTerms.length}
+                      </span>
+                    )}
+                  </button>
+                  <span className="text-sm text-gray-600">
                     Showing: {getFilteredAndSortedResults().length} / {searchResults.length}
                   </span>
                 </div>
