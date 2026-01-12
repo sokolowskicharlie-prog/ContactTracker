@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapPin, Ship, Truck, Anchor, X, Building2, ZoomIn, ZoomOut, Maximize2, Edit3, Save, Lock, Unlock } from 'lucide-react';
+import { MapPin, Ship, Truck, Anchor, X, Building2, ZoomIn, ZoomOut, Maximize2, CreditCard as Edit3, Save, Lock, Unlock } from 'lucide-react';
 import { supabase, SupplierWithOrders } from '../lib/supabase';
 
 interface PortLocation {
