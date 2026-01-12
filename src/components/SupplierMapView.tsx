@@ -41,6 +41,8 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [selectedPortsToAdd, setSelectedPortsToAdd] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [minSuppliers, setMinSuppliers] = useState<number | null>(null);
+  const [maxSuppliers, setMaxSuppliers] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -266,6 +268,15 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     if (supplierCount < 6) return '#F59E0B';
     return '#EF4444';
   };
+
+  const meetsSupplierCountFilter = (portName: string) => {
+    const supplierCount = getSuppliersForPort(portName).length;
+    const meetsMin = minSuppliers === null || supplierCount >= minSuppliers;
+    const meetsMax = maxSuppliers === null || supplierCount <= maxSuppliers;
+    return meetsMin && meetsMax;
+  };
+
+  const hasActiveSupplierFilter = minSuppliers !== null || maxSuppliers !== null;
 
   const handleWheel = (e: React.WheelEvent) => {
     if (!isZoomLocked) return;
@@ -606,6 +617,43 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 </span>
               )}
             </div>
+            <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
+              <span className="text-xs text-gray-600 font-medium whitespace-nowrap">Suppliers:</span>
+              <input
+                type="number"
+                min="0"
+                value={minSuppliers ?? ''}
+                onChange={(e) => setMinSuppliers(e.target.value === '' ? null : parseInt(e.target.value))}
+                placeholder="Min"
+                className="w-16 px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <span className="text-gray-400">-</span>
+              <input
+                type="number"
+                min="0"
+                value={maxSuppliers ?? ''}
+                onChange={(e) => setMaxSuppliers(e.target.value === '' ? null : parseInt(e.target.value))}
+                placeholder="Max"
+                className="w-16 px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {hasActiveSupplierFilter && (
+                <>
+                  <span className="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded-lg whitespace-nowrap">
+                    {portLocations.filter(p => meetsSupplierCountFilter(p.port_name)).length} ports
+                  </span>
+                  <button
+                    onClick={() => {
+                      setMinSuppliers(null);
+                      setMaxSuppliers(null);
+                    }}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Clear supplier filter"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
                 {[40, 50, 60, 70, 80, 100].map((width) => (
@@ -768,7 +816,8 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 const isDragging = draggingPort === port.port_name;
                 const isSearchMatch = searchResults.includes(port.port_name);
                 const hasActiveSearch = searchTerm.trim() !== '';
-                const isGreyedOut = hasActiveSearch && !isSearchMatch;
+                const meetsSupplierFilter = meetsSupplierCountFilter(port.port_name);
+                const isGreyedOut = (hasActiveSearch && !isSearchMatch) || (hasActiveSupplierFilter && !meetsSupplierFilter);
                 const color = getPortColor(port.port_name);
                 const radiusScale = 1 / zoom;
 
