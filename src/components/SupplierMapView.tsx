@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapPin, Ship, Truck, Anchor, X, Building2, CreditCard as Edit3, Save, Plus, Trash2, Download, Lock, Search, Mail, Copy } from 'lucide-react';
 import { supabase, SupplierWithOrders } from '../lib/supabase';
+import * as XLSX from 'xlsx';
 
 interface Region {
   id: string;
@@ -686,6 +687,29 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     }
   };
 
+  const exportAllPorts = () => {
+    try {
+      const exportData = portLocations.map(port => {
+        const supplierCount = getPortSuppliers(port.port_name).length;
+        return {
+          'Port Name': port.port_name,
+          'Region': port.region,
+          'Latitude': port.latitude,
+          'Longitude': port.longitude,
+          'Supplier Count': supplierCount,
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Ports');
+      XLSX.writeFile(wb, `ports_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (error) {
+      console.error('Error exporting ports:', error);
+      alert('Failed to export ports');
+    }
+  };
+
   return (
     <div className="flex gap-4 h-full">
       <div
@@ -841,6 +865,13 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 Save Changes
               </button>
             )}
+            <button
+              onClick={exportAllPorts}
+              className="flex items-center gap-2 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors text-sm font-medium"
+            >
+              <Download className="w-4 h-4" />
+              Export All Ports
+            </button>
             {isEditMode && (
               <>
                 <button
