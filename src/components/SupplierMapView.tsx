@@ -74,33 +74,6 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     return { x, y };
   };
 
-  const getUKOutlinePath = () => {
-    const coastlinePoints = [
-      [50.05, -5.71], [49.95, -5.20], [50.10, -5.05], [50.37, -4.14],
-      [50.52, -3.53], [50.72, -2.46], [50.80, -1.99], [50.82, -1.09],
-      [50.96, -0.24], [51.13, 1.31], [51.38, 1.43], [52.48, 1.73],
-      [52.97, 1.30], [53.41, 0.43], [53.57, -0.08], [53.74, -0.34],
-      [54.00, -0.19], [54.61, -1.16], [55.01, -1.42], [55.46, -1.62],
-      [55.77, -2.04], [55.81, -2.78], [55.98, -3.18], [56.45, -2.97],
-      [57.36, -2.09], [57.65, -1.78], [57.70, -3.36], [58.21, -3.36],
-      [58.64, -3.07], [58.45, -4.22], [58.18, -5.09], [57.60, -5.65],
-      [57.35, -6.22], [56.62, -6.15], [56.13, -5.64], [55.31, -6.23],
-      [55.01, -7.32], [54.99, -8.18], [54.42, -8.24], [54.20, -8.57],
-      [53.42, -7.63], [53.33, -6.26], [53.26, -4.63], [53.41, -4.08],
-      [53.17, -4.65], [52.93, -4.09], [52.12, -4.65], [51.87, -5.30],
-      [51.58, -5.04], [50.99, -5.54], [50.67, -4.54], [50.05, -5.71]
-    ];
-
-    let pathData = '';
-    coastlinePoints.forEach((point, index) => {
-      const { x, y } = latLngToSVG(point[0], point[1]);
-      pathData += `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)} `;
-    });
-    pathData += 'Z';
-
-    return pathData;
-  };
-
   const getPortColor = (portName: string) => {
     const supplierCount = getSuppliersForPort(portName).length;
     if (supplierCount === 0) return '#D1D5DB';
@@ -140,13 +113,13 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
             className="w-full h-auto"
             style={{ minHeight: '600px' }}
           >
-            <rect width="800" height="1000" fill="#E0F2FE" />
-
-            <path
-              d={getUKOutlinePath()}
-              fill="#D4E8D4"
-              stroke="#5A8A5A"
-              strokeWidth="2"
+            <image
+              href="/image copy.png"
+              x="0"
+              y="0"
+              width="800"
+              height="1000"
+              preserveAspectRatio="xMidYMid slice"
             />
 
             {portLocations.map((port) => {
