@@ -275,7 +275,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
         // Split search term into individual words and filter out excluded generic words
         const searchWords = searchTerm
           .split(/\s+/)
-          .filter(w => w.length > 0 && !EXCLUDED_WORDS.has(w));
+          .filter(w => w.length > 0 && !EXCLUDED_WORDS.has(w) && !permanentExcludedTerms.includes(w));
 
         // If all words were excluded, skip this search
         if (searchWords.length === 0) {
@@ -337,7 +337,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
         // Split search term into words and filter out excluded generic words
         const searchWords = searchTerm
           .split(/\s+/)
-          .filter(w => w.length > 0 && !EXCLUDED_WORDS.has(w));
+          .filter(w => w.length > 0 && !EXCLUDED_WORDS.has(w) && !permanentExcludedTerms.includes(w));
 
         // If all words were excluded, skip this search
         if (searchWords.length > 0) {
@@ -575,13 +575,6 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
       filtered = filtered.filter(result => {
         if (!result.matchedTerm) return true;
         return !excludedMatchedTerms.has(result.matchedTerm.toLowerCase());
-      });
-    }
-
-    if (permanentExcludedTerms.length > 0) {
-      filtered = filtered.filter(result => {
-        if (!result.matchedTerm) return true;
-        return !permanentExcludedTerms.includes(result.matchedTerm.toLowerCase());
       });
     }
 
