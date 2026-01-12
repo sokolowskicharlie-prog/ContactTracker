@@ -399,13 +399,15 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-4 min-h-0">
+        <div className="flex-1 p-4 min-h-0 flex items-center justify-center">
           <div
-            className="relative bg-white rounded-lg mx-auto"
+            className="relative bg-white rounded-lg"
             style={{
               width: '100%',
+              height: '100%',
+              maxWidth: 'calc(100% - 2rem)',
+              maxHeight: 'calc(100% - 2rem)',
               aspectRatio: '0.8',
-              maxHeight: '100%',
               cursor: draggingPort ? 'grabbing' : isPanning ? 'grabbing' : isEditMode ? 'default' : 'grab'
             }}
           >
