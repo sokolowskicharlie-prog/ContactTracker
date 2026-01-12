@@ -436,10 +436,6 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   };
 
   const handleImportAllPorts = async () => {
-    if (!confirm('This will add all ports from your suppliers to the map. Continue?')) {
-      return;
-    }
-
     try {
       // Get all unique port names from supplier_ports
       const { data: supplierPorts, error: fetchError } = await supabase
@@ -464,6 +460,10 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
 
       if (newPortNames.length === 0) {
         alert('All ports are already on the map!');
+        return;
+      }
+
+      if (!confirm(`This will add ${newPortNames.length} new port${newPortNames.length !== 1 ? 's' : ''} to the map (ports already on the map will be skipped). Continue?`)) {
         return;
       }
 
@@ -611,7 +611,10 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                   Import All Ports
                 </button>
                 <button
-                  onClick={() => setShowAddPort(true)}
+                  onClick={() => {
+                    loadAvailablePorts();
+                    setShowAddPort(true);
+                  }}
                   className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
                 >
                   <Plus className="w-4 h-4" />
@@ -928,9 +931,14 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
             <div className="p-6 space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Select Ports ({selectedPortsToAdd.length} selected)
-                  </label>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Select Ports ({selectedPortsToAdd.length} selected)
+                    </label>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Only showing ports not yet on the map
+                    </p>
+                  </div>
                   <div className="flex gap-2">
                     {selectedPortsToAdd.length < availablePorts.length && availablePorts.length > 0 && (
                       <button
@@ -952,9 +960,10 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 </div>
                 <div className="border border-gray-300 rounded-lg max-h-60 overflow-y-auto">
                   {availablePorts.length === 0 ? (
-                    <p className="text-sm text-gray-500 p-4 text-center">
-                      No available ports to add
-                    </p>
+                    <div className="text-sm text-gray-500 p-4 text-center space-y-1">
+                      <p className="font-medium">All ports already on map</p>
+                      <p className="text-xs">Only ports not yet on the map are shown here</p>
+                    </div>
                   ) : (
                     <div className="divide-y divide-gray-200">
                       {availablePorts.map((port) => (
