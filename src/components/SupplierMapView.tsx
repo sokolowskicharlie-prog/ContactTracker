@@ -578,20 +578,10 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   };
 
   const handleDeletePort = async (portName: string) => {
-    const suppliersAtPort = getSuppliersForPort(portName);
-    const confirmMessage = suppliersAtPort.length > 0
-      ? `Are you sure you want to delete ${portName}? This will remove ${suppliersAtPort.length} supplier association(s) and cannot be undone.`
-      : `Are you sure you want to delete ${portName}? This cannot be undone.`;
-
-    if (!confirm(confirmMessage)) {
-      return;
-    }
-
     try {
       const port = portLocations.find((p) => p.port_name === portName);
       if (!port?.id) return;
 
-      // First delete all supplier_ports associations
       const { error: supplierPortsError } = await supabase
         .from('supplier_ports')
         .delete()
@@ -599,7 +589,6 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
 
       if (supplierPortsError) throw supplierPortsError;
 
-      // Then delete the port from uk_port_regions
       const { error: portError } = await supabase
         .from('uk_port_regions')
         .delete()
@@ -611,11 +600,8 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
       if (selectedPort === portName) {
         setSelectedPort(null);
       }
-      alert('Port and all associated suppliers deleted successfully!');
-      window.location.reload();
     } catch (error) {
       console.error('Error deleting port:', error);
-      alert('Failed to delete port');
     }
   };
 
