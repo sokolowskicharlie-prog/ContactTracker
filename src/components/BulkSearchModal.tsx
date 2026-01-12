@@ -849,23 +849,82 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                 </div>
               </div>
 
-              <div className="bg-white border-2 border-gray-300 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Search Type
-                  </label>
-                  <button
-                    onClick={() => setShowExclusionSettings(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <Settings className="w-4 h-4" />
-                    Exclusion Settings
+              <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-5 h-5 text-amber-700" />
+                    <h3 className="text-sm font-semibold text-amber-900">Permanent Exclusions</h3>
                     {permanentExcludedTerms.length > 0 && (
                       <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
                         {permanentExcludedTerms.length}
                       </span>
                     )}
+                  </div>
+                  <button
+                    onClick={() => setShowExclusionSettings(true)}
+                    className="text-amber-700 hover:text-amber-900 text-sm font-medium underline"
+                  >
+                    Manage All
                   </button>
+                </div>
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={newExcludedTerm}
+                    onChange={(e) => setNewExcludedTerm(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        addPermanentExcludedTerm();
+                      }
+                    }}
+                    placeholder="Add term to permanently exclude..."
+                    className="flex-1 px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                  />
+                  <button
+                    onClick={addPermanentExcludedTerm}
+                    className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add
+                  </button>
+                </div>
+                {permanentExcludedTerms.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {permanentExcludedTerms.slice(0, 10).map((term) => (
+                      <div
+                        key={term}
+                        className="flex items-center gap-1 bg-white border border-amber-200 rounded px-2 py-1 text-sm"
+                      >
+                        <span className="text-gray-700">{term}</span>
+                        <button
+                          onClick={() => removePermanentExcludedTerm(term)}
+                          className="text-red-500 hover:text-red-700"
+                          title="Remove"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    {permanentExcludedTerms.length > 10 && (
+                      <button
+                        onClick={() => setShowExclusionSettings(true)}
+                        className="text-xs text-amber-700 hover:text-amber-900 font-medium underline"
+                      >
+                        +{permanentExcludedTerms.length - 10} more
+                      </button>
+                    )}
+                  </div>
+                )}
+                {permanentExcludedTerms.length === 0 && (
+                  <p className="text-xs text-amber-700">No permanent exclusions set. Terms added here will be excluded from all searches.</p>
+                )}
+              </div>
+
+              <div className="bg-white border-2 border-gray-300 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Search Type
+                  </label>
                 </div>
                 <select
                   value={searchType}
