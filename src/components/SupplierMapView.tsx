@@ -41,8 +41,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [selectedPortsToAdd, setSelectedPortsToAdd] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<string[]>([]);
-  const [minSuppliers, setMinSuppliers] = useState<number | null>(null);
-  const [maxSuppliers, setMaxSuppliers] = useState<number | null>(null);
+  const [selectedSupplierRanges, setSelectedSupplierRanges] = useState<string[]>([]);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -269,14 +268,29 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     return '#EF4444';
   };
 
-  const meetsSupplierCountFilter = (portName: string) => {
-    const supplierCount = getSuppliersForPort(portName).length;
-    const meetsMin = minSuppliers === null || supplierCount >= minSuppliers;
-    const meetsMax = maxSuppliers === null || supplierCount <= maxSuppliers;
-    return meetsMin && meetsMax;
+  const getSupplierRange = (count: number): string => {
+    if (count === 0) return 'none';
+    if (count <= 2) return '1-2';
+    if (count <= 5) return '3-5';
+    return '6+';
   };
 
-  const hasActiveSupplierFilter = minSuppliers !== null || maxSuppliers !== null;
+  const meetsSupplierCountFilter = (portName: string) => {
+    if (selectedSupplierRanges.length === 0) return true;
+    const supplierCount = getSuppliersForPort(portName).length;
+    const range = getSupplierRange(supplierCount);
+    return selectedSupplierRanges.includes(range);
+  };
+
+  const hasActiveSupplierFilter = selectedSupplierRanges.length > 0;
+
+  const toggleSupplierRange = (range: string) => {
+    setSelectedSupplierRanges(prev =>
+      prev.includes(range)
+        ? prev.filter(r => r !== range)
+        : [...prev, range]
+    );
+  };
 
   const handleWheel = (e: React.WheelEvent) => {
     if (!isZoomLocked) return;
@@ -618,34 +632,56 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               )}
             </div>
             <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
-              <span className="text-xs text-gray-600 font-medium whitespace-nowrap">Suppliers:</span>
-              <input
-                type="number"
-                min="0"
-                value={minSuppliers ?? ''}
-                onChange={(e) => setMinSuppliers(e.target.value === '' ? null : parseInt(e.target.value))}
-                placeholder="Min"
-                className="w-16 px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <span className="text-gray-400">-</span>
-              <input
-                type="number"
-                min="0"
-                value={maxSuppliers ?? ''}
-                onChange={(e) => setMaxSuppliers(e.target.value === '' ? null : parseInt(e.target.value))}
-                placeholder="Max"
-                className="w-16 px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              <span className="text-xs text-gray-600 font-medium whitespace-nowrap">Filter:</span>
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={selectedSupplierRanges.includes('none')}
+                    onChange={() => toggleSupplierRange('none')}
+                    className="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <div className="w-2.5 h-2.5 rounded-full bg-gray-300"></div>
+                  <span className="text-xs text-gray-600 whitespace-nowrap">None</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={selectedSupplierRanges.includes('1-2')}
+                    onChange={() => toggleSupplierRange('1-2')}
+                    className="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+                  <span className="text-xs text-gray-600">1-2</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={selectedSupplierRanges.includes('3-5')}
+                    onChange={() => toggleSupplierRange('3-5')}
+                    className="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <div className="w-2.5 h-2.5 rounded-full bg-orange-500"></div>
+                  <span className="text-xs text-gray-600">3-5</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={selectedSupplierRanges.includes('6+')}
+                    onChange={() => toggleSupplierRange('6+')}
+                    className="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                  <span className="text-xs text-gray-600">6+</span>
+                </label>
+              </div>
               {hasActiveSupplierFilter && (
                 <>
                   <span className="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded-lg whitespace-nowrap">
                     {portLocations.filter(p => meetsSupplierCountFilter(p.port_name)).length} ports
                   </span>
                   <button
-                    onClick={() => {
-                      setMinSuppliers(null);
-                      setMaxSuppliers(null);
-                    }}
+                    onClick={() => setSelectedSupplierRanges([])}
                     className="text-gray-400 hover:text-gray-600 transition-colors"
                     title="Clear supplier filter"
                   >
