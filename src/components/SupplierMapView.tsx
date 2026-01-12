@@ -264,10 +264,10 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   return (
     <div className="flex gap-4 h-full">
       <div
-        className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 overflow-hidden flex flex-col transition-all duration-300"
-        style={{ width: `${mapWidth}%` }}
+        className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col transition-all duration-300"
+        style={{ width: `${mapWidth}%`, maxHeight: '100%' }}
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 flex-shrink-0">
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold text-gray-900">UK Ports Map</h3>
             <div className="flex items-center gap-2">
@@ -399,21 +399,26 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
           </div>
         </div>
 
-        <div
-          className="relative flex-1 overflow-hidden bg-white rounded-lg"
-          style={{
-            cursor: draggingPort ? 'grabbing' : isPanning ? 'grabbing' : isEditMode ? 'default' : 'grab'
-          }}
-        >
-          {isEditMode && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-10 text-sm font-medium">
-              Edit Mode: Drag ports to reposition them
-            </div>
-          )}
-          <svg
-            ref={svgRef}
-            viewBox="0 0 800 1000"
-            className="w-full h-full"
+        <div className="flex-1 overflow-auto p-4 min-h-0">
+          <div
+            className="relative bg-white rounded-lg mx-auto"
+            style={{
+              width: '100%',
+              aspectRatio: '0.8',
+              maxHeight: '100%',
+              cursor: draggingPort ? 'grabbing' : isPanning ? 'grabbing' : isEditMode ? 'default' : 'grab'
+            }}
+          >
+            {isEditMode && (
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-10 text-sm font-medium">
+                Edit Mode: Drag ports to reposition them
+              </div>
+            )}
+            <svg
+              ref={svgRef}
+              viewBox="0 0 800 1000"
+              className="w-full h-full"
+              preserveAspectRatio="xMidYMid meet"
             onMouseDown={handleMouseDown}
             onMouseMove={(e) => {
               handleMouseMove(e);
@@ -436,7 +441,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 y="0"
                 width="800"
                 height="1000"
-                preserveAspectRatio="xMidYMid meet"
+                preserveAspectRatio="xMidYMid slice"
               />
 
               {portLocations.map((port) => {
@@ -501,17 +506,18 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 );
               })}
             </g>
-          </svg>
-          <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm text-xs text-gray-600 flex items-center gap-2">
-            <span>Zoom: {(zoom * 100).toFixed(0)}%</span>
-            {isZoomLocked && (
-              <span className="flex items-center gap-1 text-blue-600 font-medium">
-                <Lock className="w-3 h-3" />
-                Locked
-              </span>
-            )}
-            <span>|</span>
-            <span>{isEditMode ? 'Drag ports to move them' : 'Drag to pan'}</span>
+            </svg>
+            <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm text-xs text-gray-600 flex items-center gap-2">
+              <span>Zoom: {(zoom * 100).toFixed(0)}%</span>
+              {isZoomLocked && (
+                <span className="flex items-center gap-1 text-blue-600 font-medium">
+                  <Lock className="w-3 h-3" />
+                  Locked
+                </span>
+              )}
+              <span>|</span>
+              <span>{isEditMode ? 'Drag ports to move them' : 'Drag to pan'}</span>
+            </div>
           </div>
         </div>
       </div>
