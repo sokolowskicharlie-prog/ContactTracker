@@ -1,4 +1,4 @@
-import { X, TrendingUp, ChevronDown, ChevronUp, Star, AlertTriangle, Check, Phone, Mail, Building2 } from 'lucide-react';
+import { X, TrendingUp, ChevronDown, ChevronUp, Star, AlertTriangle, Check, Phone, Mail, Building2, Skull } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { ContactWithActivity } from '../lib/supabase';
 
@@ -56,6 +56,9 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
     if (contact.is_jammed) {
       return <AlertTriangle className="w-3 h-3 text-red-600 fill-red-100" title="Jammed" />;
     }
+    if (contact.is_dead) {
+      return <Skull className="w-3 h-3 text-gray-700" title="Dead" />;
+    }
     return null;
   };
 
@@ -84,6 +87,15 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
         text: noteText,
         bgColor: 'bg-red-50',
         borderColor: 'border-red-200',
+        textColor: 'text-gray-600'
+      };
+    }
+    if (contact.is_dead && (contact.dead_note || contact.dead_additional_note)) {
+      const noteText = contact.dead_additional_note || contact.dead_note || '';
+      return {
+        text: noteText,
+        bgColor: 'bg-gray-50',
+        borderColor: 'border-gray-200',
         textColor: 'text-gray-600'
       };
     }

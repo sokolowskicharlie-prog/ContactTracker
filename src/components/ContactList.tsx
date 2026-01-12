@@ -1,4 +1,4 @@
-import { Phone, Mail, Building2, Calendar, Trash2, CreditCard as Edit, Globe, Bell, AlertCircle, User, Star, Check, Globe2, Clock, CheckSquare, AlertTriangle, StickyNote, TrendingUp } from 'lucide-react';
+import { Phone, Mail, Building2, Calendar, Trash2, CreditCard as Edit, Globe, Bell, AlertCircle, User, Star, Check, Globe2, Clock, CheckSquare, AlertTriangle, StickyNote, TrendingUp, Skull } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 
@@ -211,6 +211,9 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                     {contact.is_jammed && (
                       <AlertTriangle className="w-4 h-4 text-red-600 fill-red-100" />
                     )}
+                    {contact.is_dead && (
+                      <Skull className="w-4 h-4 text-gray-700" />
+                    )}
                   </div>
                   {(contact.is_jammed && contact.jammed_note) && (
                     <div className="flex items-center gap-1 mt-1">
@@ -233,6 +236,14 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                       <Star className="w-3 h-3 text-yellow-600" />
                       <span className="text-xs text-yellow-700 font-medium">
                         {contact.traction_note}
+                      </span>
+                    </div>
+                  )}
+                  {(contact.is_dead && contact.dead_note) && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <Skull className="w-3 h-3 text-gray-700" />
+                      <span className="text-xs text-gray-700 font-medium">
+                        {contact.dead_note}
                       </span>
                     </div>
                   )}

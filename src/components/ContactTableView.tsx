@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Edit2, Trash2, Phone, Mail, MapPin, AlertCircle, CheckCircle, TrendingUp, Settings, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { Edit2, Trash2, Phone, Mail, MapPin, AlertCircle, CheckCircle, TrendingUp, Settings, GripVertical, Eye, EyeOff, Skull } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
 
 interface ContactTableViewProps {
@@ -135,6 +135,21 @@ export default function ContactTableView({
           {contact.jammed_note && (
             <div className="text-xs text-red-700 font-medium truncate" title={contact.jammed_note}>
               {contact.jammed_note}
+            </div>
+          )}
+        </div>
+      );
+    }
+    if (contact.is_dead) {
+      return (
+        <div className="flex flex-col gap-1">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            <Skull className="w-3 h-3" />
+            Dead
+          </span>
+          {contact.dead_note && (
+            <div className="text-xs text-gray-700 font-medium truncate" title={contact.dead_note}>
+              {contact.dead_note}
             </div>
           )}
         </div>

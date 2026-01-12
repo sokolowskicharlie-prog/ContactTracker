@@ -1,4 +1,4 @@
-import { Phone, Mail, Building2, Edit, Trash2, Star, AlertTriangle, Check, TrendingUp, ArrowUpDown, Filter } from 'lucide-react';
+import { Phone, Mail, Building2, Edit, Trash2, Star, AlertTriangle, Check, TrendingUp, ArrowUpDown, Filter, Skull } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
 import { useState } from 'react';
 
@@ -19,7 +19,7 @@ const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: s
 };
 
 type SortOption = 'name' | 'company' | 'activity' | 'priority';
-type FilterStatus = 'all' | 'client' | 'traction' | 'jammed' | 'none';
+type FilterStatus = 'all' | 'client' | 'traction' | 'jammed' | 'dead' | 'none';
 
 export default function PriorityList({ contacts, onContactClick, onEditContact, onDeleteContact }: PriorityListProps) {
   const [sortBy, setSortBy] = useState<SortOption>('priority');
@@ -36,7 +36,8 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
       if (filterStatus === 'client') return c.is_client;
       if (filterStatus === 'traction') return c.has_traction && !c.is_client;
       if (filterStatus === 'jammed') return c.is_jammed;
-      if (filterStatus === 'none') return !c.is_client && !c.has_traction && !c.is_jammed;
+      if (filterStatus === 'dead') return c.is_dead;
+      if (filterStatus === 'none') return !c.is_client && !c.has_traction && !c.is_jammed && !c.is_dead;
       return true;
     });
   }
@@ -81,6 +82,9 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
     if (contact.is_jammed) {
       return <AlertTriangle className="w-4 h-4 text-red-600 fill-red-100" title="Jammed" />;
     }
+    if (contact.is_dead) {
+      return <Skull className="w-4 h-4 text-gray-700" title="Dead" />;
+    }
     return null;
   };
 
@@ -109,6 +113,15 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
         text: noteText,
         bgColor: 'bg-red-50',
         borderColor: 'border-red-200',
+        textColor: 'text-gray-600'
+      };
+    }
+    if (contact.is_dead && (contact.dead_note || contact.dead_additional_note)) {
+      const noteText = contact.dead_additional_note || contact.dead_note || '';
+      return {
+        text: noteText,
+        bgColor: 'bg-gray-50',
+        borderColor: 'border-gray-200',
         textColor: 'text-gray-600'
       };
     }
@@ -162,6 +175,7 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
                 <option value="client">Client</option>
                 <option value="traction">Traction</option>
                 <option value="jammed">Jammed</option>
+                <option value="dead">Dead</option>
                 <option value="none">No Status</option>
               </select>
             </div>
