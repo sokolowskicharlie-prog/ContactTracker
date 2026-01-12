@@ -428,8 +428,9 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
 
       onSave({});
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving port:', error);
+      alert(`Error saving port: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -467,13 +468,16 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
                 }}
                 required
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder={supplierPort ? "e.g., Singapore" : "e.g., Singapore; Rotterdam; Dubai"}
+                placeholder={supplierPort ? "Type any port name" : "Type port names (separate with semicolons)"}
               />
               {showPortSuggestions && filteredPorts.length > 0 && (
                 <div
                   ref={dropdownRef}
                   className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto"
                 >
+                  <div className="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-200">
+                    Suggestions (optional - you can type any port name)
+                  </div>
                   {filteredPorts.map((port) => (
                     <button
                       key={port.id}
@@ -504,11 +508,13 @@ export default function SupplierPortModal({ supplierPort, supplierId, onClose, o
                 </div>
               )}
             </div>
-            {!supplierPort && (
-              <p className="text-xs text-gray-500 mt-1">
-                Tip: Add multiple ports at once by separating them with semicolons (;)
-              </p>
-            )}
+            <p className="text-xs text-gray-500 mt-1">
+              {!supplierPort ? (
+                <>Add multiple ports at once by separating them with semicolons (e.g., Singapore; Rotterdam; Dubai)</>
+              ) : (
+                <>You can type any port name - suggestions are optional</>
+              )}
+            </p>
             {supplierPort?.region && (
               <p className="text-xs text-gray-600 mt-1">
                 Region: <span className="font-medium">{supplierPort.region}</span>
