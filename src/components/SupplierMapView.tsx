@@ -250,7 +250,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
             <h3 className="text-lg font-semibold text-gray-900 whitespace-nowrap">UK Ports Map</h3>
             <div className="flex items-center gap-2">
               <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-                {[40, 50, 60, 70, 80].map((width) => (
+                {[40, 50, 60, 70, 80, 100].map((width) => (
                   <button
                     key={width}
                     onClick={() => {
@@ -270,7 +270,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               <input
                 type="range"
                 min="30"
-                max="90"
+                max="100"
                 value={mapWidth}
                 onChange={(e) => {
                   const width = Number(e.target.value);
