@@ -200,10 +200,22 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     if (draggingPort && svgRef.current) {
       const svg = svgRef.current;
       const rect = svg.getBoundingClientRect();
-      const centerOffsetX = (rect.width - rect.width * zoom) / 2;
-      const centerOffsetY = (rect.height - rect.height * zoom) / 2;
-      const svgX = ((e.clientX - rect.left - centerOffsetX) / zoom) / (rect.width / 800);
-      const svgY = ((e.clientY - rect.top - centerOffsetY) / zoom) / (rect.height / 1000);
+
+      // Get mouse position relative to SVG in pixel coordinates
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      // Convert to SVG viewBox coordinates (0-800, 0-1000)
+      const viewBoxX = (mouseX / rect.width) * 800;
+      const viewBoxY = (mouseY / rect.height) * 1000;
+
+      // Reverse the transform to get actual SVG coordinates
+      // Transform is: translate(400 + panOffset.x/zoom, 500 + panOffset.y/zoom) scale(zoom) translate(-400, -500)
+      const centerX = 400 + panOffset.x / zoom;
+      const centerY = 500 + panOffset.y / zoom;
+
+      const svgX = (viewBoxX - centerX) / zoom + 400;
+      const svgY = (viewBoxY - centerY) / zoom + 500;
 
       const { lat, lng } = svgToLatLng(svgX, svgY);
 
