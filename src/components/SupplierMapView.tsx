@@ -43,6 +43,9 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const [selectedSupplierRanges, setSelectedSupplierRanges] = useState<string[]>([]);
   const [hidePortsWithoutSuppliers, setHidePortsWithoutSuppliers] = useState(true);
+  const [showAddSupplier, setShowAddSupplier] = useState(false);
+  const [selectedSupplierToAdd, setSelectedSupplierToAdd] = useState('');
+  const [supplierSearchTerm, setSupplierSearchTerm] = useState('');
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -229,6 +232,60 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     }).catch(() => {
       alert('Failed to copy emails');
     });
+  };
+
+  const handleAddSupplierToPort = async () => {
+    if (!selectedPort || !selectedSupplierToAdd) return;
+
+    try {
+      const supplier = suppliers.find((s) => s.id === selectedSupplierToAdd);
+      if (!supplier) return;
+
+      const { error } = await supabase.from('supplier_ports').insert({
+        supplier_id: selectedSupplierToAdd,
+        port_name: selectedPort,
+        has_barge: supplier.default_has_barge || false,
+        has_truck: supplier.default_has_truck || false,
+        has_expipe: supplier.default_has_expipe || false,
+        has_vlsfo: supplier.default_has_vlsfo || false,
+        has_lsmgo: supplier.default_has_lsmgo || false,
+      });
+
+      if (error) throw error;
+
+      setShowAddSupplier(false);
+      setSelectedSupplierToAdd('');
+      setSupplierSearchTerm('');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error adding supplier to port:', error);
+      alert('Failed to add supplier to port');
+    }
+  };
+
+  const handleRemoveSupplierFromPort = async (supplierId: string, portName: string) => {
+    if (!confirm('Are you sure you want to remove this supplier from this port?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('supplier_ports')
+        .delete()
+        .eq('supplier_id', supplierId)
+        .eq('port_name', portName);
+
+      if (error) throw error;
+
+      window.location.reload();
+    } catch (error) {
+      console.error('Error removing supplier from port:', error);
+      alert('Failed to remove supplier from port');
+    }
+  };
+
+  const getAvailableSuppliersForPort = (portName: string) => {
+    const suppliersAtPort = getSuppliersForPort(portName);
+    const supplierIdsAtPort = new Set(suppliersAtPort.map((s) => s.id));
+    return suppliers.filter((s) => !supplierIdsAtPort.has(s.id));
   };
 
   const latLngToSVG = (lat: number, lng: number) => {
@@ -1071,6 +1128,16 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
           )}
 
           <div className="flex-1 overflow-y-auto p-4">
+            <div className="mb-3">
+              <button
+                onClick={() => setShowAddSupplier(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                Add Supplier to Port
+              </button>
+            </div>
+
             {getSuppliersForPort(selectedPort).length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Building2 className="w-12 h-12 mx-auto mb-2 text-gray-300" />
@@ -1086,10 +1153,23 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                   return (
                     <div
                       key={supplier.id}
-                      onClick={() => onSelectSupplier(supplier)}
-                      className="bg-white border border-gray-200 rounded-lg p-3 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer"
+                      className="bg-white border border-gray-200 rounded-lg p-3 hover:border-blue-400 hover:shadow-sm transition-all relative group"
                     >
-                      <h4 className="font-semibold text-gray-900 mb-2">{supplier.company_name}</h4>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveSupplierFromPort(supplier.id, selectedPort);
+                        }}
+                        className="absolute top-2 right-2 p-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded transition-colors opacity-0 group-hover:opacity-100"
+                        title="Remove supplier from port"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <div
+                        onClick={() => onSelectSupplier(supplier)}
+                        className="cursor-pointer"
+                      >
+                        <h4 className="font-semibold text-gray-900 mb-2 pr-8">{supplier.company_name}</h4>
 
                       {portData && (
                         <div className="space-y-2">
@@ -1120,16 +1200,108 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                         </div>
                       )}
 
-                      {supplier.contact_person && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          Contact: {supplier.contact_person}
-                        </p>
-                      )}
+                        {supplier.contact_person && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            Contact: {supplier.contact_person}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {showAddSupplier && selectedPort && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Add Supplier to {selectedPort}</h2>
+                <button
+                  onClick={() => {
+                    setShowAddSupplier(false);
+                    setSelectedSupplierToAdd('');
+                    setSupplierSearchTerm('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 flex-1 overflow-y-auto">
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="Search suppliers..."
+                  value={supplierSearchTerm}
+                  onChange={(e) => setSupplierSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="space-y-2">
+                {getAvailableSuppliersForPort(selectedPort)
+                  .filter((supplier) =>
+                    supplier.company_name.toLowerCase().includes(supplierSearchTerm.toLowerCase())
+                  )
+                  .map((supplier) => (
+                    <label
+                      key={supplier.id}
+                      className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all"
+                    >
+                      <input
+                        type="radio"
+                        name="supplier"
+                        value={supplier.id}
+                        checked={selectedSupplierToAdd === supplier.id}
+                        onChange={(e) => setSelectedSupplierToAdd(e.target.value)}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{supplier.company_name}</p>
+                        {supplier.contact_person && (
+                          <p className="text-xs text-gray-500">Contact: {supplier.contact_person}</p>
+                        )}
+                      </div>
+                    </label>
+                  ))}
+
+                {getAvailableSuppliersForPort(selectedPort).filter((supplier) =>
+                  supplier.company_name.toLowerCase().includes(supplierSearchTerm.toLowerCase())
+                ).length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Building2 className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                    <p>No available suppliers found</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowAddSupplier(false);
+                  setSelectedSupplierToAdd('');
+                  setSupplierSearchTerm('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddSupplierToPort}
+                disabled={!selectedSupplierToAdd}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add Supplier
+              </button>
+            </div>
           </div>
         </div>
       )}
