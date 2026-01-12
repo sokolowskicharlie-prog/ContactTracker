@@ -106,7 +106,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   const [scheduleDuration, setScheduleDuration] = useState(20);
   const [emailDuration, setEmailDuration] = useState(15);
   const [dealDuration, setDealDuration] = useState(30);
-  const [statusFilters, setStatusFilters] = useState<('none' | 'jammed' | 'traction' | 'client')[]>(['none', 'traction', 'client']);
+  const [statusFilters, setStatusFilters] = useState<('none' | 'jammed' | 'traction' | 'client' | 'dead')[]>(['none', 'traction', 'client']);
   const [replacingScheduleId, setReplacingScheduleId] = useState<string | null>(null);
   const [replaceContactId, setReplaceContactId] = useState<string>('');
   const [isAddingCall, setIsAddingCall] = useState(false);
@@ -395,9 +395,10 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
         if (statusFilters.length === 0) return true;
 
         if (c.is_jammed && statusFilters.includes('jammed')) return true;
-        if (c.is_client && !c.is_jammed && statusFilters.includes('client')) return true;
-        if (c.has_traction && !c.is_jammed && !c.is_client && statusFilters.includes('traction')) return true;
-        if (!c.is_jammed && !c.is_client && !c.has_traction && statusFilters.includes('none')) return true;
+        if (c.is_dead && statusFilters.includes('dead')) return true;
+        if (c.is_client && !c.is_jammed && !c.is_dead && statusFilters.includes('client')) return true;
+        if (c.has_traction && !c.is_jammed && !c.is_dead && !c.is_client && statusFilters.includes('traction')) return true;
+        if (!c.is_jammed && !c.is_dead && !c.is_client && !c.has_traction && statusFilters.includes('none')) return true;
 
         return false;
       });
@@ -1197,7 +1198,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                         { value: 'none' as const, label: 'None', color: 'gray' },
                         { value: 'traction' as const, label: 'Traction', color: 'yellow' },
                         { value: 'client' as const, label: 'Client', color: 'green' },
-                        { value: 'jammed' as const, label: 'Jammed', color: 'red' }
+                        { value: 'jammed' as const, label: 'Jammed', color: 'red' },
+                        { value: 'dead' as const, label: 'Dead', color: 'gray' }
                       ].map(status => (
                         <label key={status.value} className="flex items-center gap-1.5 cursor-pointer">
                           <input

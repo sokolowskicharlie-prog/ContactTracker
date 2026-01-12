@@ -31,7 +31,7 @@ export interface ScheduleParams {
   simpleMode?: boolean;
   timezoneDistribution?: Record<string, number>;
   priorityDistribution?: Record<PriorityLabel, number>;
-  statusFilters?: ('none' | 'jammed' | 'traction' | 'client')[];
+  statusFilters?: ('none' | 'jammed' | 'traction' | 'client' | 'dead')[];
 }
 
 export interface SuggestedContact {
@@ -275,14 +275,15 @@ export function generateCallSchedule(
   if (statusFilters && statusFilters.length > 0) {
     activeContacts = contacts.filter(c => {
       if (c.is_jammed && statusFilters.includes('jammed')) return true;
-      if (c.is_client && !c.is_jammed && statusFilters.includes('client')) return true;
-      if (c.has_traction && !c.is_jammed && !c.is_client && statusFilters.includes('traction')) return true;
-      if (!c.is_jammed && !c.is_client && !c.has_traction && statusFilters.includes('none')) return true;
+      if (c.is_dead && statusFilters.includes('dead')) return true;
+      if (c.is_client && !c.is_jammed && !c.is_dead && statusFilters.includes('client')) return true;
+      if (c.has_traction && !c.is_jammed && !c.is_dead && !c.is_client && statusFilters.includes('traction')) return true;
+      if (!c.is_jammed && !c.is_dead && !c.is_client && !c.has_traction && statusFilters.includes('none')) return true;
       return false;
     });
   } else {
-    // Default: filter out jammed contacts
-    activeContacts = contacts.filter(c => !c.is_jammed);
+    // Default: filter out jammed and dead contacts
+    activeContacts = contacts.filter(c => !c.is_jammed && !c.is_dead);
   }
 
   // Group contacts by timezone
@@ -329,9 +330,11 @@ export function generateCallSchedule(
     const priorityLabel = analyzeContactPriority(firstContact);
     const timezoneLabel = getTimezoneLabel(firstContact.timezone);
 
-    let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+    let contactStatus: 'jammed' | 'traction' | 'client' | 'dead' | 'none' = 'none';
     if (firstContact.is_jammed) {
       contactStatus = 'jammed';
+    } else if (firstContact.is_dead) {
+      contactStatus = 'dead';
     } else if (firstContact.is_client) {
       contactStatus = 'client';
     } else if (firstContact.has_traction) {
@@ -376,7 +379,7 @@ export function generateCallSchedule(
     const contact = task.contact_id ? contactMap.get(task.contact_id) : undefined;
     const taskDueDate = new Date(task.due_date!);
 
-    let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+    let contactStatus: 'jammed' | 'traction' | 'client' | 'dead' | 'none' = 'none';
     let contactName = task.title;
     let timezoneLabel = 'GMT+0';
     let priorityLabel: 'Warm' | 'Follow-Up' | 'High Value' | 'Cold' = 'Follow-Up';
@@ -388,6 +391,8 @@ export function generateCallSchedule(
 
       if (contact.is_jammed) {
         contactStatus = 'jammed';
+      } else if (contact.is_dead) {
+        contactStatus = 'dead';
       } else if (contact.is_client) {
         contactStatus = 'client';
       } else if (contact.has_traction) {
@@ -485,10 +490,12 @@ export function generateCallSchedule(
         // Verify the scheduled time is within 9 AM - 5 PM for this contact's timezone
         if (!isWithinBusinessHours(scheduledTime, timezone)) return;
 
-        let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+        let contactStatus: 'jammed' | 'traction' | 'client' | 'dead' | 'none' = 'none';
         if (s.contact) {
           if (s.contact.is_jammed) {
             contactStatus = 'jammed';
+          } else if (s.contact.is_dead) {
+            contactStatus = 'dead';
           } else if (s.contact.is_client) {
             contactStatus = 'client';
           } else if (s.contact.has_traction) {
@@ -552,9 +559,11 @@ export function generateCallSchedule(
 
           // Ensure call completes before deadline
           if (callEndTime <= deadline) {
-          let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+          let contactStatus: 'jammed' | 'traction' | 'client' | 'dead' | 'none' = 'none';
           if (contact.is_jammed) {
             contactStatus = 'jammed';
+          } else if (contact.is_dead) {
+            contactStatus = 'dead';
           } else if (contact.is_client) {
             contactStatus = 'client';
           } else if (contact.has_traction) {
@@ -647,7 +656,7 @@ function generateSimpleSchedule(
   contacts: (Contact | ContactWithActivity)[],
   userId: string,
   goalId: string,
-  statusFilters?: ('none' | 'jammed' | 'traction' | 'client')[]
+  statusFilters?: ('none' | 'jammed' | 'traction' | 'client' | 'dead')[]
 ): Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] {
   const schedule: Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] = [];
 
@@ -656,14 +665,15 @@ function generateSimpleSchedule(
   if (statusFilters && statusFilters.length > 0) {
     activeContacts = contacts.filter(c => {
       if (c.is_jammed && statusFilters.includes('jammed')) return true;
-      if (c.is_client && !c.is_jammed && statusFilters.includes('client')) return true;
-      if (c.has_traction && !c.is_jammed && !c.is_client && statusFilters.includes('traction')) return true;
-      if (!c.is_jammed && !c.is_client && !c.has_traction && statusFilters.includes('none')) return true;
+      if (c.is_dead && statusFilters.includes('dead')) return true;
+      if (c.is_client && !c.is_jammed && !c.is_dead && statusFilters.includes('client')) return true;
+      if (c.has_traction && !c.is_jammed && !c.is_dead && !c.is_client && statusFilters.includes('traction')) return true;
+      if (!c.is_jammed && !c.is_dead && !c.is_client && !c.has_traction && statusFilters.includes('none')) return true;
       return false;
     });
   } else {
-    // Default: filter out jammed contacts
-    activeContacts = contacts.filter(c => !c.is_jammed);
+    // Default: filter out jammed and dead contacts
+    activeContacts = contacts.filter(c => !c.is_jammed && !c.is_dead);
   }
 
   // Sort contacts by priority
@@ -691,7 +701,7 @@ function generateSimpleSchedule(
     let priorityLabel: PriorityLabel = 'Cold';
     let timezoneLabel = 'GMT+0';
     let notes = 'Manual assignment needed';
-    let contactStatus: 'jammed' | 'traction' | 'client' | 'none' = 'none';
+    let contactStatus: 'jammed' | 'traction' | 'client' | 'dead' | 'none' = 'none';
 
     // Try to find a contact whose local time is within business hours (9 AM - 5 PM)
     if (sortedContacts.length > 0) {
@@ -713,6 +723,8 @@ function generateSimpleSchedule(
 
           if (contact.is_jammed) {
             contactStatus = 'jammed';
+          } else if (contact.is_dead) {
+            contactStatus = 'dead';
           } else if (contact.is_client) {
             contactStatus = 'client';
           } else if (contact.has_traction) {

@@ -157,15 +157,18 @@ function App() {
   const [jammedReasonFilter, setJammedReasonFilter] = useState<string>('');
   const [tractionReasonFilter, setTractionReasonFilter] = useState<string>('');
   const [clientReasonFilter, setClientReasonFilter] = useState<string>('');
+  const [deadReasonFilter, setDeadReasonFilter] = useState<string>('');
   const [statusFilters, setStatusFilters] = useState<{
     hasTraction: boolean;
     isClient: boolean;
     isJammed: boolean;
+    isDead: boolean;
     none: boolean;
   }>({
     hasTraction: false,
     isClient: false,
     isJammed: false,
+    isDead: false,
     none: false,
   });
   const [filterPort, setFilterPort] = useState<string>('all');
@@ -284,6 +287,7 @@ function App() {
             contact.jammed_note?.toLowerCase().includes(query) ||
             contact.traction_note?.toLowerCase().includes(query) ||
             contact.client_note?.toLowerCase().includes(query) ||
+            contact.dead_note?.toLowerCase().includes(query) ||
             priorityMatch;
         }
       );
@@ -431,13 +435,14 @@ function App() {
     }
 
     // Apply status filters (OR logic - show contacts matching ANY selected status)
-    const hasActiveStatusFilter = statusFilters.hasTraction || statusFilters.isClient || statusFilters.isJammed || statusFilters.none;
+    const hasActiveStatusFilter = statusFilters.hasTraction || statusFilters.isClient || statusFilters.isJammed || statusFilters.isDead || statusFilters.none;
     if (hasActiveStatusFilter) {
       filtered = filtered.filter((contact) => {
         if (statusFilters.hasTraction && contact.has_traction) return true;
         if (statusFilters.isClient && contact.is_client) return true;
         if (statusFilters.isJammed && contact.is_jammed) return true;
-        if (statusFilters.none && !contact.has_traction && !contact.is_client && !contact.is_jammed) return true;
+        if (statusFilters.isDead && contact.is_dead) return true;
+        if (statusFilters.none && !contact.has_traction && !contact.is_client && !contact.is_jammed && !contact.is_dead) return true;
         return false;
       });
     }
@@ -491,6 +496,24 @@ function App() {
 
         const clientNote = contact.client_note?.toLowerCase() || '';
         return clientNote.includes(searchLower);
+      });
+    }
+
+    // Apply dead reason filter
+    if (deadReasonFilter.trim()) {
+      const searchLower = deadReasonFilter.toLowerCase();
+      filtered = filtered.filter((contact) => {
+        if (!contact.is_dead) return false;
+
+        // Check for "no reason" variations
+        const noReasonKeywords = ['[no reason]', 'no reason', 'nothing', 'none', 'empty', 'blank'];
+        if (noReasonKeywords.some(keyword => searchLower.includes(keyword))) {
+          return !contact.dead_note?.trim() && !contact.dead_additional_note?.trim();
+        }
+
+        const deadNote = contact.dead_note?.toLowerCase() || '';
+        const deadAdditionalNote = contact.dead_additional_note?.toLowerCase() || '';
+        return deadNote.includes(searchLower) || deadAdditionalNote.includes(searchLower);
       });
     }
 
@@ -562,7 +585,7 @@ function App() {
     });
 
     setFilteredContacts(filtered);
-  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterPhoneTypes, filterEmailTypes, filterCities, filterPostCodes, filterWebsites, filterAddresses, filterPriorities, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter]);
+  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterPhoneTypes, filterEmailTypes, filterCities, filterPostCodes, filterWebsites, filterAddresses, filterPriorities, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter, deadReasonFilter]);
 
   useEffect(() => {
     let filtered = [...suppliers];
@@ -3277,6 +3300,16 @@ function App() {
                   Is Jammed
                 </button>
                 <button
+                  onClick={() => setStatusFilters(prev => ({ ...prev, isDead: !prev.isDead }))}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                    statusFilters.isDead
+                      ? 'bg-gray-800 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Is Dead
+                </button>
+                <button
                   onClick={() => setStatusFilters(prev => ({ ...prev, none: !prev.none }))}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
                     statusFilters.none
@@ -3473,6 +3506,72 @@ function App() {
                             >
                               <span>{reason.length > 30 ? `${reason.substring(0, 30)}...` : reason}</span>
                               <span className="bg-blue-200 px-1.5 rounded-full text-[10px] font-semibold">
+                                {count}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : null;
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {statusFilters.isDead && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search Dead Reasons
+                  <span className="ml-2 text-xs text-gray-500 font-normal">
+                    ({contacts.filter(c => c.is_dead).length} dead contacts)
+                  </span>
+                </label>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={deadReasonFilter}
+                      onChange={(e) => setDeadReasonFilter(e.target.value)}
+                      placeholder="Search in dead notes..."
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {deadReasonFilter && (
+                      <button
+                        onClick={() => setDeadReasonFilter('')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  {(() => {
+                    const reasonCounts = new Map<string, number>();
+                    contacts
+                      .filter(c => c.is_dead && (c.dead_note || c.dead_additional_note))
+                      .forEach(c => {
+                        const trimmed = (c.dead_additional_note || c.dead_note || '').trim();
+                        if (trimmed) {
+                          reasonCounts.set(trimmed, (reasonCounts.get(trimmed) || 0) + 1);
+                        }
+                      });
+
+                    const sortedReasons = Array.from(reasonCounts.entries())
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 10);
+
+                    return sortedReasons.length > 0 ? (
+                      <>
+                        <p className="text-xs text-gray-500">Common reasons (click to filter):</p>
+                        <div className="flex flex-wrap gap-2">
+                          {sortedReasons.map(([reason, count]) => (
+                            <button
+                              key={reason}
+                              onClick={() => setDeadReasonFilter(reason)}
+                              className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors flex items-center gap-1"
+                              title={reason}
+                            >
+                              <span>{reason.length > 30 ? `${reason.substring(0, 30)}...` : reason}</span>
+                              <span className="bg-gray-200 px-1.5 rounded-full text-[10px] font-semibold">
                                 {count}
                               </span>
                             </button>
