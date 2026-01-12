@@ -13,7 +13,7 @@ interface PortLocation {
   latitude: number;
   longitude: number;
   region: string;
-  region_id: string;
+  region_id: string | null;
 }
 
 interface SupplierMapViewProps {
@@ -183,7 +183,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
         latitude: parseFloat(item.latitude),
         longitude: parseFloat(item.longitude),
         region: item.region?.name || '',
-        region_id: item.region_id || '',
+        region_id: item.region_id || null,
       }));
 
       setPortLocations(locations);
@@ -350,8 +350,10 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
             longitude: portToSave.longitude,
           };
 
-          if (portToSave.region_id !== undefined) {
+          if (portToSave.region_id && portToSave.region_id.trim() !== '') {
             updateData.region_id = portToSave.region_id;
+          } else {
+            updateData.region_id = null;
           }
 
           const { error } = await supabase
@@ -403,8 +405,10 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
             longitude: port.longitude,
           };
 
-          if (port.region_id !== undefined) {
+          if (port.region_id && port.region_id.trim() !== '') {
             updateData.region_id = port.region_id;
+          } else {
+            updateData.region_id = null;
           }
 
           const { error } = await supabase
@@ -505,7 +509,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
           const newRegion = regions.find((r) => r.id === newRegionId);
           return {
             ...port,
-            region_id: newRegionId,
+            region_id: newRegionId.trim() === '' ? null : newRegionId,
             region: newRegion?.name || port.region,
           };
         }
