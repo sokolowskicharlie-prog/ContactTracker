@@ -42,6 +42,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const [selectedSupplierRanges, setSelectedSupplierRanges] = useState<string[]>([]);
+  const [hidePortsWithoutSuppliers, setHidePortsWithoutSuppliers] = useState(true);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -670,6 +671,17 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               )}
             </div>
             <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
+              <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors">
+                <input
+                  type="checkbox"
+                  checked={hidePortsWithoutSuppliers}
+                  onChange={(e) => setHidePortsWithoutSuppliers(e.target.checked)}
+                  className="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <span className="text-xs text-gray-600 whitespace-nowrap">Hide empty ports</span>
+              </label>
+            </div>
+            <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
               <span className="text-xs text-gray-600 font-medium whitespace-nowrap">Filter:</span>
               <div className="flex items-center gap-2">
                 <label className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors">
@@ -882,7 +894,15 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 preserveAspectRatio="xMidYMid slice"
               />
 
-              {portLocations.map((port) => {
+              {portLocations
+                .filter((port) => {
+                  if (hidePortsWithoutSuppliers && !isEditMode) {
+                    const supplierCount = getSuppliersForPort(port.port_name).length;
+                    return supplierCount > 0;
+                  }
+                  return true;
+                })
+                .map((port) => {
                 const { x, y } = latLngToSVG(port.latitude, port.longitude);
                 const supplierCount = getSuppliersForPort(port.port_name).length;
                 const isSelected = selectedPort === port.port_name;
