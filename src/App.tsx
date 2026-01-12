@@ -175,7 +175,7 @@ function App() {
   const [filterFuelType, setFilterFuelType] = useState<string>('all');
   const [filterDeliveryMethod, setFilterDeliveryMethod] = useState<string>('all');
   const [filterRegion, setFilterRegion] = useState<string>('all');
-  const [filterBusinessClassification, setFilterBusinessClassification] = useState<string>('all');
+  const [filterBusinessClassification, setFilterBusinessClassification] = useState<string>('Supplier');
   const [supplierSortBy, setSupplierSortBy] = useState<'name' | 'type' | 'classification' | 'country' | 'region'>('name');
   const [tasks, setTasks] = useState<TaskWithRelated[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<TaskWithRelated[]>([]);
