@@ -340,7 +340,33 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
     }
   };
 
-  const handlePortMouseUp = () => {
+  const handlePortMouseUp = async () => {
+    if (draggingPort) {
+      // Auto-save the port position when drag is complete
+      const portToSave = portLocations.find(p => p.port_name === draggingPort);
+      if (portToSave && portToSave.id) {
+        try {
+          const { error } = await supabase
+            .from('uk_port_regions')
+            .update({
+              latitude: portToSave.latitude,
+              longitude: portToSave.longitude,
+              region_id: portToSave.region_id,
+            })
+            .eq('id', portToSave.id);
+
+          if (error) {
+            console.error('Error saving port location:', error);
+            alert('Failed to save port location');
+          } else {
+            setHasUnsavedChanges(false);
+          }
+        } catch (error) {
+          console.error('Error saving port location:', error);
+          alert('Failed to save port location');
+        }
+      }
+    }
     setDraggingPort(null);
   };
 
