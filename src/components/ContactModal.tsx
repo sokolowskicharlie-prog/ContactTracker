@@ -177,7 +177,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
     console.log('Valid PICs:', validContactPersons);
 
     const contactDataToSave = {
-      ...(contact ? { id: contact.id } : {}),
+      ...(contact?.id ? { id: contact.id } : {}),
       name: name.trim(),
       phone: phone.trim() || null,
       phone_type: phone.trim() ? phoneType : null,
