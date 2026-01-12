@@ -38,7 +38,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   const [showAddPort, setShowAddPort] = useState(false);
   const [newPortRegion, setNewPortRegion] = useState('');
   const [availablePorts, setAvailablePorts] = useState<string[]>([]);
-  const [selectedPortToAdd, setSelectedPortToAdd] = useState('');
+  const [selectedPortsToAdd, setSelectedPortsToAdd] = useState<string[]>([]);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -317,20 +317,22 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
   };
 
   const handleAddPort = async () => {
-    if (!selectedPortToAdd || !newPortRegion) {
-      alert('Please select a port and a region');
+    if (selectedPortsToAdd.length === 0 || !newPortRegion) {
+      alert('Please select at least one port and a region');
       return;
     }
 
     try {
+      const portsToInsert = selectedPortsToAdd.map((portName) => ({
+        port_name: portName.toUpperCase().trim(),
+        region_id: newPortRegion,
+        latitude: 60,
+        longitude: 1,
+      }));
+
       const { data, error } = await supabase
         .from('uk_port_regions')
-        .insert({
-          port_name: selectedPortToAdd.toUpperCase().trim(),
-          region_id: newPortRegion,
-          latitude: 60,
-          longitude: 1,
-        })
+        .insert(portsToInsert)
         .select(`
           id,
           port_name,
@@ -338,33 +340,32 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
           longitude,
           region_id,
           region:uk_regions(name)
-        `)
-        .single();
+        `);
 
       if (error) throw error;
 
       if (data) {
-        const newPort: PortLocation = {
-          id: data.id,
-          port_name: data.port_name,
-          latitude: parseFloat(data.latitude),
-          longitude: parseFloat(data.longitude),
-          region: data.region?.name || '',
-          region_id: data.region_id,
-        };
-        setPortLocations([...portLocations, newPort]);
+        const newPorts: PortLocation[] = data.map((port: any) => ({
+          id: port.id,
+          port_name: port.port_name,
+          latitude: parseFloat(port.latitude),
+          longitude: parseFloat(port.longitude),
+          region: port.region?.name || '',
+          region_id: port.region_id,
+        }));
+        setPortLocations([...portLocations, ...newPorts]);
         setNewPortRegion('');
-        setSelectedPortToAdd('');
+        setSelectedPortsToAdd([]);
         setShowAddPort(false);
         loadAvailablePorts();
-        alert('Port added successfully! Drag it to the correct position and save.');
+        alert(`${selectedPortsToAdd.length} port(s) added successfully! Drag them to the correct positions and save.`);
       }
     } catch (error: any) {
       console.error('Error adding port:', error);
       if (error.code === '23505') {
-        alert('A port with this name already exists');
+        alert('One or more ports already exist');
       } else {
-        alert('Failed to add port');
+        alert('Failed to add ports');
       }
     }
   };
@@ -572,7 +573,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 setIsEditMode(!isEditMode);
                 setHasUnsavedChanges(false);
                 setShowAddPort(false);
-                setSelectedPortToAdd('');
+                setSelectedPortsToAdd([]);
                 setNewPortRegion('');
                 loadPortLocations();
               }}
@@ -855,12 +856,12 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Add New Port</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Add Ports</h2>
                 <button
                   onClick={() => {
                     setShowAddPort(false);
                     setNewPortRegion('');
-                    setSelectedPortToAdd('');
+                    setSelectedPortsToAdd([]);
                   }}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
@@ -871,21 +872,59 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Port
-                </label>
-                <select
-                  value={selectedPortToAdd}
-                  onChange={(e) => setSelectedPortToAdd(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select from existing ports...</option>
-                  {availablePorts.map((port) => (
-                    <option key={port} value={port}>
-                      {port}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Select Ports ({selectedPortsToAdd.length} selected)
+                  </label>
+                  <div className="flex gap-2">
+                    {selectedPortsToAdd.length < availablePorts.length && availablePorts.length > 0 && (
+                      <button
+                        onClick={() => setSelectedPortsToAdd([...availablePorts])}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Select All
+                      </button>
+                    )}
+                    {selectedPortsToAdd.length > 0 && (
+                      <button
+                        onClick={() => setSelectedPortsToAdd([])}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="border border-gray-300 rounded-lg max-h-60 overflow-y-auto">
+                  {availablePorts.length === 0 ? (
+                    <p className="text-sm text-gray-500 p-4 text-center">
+                      No available ports to add
+                    </p>
+                  ) : (
+                    <div className="divide-y divide-gray-200">
+                      {availablePorts.map((port) => (
+                        <label
+                          key={port}
+                          className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedPortsToAdd.includes(port)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedPortsToAdd([...selectedPortsToAdd, port]);
+                              } else {
+                                setSelectedPortsToAdd(selectedPortsToAdd.filter((p) => p !== port));
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                          />
+                          <span className="text-sm text-gray-900">{port}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -907,7 +946,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               </div>
 
               <p className="text-sm text-gray-600">
-                The port will be added at a default location. You can drag it to the correct position on the map and then save your changes.
+                Selected ports will be added at a default location. You can drag them to the correct positions on the map and then save your changes.
               </p>
             </div>
 
@@ -916,7 +955,7 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
                 onClick={() => {
                   setShowAddPort(false);
                   setNewPortRegion('');
-                  setSelectedPortToAdd('');
+                  setSelectedPortsToAdd([]);
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
@@ -924,9 +963,10 @@ export default function SupplierMapView({ suppliers, onSelectSupplier }: Supplie
               </button>
               <button
                 onClick={handleAddPort}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                disabled={selectedPortsToAdd.length === 0}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Add Port
+                Add Selected Ports
               </button>
             </div>
           </div>
