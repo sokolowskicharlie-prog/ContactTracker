@@ -641,7 +641,8 @@ function App() {
 
     if (filterRegion !== 'all') {
       filtered = filtered.filter((supplier) => {
-        return supplier.region === filterRegion;
+        if (!supplier.regions || supplier.regions.length === 0) return false;
+        return supplier.regions.some(region => region.name === filterRegion);
       });
     }
 
@@ -661,8 +662,11 @@ function App() {
           return (a.business_classification || '').localeCompare(b.business_classification || '');
         case 'country':
           return (a.country || '').localeCompare(b.country || '');
-        case 'region':
-          return (a.region || '').localeCompare(b.region || '');
+        case 'region': {
+          const aRegion = a.regions?.[0]?.name || '';
+          const bRegion = b.regions?.[0]?.name || '';
+          return aRegion.localeCompare(bRegion);
+        }
         default:
           return a.company_name.localeCompare(b.company_name);
       }
@@ -3966,7 +3970,7 @@ function App() {
                   <option value="all">All Regions</option>
                   {Array.from(new Set(
                     suppliers
-                      .map(s => s.region)
+                      .flatMap(s => s.regions?.map(r => r.name) || [])
                       .filter(Boolean)
                   )).sort().map((region) => (
                     <option key={region} value={region}>
