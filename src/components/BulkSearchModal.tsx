@@ -54,37 +54,57 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
 
   useEffect(() => {
     loadExcludedTerms();
-  }, [user]);
+  }, []);
 
   const loadExcludedTerms = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('user_preferences')
-      .select('excluded_search_terms')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('excluded_search_terms')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-    if (data && data.excluded_search_terms) {
-      setPermanentExcludedTerms(data.excluded_search_terms);
+      if (error) {
+        console.error('Error loading excluded terms:', error);
+        return;
+      }
+
+      if (data && data.excluded_search_terms) {
+        setPermanentExcludedTerms(data.excluded_search_terms);
+      } else {
+        setPermanentExcludedTerms([]);
+      }
+    } catch (error) {
+      console.error('Error loading excluded terms:', error);
     }
   };
 
   const saveExcludedTerms = async (terms: string[]) => {
     if (!user) return;
 
-    const { error } = await supabase
-      .from('user_preferences')
-      .upsert({
-        user_id: user.id,
-        excluded_search_terms: terms,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id'
-      });
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: user.id,
+          excluded_search_terms: terms,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
 
-    if (error) {
+      if (error) {
+        console.error('Error saving excluded terms:', error);
+        alert('Failed to save excluded terms. Please try again.');
+        return false;
+      }
+      return true;
+    } catch (error) {
       console.error('Error saving excluded terms:', error);
+      alert('Failed to save excluded terms. Please try again.');
+      return false;
     }
   };
 
@@ -98,15 +118,19 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
     }
 
     const newTerms = [...permanentExcludedTerms, term];
-    setPermanentExcludedTerms(newTerms);
-    await saveExcludedTerms(newTerms);
-    setNewExcludedTerm('');
+    const success = await saveExcludedTerms(newTerms);
+    if (success) {
+      setPermanentExcludedTerms(newTerms);
+      setNewExcludedTerm('');
+    }
   };
 
   const removePermanentExcludedTerm = async (term: string) => {
     const newTerms = permanentExcludedTerms.filter(t => t !== term);
-    setPermanentExcludedTerms(newTerms);
-    await saveExcludedTerms(newTerms);
+    const success = await saveExcludedTerms(newTerms);
+    if (success) {
+      setPermanentExcludedTerms(newTerms);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
