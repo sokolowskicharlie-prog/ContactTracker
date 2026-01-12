@@ -84,10 +84,30 @@ export default function SupplierList({ suppliers, onSupplierClick, onDeleteSuppl
               {supplier.country && (
                 <div className="flex items-center text-sm text-gray-600">
                   <MapPin className="w-4 h-4 mr-2 text-gray-400" />
-                  {supplier.country}{supplier.region && ` - ${supplier.region}`}
+                  {supplier.country}
                 </div>
               )}
             </div>
+
+            {supplier.regions && supplier.regions.length > 0 && (
+              <div className="mb-3">
+                <div className="flex flex-wrap gap-1">
+                  {supplier.regions.slice(0, 4).map((region) => (
+                    <span
+                      key={region.id}
+                      className="inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full"
+                    >
+                      {region.name}
+                    </span>
+                  ))}
+                  {supplier.regions.length > 4 && (
+                    <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                      +{supplier.regions.length - 4} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {supplier.products_services && (
               <p className="text-sm text-gray-500 mb-3 line-clamp-2">
