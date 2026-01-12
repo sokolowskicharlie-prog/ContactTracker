@@ -155,7 +155,14 @@ export default function SupplierTableView({
                     <div className="text-sm font-medium text-gray-900 truncate">{supplier.company_name}</div>
                   </td>
                   <td className="px-4 py-3" style={{ width: columnWidths.type }}>
-                    <div className="text-sm text-gray-900 truncate">{supplier.supplier_type || '-'}</div>
+                    <div className="flex flex-col gap-1">
+                      <div className="text-sm text-gray-900 truncate">{supplier.supplier_type || '-'}</div>
+                      {supplier.business_classification && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-green-50 text-green-700 text-xs w-fit">
+                          {supplier.business_classification}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3" style={{ width: columnWidths.contactPerson }}>
                     <div className="text-sm text-gray-900 truncate">{supplier.contact_person || '-'}</div>

@@ -42,11 +42,18 @@ export default function SupplierList({ suppliers, onSupplierClick, onDeleteSuppl
                   <Building2 className="w-5 h-5 text-blue-600" />
                   {supplier.company_name}
                 </h3>
-                {supplier.supplier_type && (
-                  <span className="inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">
-                    {supplier.supplier_type}
-                  </span>
-                )}
+                <div className="flex gap-2 flex-wrap">
+                  {supplier.supplier_type && (
+                    <span className="inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">
+                      {supplier.supplier_type}
+                    </span>
+                  )}
+                  {supplier.business_classification && (
+                    <span className="inline-block px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full">
+                      {supplier.business_classification}
+                    </span>
+                  )}
+                </div>
               </div>
               {supplier.rating && (
                 <div className="ml-2">{renderRating(supplier.rating)}</div>

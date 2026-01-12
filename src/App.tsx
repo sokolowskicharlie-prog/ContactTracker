@@ -175,6 +175,8 @@ function App() {
   const [filterFuelType, setFilterFuelType] = useState<string>('all');
   const [filterDeliveryMethod, setFilterDeliveryMethod] = useState<string>('all');
   const [filterRegion, setFilterRegion] = useState<string>('all');
+  const [filterBusinessClassification, setFilterBusinessClassification] = useState<string>('all');
+  const [supplierSortBy, setSupplierSortBy] = useState<'name' | 'type' | 'classification' | 'country' | 'region'>('name');
   const [tasks, setTasks] = useState<TaskWithRelated[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<TaskWithRelated[]>([]);
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -643,10 +645,31 @@ function App() {
       });
     }
 
-    filtered.sort((a, b) => a.company_name.localeCompare(b.company_name));
+    if (filterBusinessClassification !== 'all') {
+      filtered = filtered.filter((supplier) => {
+        return supplier.business_classification === filterBusinessClassification;
+      });
+    }
+
+    filtered.sort((a, b) => {
+      switch (supplierSortBy) {
+        case 'name':
+          return a.company_name.localeCompare(b.company_name);
+        case 'type':
+          return (a.supplier_type || '').localeCompare(b.supplier_type || '');
+        case 'classification':
+          return (a.business_classification || '').localeCompare(b.business_classification || '');
+        case 'country':
+          return (a.country || '').localeCompare(b.country || '');
+        case 'region':
+          return (a.region || '').localeCompare(b.region || '');
+        default:
+          return a.company_name.localeCompare(b.company_name);
+      }
+    });
 
     setFilteredSuppliers(filtered);
-  }, [suppliers, searchQuery, filterPort, filterFuelType, filterDeliveryMethod, filterRegion]);
+  }, [suppliers, searchQuery, filterPort, filterFuelType, filterDeliveryMethod, filterRegion, filterBusinessClassification, supplierSortBy]);
 
   useEffect(() => {
     let filtered = [...tasks];
@@ -3861,11 +3884,27 @@ function App() {
 
         {currentPage === 'suppliers' && (
           <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Filter className="w-5 h-5 text-gray-600" />
-              <h3 className="font-medium text-gray-900">Filter Suppliers</h3>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-gray-600" />
+                <h3 className="font-medium text-gray-900">Filter & Sort Suppliers</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Sort by:</label>
+                <select
+                  value={supplierSortBy}
+                  onChange={(e) => setSupplierSortBy(e.target.value as any)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                >
+                  <option value="name">Company Name</option>
+                  <option value="type">Supplier Type</option>
+                  <option value="classification">Business Classification</option>
+                  <option value="country">Country</option>
+                  <option value="region">Region</option>
+                </select>
+              </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Region
@@ -3944,6 +3983,21 @@ function App() {
                       {fuelType}
                     </option>
                   ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Business Classification
+                </label>
+                <select
+                  value={filterBusinessClassification}
+                  onChange={(e) => setFilterBusinessClassification(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                >
+                  <option value="all">All Classifications</option>
+                  <option value="Trader">Trader</option>
+                  <option value="Supplier">Supplier</option>
+                  <option value="Trader/Supplier">Trader/Supplier</option>
                 </select>
               </div>
             </div>
