@@ -456,16 +456,22 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
           const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
           const counts = getEventCounts(date);
           const today = isToday(date);
+          const dayOfWeek = date.getDay();
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
           return (
             <div
               key={day}
               onClick={() => onDateClick?.(date)}
               className={`border rounded-lg min-h-[140px] p-1.5 transition-colors ${
-                today ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                today
+                  ? 'border-blue-500 bg-blue-50'
+                  : isWeekend
+                    ? 'border-gray-300 bg-gray-200 hover:border-gray-400 hover:bg-gray-300'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               } ${onDateClick ? 'cursor-pointer' : ''}`}
             >
-              <div className={`text-sm font-semibold mb-2 ${today ? 'text-blue-700' : 'text-gray-700'}`}>
+              <div className={`text-sm font-semibold mb-2 ${today ? 'text-blue-700' : isWeekend ? 'text-gray-600' : 'text-gray-700'}`}>
                 {day}
               </div>
               <div className="space-y-1">
