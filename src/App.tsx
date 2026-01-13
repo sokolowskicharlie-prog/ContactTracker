@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell, ChevronDown, FolderOpen, PieChart, Calendar, Map } from 'lucide-react';
+import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell, ChevronDown, FolderOpen, PieChart, Calendar, Map as MapIcon } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import { Workspace, getWorkspaces, getOrCreateDefaultWorkspace } from './lib/workspaces';
 import AuthForm from './components/AuthForm';
@@ -575,6 +575,17 @@ function App() {
           const aPriority = a.priority_rank !== null && a.priority_rank !== undefined ? a.priority_rank : 999;
           const bPriority = b.priority_rank !== null && b.priority_rank !== undefined ? b.priority_rank : 999;
           return aPriority - bPriority;
+        }
+        case 'status': {
+          const getStatusOrder = (contact: ContactWithActivity) => {
+            if (contact.is_client) return 0;
+            if (contact.has_traction) return 1;
+            if (!contact.is_jammed && !contact.is_dead) return 2;
+            if (contact.is_jammed) return 3;
+            if (contact.is_dead) return 4;
+            return 5;
+          };
+          return getStatusOrder(a) - getStatusOrder(b);
         }
         case 'recent-activity': {
           const getLastActivity = (contact: ContactWithActivity) => {
@@ -3253,7 +3264,7 @@ function App() {
                   }`}
                   title="Map View"
                 >
-                  <Map className="w-4 h-4" />
+                  <MapIcon className="w-4 h-4" />
                 </button>
               )}
             </div>
@@ -3902,6 +3913,7 @@ function App() {
                   <option value="timezone">Timezone</option>
                   <option value="email_type">Email Type</option>
                   <option value="priority">Priority</option>
+                  <option value="status">Status</option>
                   <option value="recent-activity">Most Recent Activity</option>
                 </select>
               </div>
