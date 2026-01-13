@@ -238,6 +238,15 @@ function App() {
   }, [user, currentWorkspace]);
 
   useEffect(() => {
+    if (selectedContact) {
+      const updated = contacts.find(c => c.id === selectedContact.id);
+      if (updated) {
+        setSelectedContact(updated);
+      }
+    }
+  }, [contacts]);
+
+  useEffect(() => {
     let filtered = [...contacts];
 
     // Apply search filter
@@ -1248,11 +1257,6 @@ function App() {
       }
 
       await loadContacts();
-
-      const updatedContact = contacts.find(c => c.id === selectedContact.id);
-      if (updatedContact) {
-        setSelectedContact(updatedContact);
-      }
       setEditingEmail(undefined);
     } catch (error) {
       console.error('Error saving email:', error);
