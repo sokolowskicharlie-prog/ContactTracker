@@ -1393,6 +1393,17 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                                     <span className="text-blue-600 font-medium">• Suggested</span>
                                   )}
                                 </div>
+                                {contact?.follow_up_date && (
+                                  <div className="mt-1 text-xs text-blue-600 flex items-start gap-1">
+                                    <Calendar className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                    <div>
+                                      <span className="font-medium">Follow-up: {new Date(contact.follow_up_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                      {contact.follow_up_reason && (
+                                        <div className="text-gray-600 italic mt-0.5">{contact.follow_up_reason}</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
                                 {schedule.notes && (
                                   <p className="text-xs text-gray-600 mt-1 italic">{schedule.notes}</p>
                                 )}

@@ -1435,6 +1435,7 @@ function App() {
           dead_additional_note: contact.dead_additional_note,
           priority_rank: contact.priority_rank,
           follow_up_date: contact.follow_up_date,
+          follow_up_reason: contact.follow_up_reason,
         })
         .eq('id', contact.id);
 
