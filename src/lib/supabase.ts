@@ -35,6 +35,7 @@ export type Contact = {
   client_date?: string;
   dead_date?: string;
   follow_up_date?: string;
+  follow_up_reason?: string;
   jammed_note?: string;
   jammed_additional_note?: string;
   client_note?: string;
