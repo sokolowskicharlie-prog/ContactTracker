@@ -79,6 +79,7 @@ function App() {
   const [filteredSuppliers, setFilteredSuppliers] = useState<SupplierWithOrders[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSupplierSearch, setSelectedSupplierSearch] = useState('');
+  const [supplierSearchQuery, setSupplierSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showCallModal, setShowCallModal] = useState(false);
@@ -621,6 +622,27 @@ function App() {
       );
     }
 
+    if (supplierSearchQuery.trim() !== '') {
+      const query = supplierSearchQuery.toLowerCase();
+      filtered = filtered.filter((supplier) => {
+        const companyMatch = supplier.company_name.toLowerCase().includes(query);
+        const contactMatch = supplier.contact_person?.toLowerCase().includes(query);
+        const emailMatch = (supplier.general_email?.toLowerCase().includes(query) || supplier.email?.toLowerCase().includes(query));
+        const phoneMatch = supplier.phone?.toLowerCase().includes(query);
+        const countryMatch = supplier.country?.toLowerCase().includes(query);
+        const regionMatch = supplier.regions?.some(r => r.name.toLowerCase().includes(query));
+
+        const portsMatch = supplier.ports_detailed?.some(port =>
+          port.port_name.toLowerCase().includes(query)
+        ) || supplier.ports?.toLowerCase().includes(query);
+
+        const fuelTypesMatch = supplier.fuel_types?.toLowerCase().includes(query);
+
+        return companyMatch || contactMatch || emailMatch || phoneMatch || countryMatch ||
+               regionMatch || portsMatch || fuelTypesMatch;
+      });
+    }
+
     if (filterPort !== 'all') {
       filtered = filtered.filter((supplier) => {
         if (!supplier.ports_detailed || supplier.ports_detailed.length === 0) {
@@ -688,7 +710,7 @@ function App() {
     });
 
     setFilteredSuppliers(filtered);
-  }, [suppliers, selectedSupplierSearch, filterPort, filterFuelType, filterDeliveryMethod, filterRegion, filterBusinessClassification, supplierSortBy]);
+  }, [suppliers, selectedSupplierSearch, supplierSearchQuery, filterPort, filterFuelType, filterDeliveryMethod, filterRegion, filterBusinessClassification, supplierSortBy]);
 
   useEffect(() => {
     let filtered = [...tasks];
@@ -3962,22 +3984,21 @@ function App() {
             <div className="mb-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <select
-                  value={selectedSupplierSearch}
-                  onChange={(e) => setSelectedSupplierSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none"
-                >
-                  <option value="">All Suppliers</option>
-                  {suppliers
-                    .sort((a, b) => a.company_name.localeCompare(b.company_name))
-                    .map((supplier) => (
-                      <option key={supplier.id} value={supplier.id}>
-                        {supplier.company_name}
-                        {supplier.country ? ` - ${supplier.country}` : ''}
-                      </option>
-                    ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+                <input
+                  type="text"
+                  value={supplierSearchQuery}
+                  onChange={(e) => setSupplierSearchQuery(e.target.value)}
+                  placeholder="Search suppliers, ports, regions, fuel types..."
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+                {supplierSearchQuery && (
+                  <button
+                    onClick={() => setSupplierSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -4132,14 +4153,14 @@ function App() {
                 </div>
               </div>
             )}
-            {(searchQuery.trim() !== '' || filterPort !== 'all' || filterFuelType !== 'all' || filterDeliveryMethod !== 'all' || filterRegion !== 'all' || filterBusinessClassification !== 'all') && (
+            {(supplierSearchQuery.trim() !== '' || filterPort !== 'all' || filterFuelType !== 'all' || filterDeliveryMethod !== 'all' || filterRegion !== 'all' || filterBusinessClassification !== 'all') && (
               <div className="mt-3 flex items-center gap-2">
                 <span className="text-sm text-gray-600">
                   Showing {filteredSuppliers.length} of {suppliers.length} suppliers
                 </span>
                 <button
                   onClick={() => {
-                    setSearchQuery('');
+                    setSupplierSearchQuery('');
                     setFilterPort('all');
                     setFilterFuelType('all');
                     setFilterDeliveryMethod('all');
