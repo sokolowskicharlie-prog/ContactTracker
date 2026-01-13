@@ -2413,6 +2413,23 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                   {schedule.is_suggested && (
                                     <span className="text-blue-600 font-medium">• Suggested</span>
                                   )}
+                                  {(() => {
+                                    const contact = contacts.find(c => c.id === schedule.contact_id);
+                                    if (contact?.follow_up_date) {
+                                      const followUpDate = new Date(contact.follow_up_date);
+                                      const today = new Date();
+                                      today.setHours(0, 0, 0, 0);
+                                      followUpDate.setHours(0, 0, 0, 0);
+                                      const isOverdue = followUpDate < today;
+                                      return (
+                                        <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-600 font-medium' : 'text-blue-600'}`}>
+                                          <Calendar className="w-3 h-3" />
+                                          Follow-up: {new Date(contact.follow_up_date).toLocaleDateString()}
+                                        </span>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
                                 </div>
                                 {schedule.notes && (
                                   <p className="text-xs text-gray-600 mt-1 italic">{schedule.notes}</p>
