@@ -399,6 +399,34 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                   <span className="text-xs text-gray-600">Every {contact.reminder_days} days</span>
                 </div>
               )}
+              {contact.follow_up_date && (
+                <div className={`flex items-center justify-between p-2 rounded-lg ${
+                  new Date(contact.follow_up_date) < new Date(new Date().setHours(0, 0, 0, 0))
+                    ? 'bg-red-50 border border-red-200'
+                    : new Date(contact.follow_up_date) <= new Date(new Date().setDate(new Date().getDate() + 3))
+                    ? 'bg-yellow-50 border border-yellow-200'
+                    : 'bg-purple-50 border border-purple-200'
+                }`}>
+                  <div className="flex items-center text-sm">
+                    <Calendar className={`w-4 h-4 mr-1 ${
+                      new Date(contact.follow_up_date) < new Date(new Date().setHours(0, 0, 0, 0))
+                        ? 'text-red-600'
+                        : 'text-purple-600'
+                    }`} />
+                    <span className={
+                      new Date(contact.follow_up_date) < new Date(new Date().setHours(0, 0, 0, 0))
+                        ? 'text-red-700 font-medium'
+                        : 'text-purple-700'
+                    }>
+                      Follow-up: {new Date(contact.follow_up_date).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-sm text-gray-600">
                   <Phone className="w-4 h-4 mr-1" />

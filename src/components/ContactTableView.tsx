@@ -28,6 +28,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'lastActivity', label: 'Last Activity', visible: true, width: 150 },
   { id: 'nextTask', label: 'Next Task', visible: true, width: 180 },
   { id: 'nextCall', label: 'Next Call', visible: true, width: 150 },
+  { id: 'followUp', label: 'Follow Up', visible: true, width: 150 },
 ];
 
 export default function ContactTableView({
@@ -404,6 +405,34 @@ export default function ContactTableView({
           </div>
         ) : (
           <span className="text-sm text-gray-400">-</span>
+        );
+      case 'followUp':
+        if (!contact.follow_up_date) {
+          return <span className="text-sm text-gray-400">-</span>;
+        }
+        const followUpDate = new Date(contact.follow_up_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const followUpDiffTime = followUpDate.getTime() - today.getTime();
+        const followUpDiffDays = Math.ceil(followUpDiffTime / (1000 * 60 * 60 * 24));
+        const followUpIsOverdue = followUpDiffDays < 0;
+        return (
+          <div className="flex flex-col gap-1">
+            <div
+              className={`text-sm font-medium ${
+                followUpIsOverdue ? 'text-red-600' : 'text-purple-700'
+              }`}
+            >
+              {followUpDate.toLocaleDateString()}
+            </div>
+            <div className={`text-xs ${followUpIsOverdue ? 'text-red-600' : 'text-gray-500'}`}>
+              {followUpIsOverdue
+                ? `${Math.abs(followUpDiffDays)} days overdue`
+                : followUpDiffDays === 0
+                ? 'Today'
+                : `in ${followUpDiffDays} days`}
+            </div>
+          </div>
         );
       default:
         return null;
