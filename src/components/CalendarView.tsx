@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Phone, Mail, CheckSquare, Circle, CheckCircle2, DollarSign, Calendar as CalendarIcon, Plus, X } from 'lucide-react';
-import { TaskWithRelated, Holiday, supabase } from '../lib/supabase';
+import { ChevronLeft, ChevronRight, Phone, Mail, CheckSquare, Circle, CheckCircle2, DollarSign, Calendar as CalendarIcon, Plus, X, Clock } from 'lucide-react';
+import { TaskWithRelated, Holiday, Meeting, supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
 interface DailyGoal {
@@ -49,14 +49,24 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [showAddHolidayModal, setShowAddHolidayModal] = useState(false);
+  const [showAddMeetingModal, setShowAddMeetingModal] = useState(false);
   const [newHolidayName, setNewHolidayName] = useState('');
   const [newHolidayDate, setNewHolidayDate] = useState('');
+  const [newHolidayEndDate, setNewHolidayEndDate] = useState('');
   const [newHolidayDescription, setNewHolidayDescription] = useState('');
+  const [newMeetingTitle, setNewMeetingTitle] = useState('');
+  const [newMeetingDate, setNewMeetingDate] = useState('');
+  const [newMeetingStartTime, setNewMeetingStartTime] = useState('');
+  const [newMeetingEndTime, setNewMeetingEndTime] = useState('');
+  const [newMeetingLocation, setNewMeetingLocation] = useState('');
+  const [newMeetingDescription, setNewMeetingDescription] = useState('');
 
   useEffect(() => {
     if (user) {
       loadHolidays();
+      loadMeetings();
     }
   }, [user, currentDate]);
 
@@ -69,14 +79,35 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
     const { data, error } = await supabase
       .from('holidays')
       .select('*')
-      .gte('date', startOfMonth.toISOString().split('T')[0])
-      .lte('date', endOfMonth.toISOString().split('T')[0])
+      .or(`date.gte.${startOfMonth.toISOString().split('T')[0]},end_date.gte.${startOfMonth.toISOString().split('T')[0]}`)
+      .or(`date.lte.${endOfMonth.toISOString().split('T')[0]},end_date.lte.${endOfMonth.toISOString().split('T')[0]}`)
       .order('date', { ascending: true });
 
     if (error) {
       console.error('Error loading holidays:', error);
     } else {
       setHolidays(data || []);
+    }
+  };
+
+  const loadMeetings = async () => {
+    if (!user) return;
+
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+    const { data, error } = await supabase
+      .from('meetings')
+      .select('*')
+      .gte('date', startOfMonth.toISOString().split('T')[0])
+      .lte('date', endOfMonth.toISOString().split('T')[0])
+      .order('date', { ascending: true })
+      .order('start_time', { ascending: true });
+
+    if (error) {
+      console.error('Error loading meetings:', error);
+    } else {
+      setMeetings(data || []);
     }
   };
 
@@ -89,6 +120,7 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
         user_id: user.id,
         name: newHolidayName,
         date: newHolidayDate,
+        end_date: newHolidayEndDate || null,
         is_public: false,
         description: newHolidayDescription || null
       });
@@ -100,8 +132,55 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
       setShowAddHolidayModal(false);
       setNewHolidayName('');
       setNewHolidayDate('');
+      setNewHolidayEndDate('');
       setNewHolidayDescription('');
       loadHolidays();
+    }
+  };
+
+  const handleAddMeeting = async () => {
+    if (!user || !newMeetingTitle || !newMeetingDate || !newMeetingStartTime) return;
+
+    const { error } = await supabase
+      .from('meetings')
+      .insert({
+        user_id: user.id,
+        title: newMeetingTitle,
+        date: newMeetingDate,
+        start_time: newMeetingStartTime,
+        end_time: newMeetingEndTime || null,
+        location: newMeetingLocation || null,
+        description: newMeetingDescription || null
+      });
+
+    if (error) {
+      console.error('Error adding meeting:', error);
+      alert('Failed to add meeting. Please try again.');
+    } else {
+      setShowAddMeetingModal(false);
+      setNewMeetingTitle('');
+      setNewMeetingDate('');
+      setNewMeetingStartTime('');
+      setNewMeetingEndTime('');
+      setNewMeetingLocation('');
+      setNewMeetingDescription('');
+      loadMeetings();
+    }
+  };
+
+  const handleDeleteMeeting = async (meetingId: string) => {
+    if (!confirm('Are you sure you want to delete this meeting?')) return;
+
+    const { error } = await supabase
+      .from('meetings')
+      .delete()
+      .eq('id', meetingId);
+
+    if (error) {
+      console.error('Error deleting meeting:', error);
+      alert('Failed to delete meeting. Please try again.');
+    } else {
+      loadMeetings();
     }
   };
 
@@ -190,6 +269,13 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
     return tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr)).length;
   };
 
+  const isDateInRange = (dateStr: string, startDate: string, endDate?: string) => {
+    if (!endDate) {
+      return dateStr === startDate;
+    }
+    return dateStr >= startDate && dateStr <= endDate;
+  };
+
   const getEventCounts = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
 
@@ -198,7 +284,8 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
     const callsCount = communications.filter(comm => comm.type === 'call' && comm.date && comm.date.startsWith(dateStr)).length;
     const emailsCount = communications.filter(comm => comm.type === 'email' && comm.date && comm.date.startsWith(dateStr)).length;
     const dealsCount = fuelDeals.filter(deal => deal.created_at && deal.created_at.startsWith(dateStr)).length;
-    const holidaysForDate = holidays.filter(holiday => holiday.date === dateStr);
+    const holidaysForDate = holidays.filter(holiday => isDateInRange(dateStr, holiday.date, holiday.end_date || undefined));
+    const meetingsForDate = meetings.filter(meeting => meeting.date === dateStr);
 
     return {
       tasksDue: tasksDueCount,
@@ -207,6 +294,7 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
       emails: emailsCount,
       deals: dealsCount,
       holidays: holidaysForDate,
+      meetings: meetingsForDate,
     };
   };
 
@@ -329,14 +417,27 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
             <CalendarIcon className="w-3 h-3 text-rose-600" />
             <span className="text-gray-600">Holidays</span>
           </div>
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3 h-3 text-violet-600" />
+            <span className="text-gray-600">Meetings</span>
+          </div>
         </div>
-        <button
-          onClick={() => setShowAddHolidayModal(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Personal Holiday
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowAddHolidayModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Holiday
+          </button>
+          <button
+            onClick={() => setShowAddMeetingModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Meeting
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-7 gap-1">
@@ -406,6 +507,7 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
                         <div className="flex-1 min-w-0">
                           <div className={`text-xs truncate ${holiday.is_public ? 'text-rose-700 font-semibold' : 'text-pink-700'}`} title={holiday.name}>
                             {holiday.name}
+                            {holiday.end_date && ` (${holiday.date} - ${holiday.end_date})`}
                           </div>
                           {!holiday.is_public && (
                             <button
@@ -418,6 +520,29 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
                               Delete
                             </button>
                           )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {counts.meetings.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    {counts.meetings.map(meeting => (
+                      <div key={meeting.id} className="flex items-start gap-1 mb-1 group">
+                        <Clock className="w-3 h-3 flex-shrink-0 mt-0.5 text-violet-600" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs truncate text-violet-700 font-semibold" title={meeting.title}>
+                            {meeting.start_time.substring(0, 5)} {meeting.title}
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteMeeting(meeting.id);
+                            }}
+                            className="text-[10px] text-red-600 hover:text-red-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            Delete
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -439,6 +564,7 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
                   setShowAddHolidayModal(false);
                   setNewHolidayName('');
                   setNewHolidayDate('');
+                  setNewHolidayEndDate('');
                   setNewHolidayDescription('');
                 }}
                 className="text-gray-400 hover:text-gray-600"
@@ -462,17 +588,31 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date *
-                </label>
-                <input
-                  type="date"
-                  value={newHolidayDate}
-                  onChange={(e) => setNewHolidayDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Start Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={newHolidayDate}
+                    onChange={(e) => setNewHolidayDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={newHolidayEndDate}
+                    onChange={(e) => setNewHolidayEndDate(e.target.value)}
+                    min={newHolidayDate}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                  />
+                </div>
               </div>
 
               <div>
@@ -494,6 +634,7 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
                     setShowAddHolidayModal(false);
                     setNewHolidayName('');
                     setNewHolidayDate('');
+                    setNewHolidayEndDate('');
                     setNewHolidayDescription('');
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
@@ -506,6 +647,135 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
                   className="flex-1 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   Add Holiday
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddMeetingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Schedule Meeting</h3>
+              <button
+                onClick={() => {
+                  setShowAddMeetingModal(false);
+                  setNewMeetingTitle('');
+                  setNewMeetingDate('');
+                  setNewMeetingStartTime('');
+                  setNewMeetingEndTime('');
+                  setNewMeetingLocation('');
+                  setNewMeetingDescription('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Meeting Title *
+                </label>
+                <input
+                  type="text"
+                  value={newMeetingTitle}
+                  onChange={(e) => setNewMeetingTitle(e.target.value)}
+                  placeholder="e.g., Client Meeting, Team Standup"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Date *
+                </label>
+                <input
+                  type="date"
+                  value={newMeetingDate}
+                  onChange={(e) => setNewMeetingDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Start Time *
+                  </label>
+                  <input
+                    type="time"
+                    value={newMeetingStartTime}
+                    onChange={(e) => setNewMeetingStartTime(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Time (Optional)
+                  </label>
+                  <input
+                    type="time"
+                    value={newMeetingEndTime}
+                    onChange={(e) => setNewMeetingEndTime(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Location/Link (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newMeetingLocation}
+                  onChange={(e) => setNewMeetingLocation(e.target.value)}
+                  placeholder="e.g., Conference Room A, Zoom Link"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={newMeetingDescription}
+                  onChange={(e) => setNewMeetingDescription(e.target.value)}
+                  placeholder="Agenda, notes, or additional details..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowAddMeetingModal(false);
+                    setNewMeetingTitle('');
+                    setNewMeetingDate('');
+                    setNewMeetingStartTime('');
+                    setNewMeetingEndTime('');
+                    setNewMeetingLocation('');
+                    setNewMeetingDescription('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddMeeting}
+                  disabled={!newMeetingTitle || !newMeetingDate || !newMeetingStartTime}
+                  className="flex-1 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Schedule Meeting
                 </button>
               </div>
             </div>

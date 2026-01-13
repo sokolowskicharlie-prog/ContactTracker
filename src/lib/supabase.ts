@@ -308,10 +308,29 @@ export type Holiday = {
   user_id?: string;
   name: string;
   date: string;
+  end_date?: string;
   is_public: boolean;
   country?: string;
   description?: string;
   created_at: string;
+};
+
+export type Meeting = {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  date: string;
+  start_time: string;
+  end_time?: string;
+  location?: string;
+  contact_id?: string;
+  supplier_id?: string;
+  reminder_minutes?: number;
+  is_completed: boolean;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export type CustomJammedReason = {
