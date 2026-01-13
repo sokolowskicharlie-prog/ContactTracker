@@ -107,6 +107,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   const [emailDuration, setEmailDuration] = useState(15);
   const [dealDuration, setDealDuration] = useState(30);
   const [statusFilters, setStatusFilters] = useState<('none' | 'jammed' | 'traction' | 'client' | 'dead')[]>(['none', 'traction', 'client']);
+  const [excludedCountries, setExcludedCountries] = useState<string[]>([]);
+  const [availableCountries, setAvailableCountries] = useState<string[]>([]);
   const [replacingScheduleId, setReplacingScheduleId] = useState<string | null>(null);
   const [replaceContactId, setReplaceContactId] = useState<string>('');
   const [isAddingCall, setIsAddingCall] = useState(false);
@@ -118,8 +120,21 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
       loadGoals();
       loadSettings();
       loadContactPersons();
+      loadExcludedCountries();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (contacts.length > 0) {
+      const countries = new Set<string>();
+      contacts.forEach(c => {
+        if (c.country) {
+          countries.add(c.country);
+        }
+      });
+      setAvailableCountries(Array.from(countries).sort());
+    }
+  }, [contacts]);
 
   useEffect(() => {
     if (selectedGoal && selectedGoal.goal_type === 'calls') {
@@ -219,6 +234,38 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
       }
     } catch (error) {
       console.error('Error loading settings:', error);
+    }
+  };
+
+  const loadExcludedCountries = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('excluded_countries')
+        .eq('user_id', user!.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data && data.excluded_countries) {
+        setExcludedCountries(data.excluded_countries);
+      }
+    } catch (error) {
+      console.error('Error loading excluded countries:', error);
+    }
+  };
+
+  const saveExcludedCountries = async (countries: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({ excluded_countries: countries })
+        .eq('user_id', user!.id);
+
+      if (error) throw error;
+      setExcludedCountries(countries);
+    } catch (error) {
+      console.error('Error saving excluded countries:', error);
     }
   };
 
@@ -647,7 +694,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
           callDurationMins: scheduleDuration,
           fillRestOfDay: true,
           simpleMode: true,
-          statusFilters: statusFilters.length > 0 ? statusFilters : undefined
+          statusFilters: statusFilters.length > 0 ? statusFilters : undefined,
+          excludedCountries: excludedCountries.length > 0 ? excludedCountries : undefined
         };
 
         // Fetch call_back tasks that are not completed and due today
@@ -1226,6 +1274,36 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                       ))}
                     </div>
                   </div>
+                  {availableCountries.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">Exclude Countries</label>
+                      <div className="max-h-32 overflow-y-auto p-2 bg-white border border-gray-200 rounded-lg">
+                        <div className="flex flex-wrap gap-2">
+                          {availableCountries.map(country => (
+                            <label key={country} className="flex items-center gap-1.5 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={excludedCountries.includes(country)}
+                                onChange={(e) => {
+                                  const newExcluded = e.target.checked
+                                    ? [...excludedCountries, country]
+                                    : excludedCountries.filter(c => c !== country);
+                                  saveExcludedCountries(newExcluded);
+                                }}
+                                className="w-3.5 h-3.5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                              />
+                              <span className="text-xs font-medium px-2 py-0.5 rounded border bg-gray-50 text-gray-800 border-gray-300">
+                                {country}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Contacts from excluded countries will not be included in the auto-generated schedule
+                      </p>
+                    </div>
+                  )}
                   <p className="text-xs text-gray-600">
                     Schedule will prioritize by timezone and suggest contacts based on activity
                   </p>

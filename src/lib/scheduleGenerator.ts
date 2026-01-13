@@ -32,6 +32,7 @@ export interface ScheduleParams {
   timezoneDistribution?: Record<string, number>;
   priorityDistribution?: Record<PriorityLabel, number>;
   statusFilters?: ('none' | 'jammed' | 'traction' | 'client' | 'dead')[];
+  excludedCountries?: string[];
 }
 
 export interface SuggestedContact {
@@ -228,7 +229,7 @@ export function generateCallSchedule(
   goalId: string,
   tasks: Task[] = []
 ): Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] {
-  const { totalCalls, startTimeGMT, deadlineGMT, callDurationMins, fillRestOfDay, simpleMode, statusFilters } = params;
+  const { totalCalls, startTimeGMT, deadlineGMT, callDurationMins, fillRestOfDay, simpleMode, statusFilters, excludedCountries } = params;
 
   // Use startTimeGMT if provided, otherwise use current time
   const startTime = startTimeGMT ? new Date(startTimeGMT) : new Date();
@@ -263,7 +264,8 @@ export function generateCallSchedule(
       contacts,
       userId,
       goalId,
-      statusFilters
+      statusFilters,
+      excludedCountries
     );
   }
 
@@ -284,6 +286,13 @@ export function generateCallSchedule(
   } else {
     // Default: filter out jammed and dead contacts
     activeContacts = contacts.filter(c => !c.is_jammed && !c.is_dead);
+  }
+
+  // Filter out excluded countries
+  if (excludedCountries && excludedCountries.length > 0) {
+    activeContacts = activeContacts.filter(c => {
+      return !c.country || !excludedCountries.includes(c.country);
+    });
   }
 
   // Group contacts by timezone
@@ -656,7 +665,8 @@ function generateSimpleSchedule(
   contacts: (Contact | ContactWithActivity)[],
   userId: string,
   goalId: string,
-  statusFilters?: ('none' | 'jammed' | 'traction' | 'client' | 'dead')[]
+  statusFilters?: ('none' | 'jammed' | 'traction' | 'client' | 'dead')[],
+  excludedCountries?: string[]
 ): Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] {
   const schedule: Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] = [];
 
@@ -674,6 +684,13 @@ function generateSimpleSchedule(
   } else {
     // Default: filter out jammed and dead contacts
     activeContacts = contacts.filter(c => !c.is_jammed && !c.is_dead);
+  }
+
+  // Filter out excluded countries
+  if (excludedCountries && excludedCountries.length > 0) {
+    activeContacts = activeContacts.filter(c => {
+      return !c.country || !excludedCountries.includes(c.country);
+    });
   }
 
   // Sort contacts by priority
