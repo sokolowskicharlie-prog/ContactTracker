@@ -303,6 +303,17 @@ export type CallSchedule = {
   updated_at: string;
 };
 
+export type Holiday = {
+  id: string;
+  user_id?: string;
+  name: string;
+  date: string;
+  is_public: boolean;
+  country?: string;
+  description?: string;
+  created_at: string;
+};
+
 export type CustomJammedReason = {
   id: string;
   user_id: string;
