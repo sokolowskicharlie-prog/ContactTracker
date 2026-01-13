@@ -2816,6 +2816,23 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                 Duration: {call.duration} minutes
                               </div>
                             )}
+                            {(() => {
+                              const contact = contacts.find(c => c.id === call.contact_id);
+                              if (contact?.follow_up_date) {
+                                const followUpDate = new Date(contact.follow_up_date);
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                followUpDate.setHours(0, 0, 0, 0);
+                                const isOverdue = followUpDate < today;
+                                return (
+                                  <div className={`flex items-center gap-2 text-sm mb-1 ${isOverdue ? 'text-red-600 font-medium' : 'text-blue-600'}`}>
+                                    <Calendar className="w-4 h-4" />
+                                    <span>Follow-up: {new Date(contact.follow_up_date).toLocaleDateString()}</span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
                             {call.notes && (
                               <div className="mt-2 text-sm text-gray-700 bg-white p-2 rounded">
                                 {call.notes}
