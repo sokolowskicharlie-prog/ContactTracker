@@ -53,6 +53,7 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
   const [deadAdditionalNote, setDeadAdditionalNote] = useState('');
   const [priorityRank, setPriorityRank] = useState<string>(contact.priority_rank?.toString() || '');
   const [followUpDate, setFollowUpDate] = useState(contact.follow_up_date || '');
+  const [followUpReason, setFollowUpReason] = useState(contact.follow_up_reason || '');
   const [customJammedReasons, setCustomJammedReasons] = useState<CustomJammedReason[]>([]);
   const [customTractionReasons, setCustomTractionReasons] = useState<CustomJammedReason[]>([]);
   const [customClientReasons, setCustomClientReasons] = useState<CustomJammedReason[]>([]);
@@ -309,7 +310,8 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
   const saveFollowUpDate = async () => {
     const updatedContact = {
       ...contact,
-      follow_up_date: followUpDate || null
+      follow_up_date: followUpDate || null,
+      follow_up_reason: followUpReason || null
     };
     await onEditContact(updatedContact);
   };
@@ -387,27 +389,43 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
               )}
             </div>
             {/* Follow-up Date */}
-            <div className="mb-3 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gray-500" />
-              <label className="text-sm font-medium text-gray-700">Follow-up:</label>
-              <input
-                type="date"
-                value={followUpDate ? new Date(followUpDate).toISOString().split('T')[0] : ''}
-                onChange={(e) => setFollowUpDate(e.target.value ? new Date(e.target.value).toISOString() : '')}
-                onBlur={saveFollowUpDate}
-                className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+            <div className="mb-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <label className="text-sm font-medium text-gray-700">Follow-up:</label>
+                <input
+                  type="date"
+                  value={followUpDate ? new Date(followUpDate).toISOString().split('T')[0] : ''}
+                  onChange={(e) => setFollowUpDate(e.target.value ? new Date(e.target.value).toISOString() : '')}
+                  onBlur={saveFollowUpDate}
+                  className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {followUpDate && (
+                  <button
+                    onClick={() => {
+                      setFollowUpDate('');
+                      setFollowUpReason('');
+                      onEditContact({ ...contact, follow_up_date: null, follow_up_reason: null });
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                    title="Clear follow-up date"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
               {followUpDate && (
-                <button
-                  onClick={() => {
-                    setFollowUpDate('');
-                    onEditContact({ ...contact, follow_up_date: null });
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                  title="Clear follow-up date"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-2 ml-6">
+                  <label className="text-sm font-medium text-gray-700">Reason:</label>
+                  <input
+                    type="text"
+                    value={followUpReason}
+                    onChange={(e) => setFollowUpReason(e.target.value)}
+                    onBlur={saveFollowUpDate}
+                    placeholder="Why follow up?"
+                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
               )}
             </div>
 

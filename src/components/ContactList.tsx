@@ -400,7 +400,7 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                 </div>
               )}
               {contact.follow_up_date && (
-                <div className={`flex items-center justify-between p-2 rounded-lg ${
+                <div className={`p-2 rounded-lg ${
                   new Date(contact.follow_up_date) < new Date(new Date().setHours(0, 0, 0, 0))
                     ? 'bg-red-50 border border-red-200'
                     : new Date(contact.follow_up_date) <= new Date(new Date().setDate(new Date().getDate() + 3))
@@ -425,6 +425,11 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                       })}
                     </span>
                   </div>
+                  {contact.follow_up_reason && (
+                    <div className="text-xs text-gray-600 mt-1 ml-5">
+                      {contact.follow_up_reason}
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex items-center justify-between">

@@ -2402,30 +2402,43 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                     </span>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-3 text-xs text-gray-600">
-                                  {schedule.timezone_label && localTime && (
-                                    <span className="flex items-center gap-1">
-                                      <Clock className="w-3 h-3" />
-                                      {localTime} {schedule.timezone_label}
-                                    </span>
-                                  )}
-                                  <span>{schedule.call_duration_mins} min</span>
-                                  {schedule.is_suggested && (
-                                    <span className="text-blue-600 font-medium">• Suggested</span>
-                                  )}
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex items-center gap-3 text-xs text-gray-600">
+                                    {schedule.timezone_label && localTime && (
+                                      <span className="flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {localTime} {schedule.timezone_label}
+                                      </span>
+                                    )}
+                                    <span>{schedule.call_duration_mins} min</span>
+                                    {schedule.is_suggested && (
+                                      <span className="text-blue-600 font-medium">• Suggested</span>
+                                    )}
+                                    {(() => {
+                                      const contact = contacts.find(c => c.id === schedule.contact_id);
+                                      if (contact?.follow_up_date) {
+                                        const followUpDate = new Date(contact.follow_up_date);
+                                        const today = new Date();
+                                        today.setHours(0, 0, 0, 0);
+                                        followUpDate.setHours(0, 0, 0, 0);
+                                        const isOverdue = followUpDate < today;
+                                        return (
+                                          <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-600 font-medium' : 'text-blue-600'}`}>
+                                            <Calendar className="w-3 h-3" />
+                                            Follow-up: {new Date(contact.follow_up_date).toLocaleDateString()}
+                                          </span>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
+                                  </div>
                                   {(() => {
                                     const contact = contacts.find(c => c.id === schedule.contact_id);
-                                    if (contact?.follow_up_date) {
-                                      const followUpDate = new Date(contact.follow_up_date);
-                                      const today = new Date();
-                                      today.setHours(0, 0, 0, 0);
-                                      followUpDate.setHours(0, 0, 0, 0);
-                                      const isOverdue = followUpDate < today;
+                                    if (contact?.follow_up_reason) {
                                       return (
-                                        <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-600 font-medium' : 'text-blue-600'}`}>
-                                          <Calendar className="w-3 h-3" />
-                                          Follow-up: {new Date(contact.follow_up_date).toLocaleDateString()}
-                                        </span>
+                                        <div className="text-xs text-gray-600 italic">
+                                          {contact.follow_up_reason}
+                                        </div>
                                       );
                                     }
                                     return null;
@@ -2825,9 +2838,16 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                 followUpDate.setHours(0, 0, 0, 0);
                                 const isOverdue = followUpDate < today;
                                 return (
-                                  <div className={`flex items-center gap-2 text-sm mb-1 ${isOverdue ? 'text-red-600 font-medium' : 'text-blue-600'}`}>
-                                    <Calendar className="w-4 h-4" />
-                                    <span>Follow-up: {new Date(contact.follow_up_date).toLocaleDateString()}</span>
+                                  <div className={`text-sm mb-1 ${isOverdue ? 'text-red-600 font-medium' : 'text-blue-600'}`}>
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="w-4 h-4" />
+                                      <span>Follow-up: {new Date(contact.follow_up_date).toLocaleDateString()}</span>
+                                    </div>
+                                    {contact.follow_up_reason && (
+                                      <div className="text-xs text-gray-600 ml-6 mt-0.5">
+                                        {contact.follow_up_reason}
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               }
