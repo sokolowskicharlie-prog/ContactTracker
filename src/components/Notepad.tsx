@@ -196,7 +196,7 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
   };
 
   return (
-    <div className="fixed right-4 z-40 w-80" style={{ top: `${calculateTopPosition()}px` }}>
+    <div className="fixed right-4 z-50 w-80" style={{ top: `${calculateTopPosition()}px` }}>
       <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -276,7 +276,7 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
               </div>
 
               {showSearchResults && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto z-50">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto z-[60]">
                   {isSearching ? (
                     <div className="p-4 text-center text-sm text-gray-500">Searching...</div>
                   ) : searchResults.length > 0 ? (
@@ -342,7 +342,7 @@ export default function Notepad({ isOpen, onClose, content, onSave, showGoals, c
       </div>
 
       {showSaveModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
             <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-6 py-4 flex justify-between items-center">
               <h3 className="text-lg font-semibold">Save to Notes Section</h3>
