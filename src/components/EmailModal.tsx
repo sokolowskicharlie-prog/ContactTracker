@@ -1,25 +1,28 @@
 import { X, User, Mail, CheckSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Email, Contact, Supplier } from '../lib/supabase';
+import { Email, ContactPerson, Contact, Supplier } from '../lib/supabase';
 
 interface EmailModalProps {
   email?: Email;
   contactId: string;
   contactName: string;
+  contactPersons?: ContactPerson[];
   contacts: Contact[];
   suppliers: Supplier[];
   onClose: () => void;
-  onSave: (email: { id?: string; email_date: string; subject?: string; emailed_to?: string; email_address?: string; notes?: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => void;
+  onSave: (email: { id?: string; email_date: string; subject?: string; emailed_to?: string; email_address?: string; notes?: string }, newPIC?: { name: string; email: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => void;
 }
 
-export default function EmailModal({ email, contactId, contactName, contacts, suppliers, onClose, onSave }: EmailModalProps) {
+export default function EmailModal({ email, contactId, contactName, contactPersons = [], contacts, suppliers, onClose, onSave }: EmailModalProps) {
   const [emailDate, setEmailDate] = useState(
     new Date().toISOString().slice(0, 16)
   );
   const [subject, setSubject] = useState('');
-  const [emailedTo, setEmailedTo] = useState('');
-  const [emailAddress, setEmailAddress] = useState('');
+  const [selectedPersonId, setSelectedPersonId] = useState('');
+  const [manualName, setManualName] = useState('');
+  const [selectedEmailAddress, setSelectedEmailAddress] = useState('');
   const [notes, setNotes] = useState('');
+  const [useManualEntry, setUseManualEntry] = useState(false);
   const [createTask, setCreateTask] = useState(false);
   const [taskType, setTaskType] = useState('email_back');
   const [taskTitle, setTaskTitle] = useState('');
@@ -37,14 +40,62 @@ export default function EmailModal({ email, contactId, contactName, contacts, su
     if (email) {
       setEmailDate(new Date(email.email_date).toISOString().slice(0, 16));
       setSubject(email.subject || '');
-      setEmailedTo(email.emailed_to || '');
-      setEmailAddress(email.email_address || '');
       setNotes(email.notes || '');
+
+      const matchedPerson = contactPersons.find(p => p.name === email.emailed_to);
+      if (matchedPerson) {
+        setSelectedPersonId(matchedPerson.id);
+        setSelectedEmailAddress(email.email_address || '');
+      } else {
+        setUseManualEntry(true);
+        setManualName(email.emailed_to || '');
+        setSelectedEmailAddress(email.email_address || '');
+      }
     }
-  }, [email]);
+  }, [email, contactPersons]);
+
+  const getEmailAddresses = (personId: string) => {
+    const person = contactPersons.find(p => p.id === personId);
+    if (!person) return [];
+
+    const emails: { label: string; address: string }[] = [];
+    if (person.email) emails.push({ label: 'Email', address: person.email });
+    return emails;
+  };
+
+  const handlePersonChange = (personId: string) => {
+    setSelectedPersonId(personId);
+    if (personId) {
+      const emails = getEmailAddresses(personId);
+      if (emails.length > 0) {
+        setSelectedEmailAddress(emails[0].address);
+      }
+    } else {
+      setSelectedEmailAddress('');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    let emailedTo = '';
+    let emailAddress = selectedEmailAddress.trim();
+    let newPIC = undefined;
+
+    if (useManualEntry) {
+      emailedTo = manualName.trim();
+      if (emailedTo && emailAddress && !email) {
+        const existingPerson = contactPersons.find(p =>
+          p.name.toLowerCase() === emailedTo.toLowerCase()
+        );
+        if (!existingPerson) {
+          newPIC = { name: emailedTo, email: emailAddress };
+        }
+      }
+    } else if (selectedPersonId) {
+      const person = contactPersons.find(p => p.id === selectedPersonId);
+      emailedTo = person?.name || '';
+    }
 
     const taskData = createTask && taskTitle.trim() ? {
       task_type: taskType,
@@ -59,13 +110,15 @@ export default function EmailModal({ email, contactId, contactName, contacts, su
       ...(email ? { id: email.id } : {}),
       email_date: new Date(emailDate).toISOString(),
       subject: subject.trim() || null,
-      emailed_to: emailedTo.trim() || null,
-      email_address: emailAddress.trim() || null,
+      emailed_to: emailedTo || null,
+      email_address: emailAddress || null,
       notes: notes.trim() || null,
-    }, taskData);
+    }, newPIC, taskData);
 
     onClose();
   };
+
+  const selectedEmails = selectedPersonId ? getEmailAddresses(selectedPersonId) : [];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[70]">
@@ -110,35 +163,97 @@ export default function EmailModal({ email, contactId, contactName, contacts, su
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Emailed To
             </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                value={emailedTo}
-                onChange={(e) => setEmailedTo(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Name of recipient"
-              />
-            </div>
+
+            {contactPersons.length > 0 && (
+              <div className="flex gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setUseManualEntry(false)}
+                  className={`flex-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    !useManualEntry
+                      ? 'bg-blue-100 text-blue-700 font-medium'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Select PIC
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseManualEntry(true);
+                    setSelectedPersonId('');
+                  }}
+                  className={`flex-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    useManualEntry
+                      ? 'bg-blue-100 text-blue-700 font-medium'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Type Manually
+                </button>
+              </div>
+            )}
+
+            {!useManualEntry && contactPersons.length > 0 ? (
+              <select
+                value={selectedPersonId}
+                onChange={(e) => handlePersonChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required={!useManualEntry}
+              >
+                <option value="">Select a person</option>
+                {contactPersons.map(person => (
+                  <option key={person.id} value={person.id}>
+                    {person.name}{person.job_title ? ` - ${person.job_title}` : ''}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  value={manualName}
+                  onChange={(e) => setManualName(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Name of recipient"
+                  required={useManualEntry || contactPersons.length === 0}
+                />
+              </div>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email Address
             </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="email"
-                value={emailAddress}
-                onChange={(e) => setEmailAddress(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="recipient@example.com"
-              />
-            </div>
+            {selectedEmails.length > 0 ? (
+              <select
+                value={selectedEmailAddress}
+                onChange={(e) => setSelectedEmailAddress(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {selectedEmails.map((emailItem, idx) => (
+                  <option key={idx} value={emailItem.address}>
+                    {emailItem.label}: {emailItem.address}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="email"
+                  value={selectedEmailAddress}
+                  onChange={(e) => setSelectedEmailAddress(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="recipient@example.com"
+                />
+              </div>
+            )}
           </div>
 
           <div>

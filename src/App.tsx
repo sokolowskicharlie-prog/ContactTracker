@@ -1163,10 +1163,23 @@ function App() {
     }
   };
 
-  const handleSaveEmail = async (emailData: { id?: string; email_date: string; subject?: string; emailed_to?: string; email_address?: string; notes?: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => {
+  const handleSaveEmail = async (emailData: { id?: string; email_date: string; subject?: string; emailed_to?: string; email_address?: string; notes?: string }, newPIC?: { name: string; email: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => {
     if (!selectedContact) return;
 
     try {
+      if (newPIC) {
+        const { error: picError } = await supabase
+          .from('contact_persons')
+          .insert([{
+            user_id: user.id,
+            contact_id: selectedContact.id,
+            name: newPIC.name,
+            email: newPIC.email,
+          }]);
+
+        if (picError) throw picError;
+      }
+
       if (emailData.id) {
         const { id, ...updateData } = emailData;
         const { error } = await supabase
@@ -4416,6 +4429,7 @@ function App() {
           email={editingEmail}
           contactId={selectedContact.id}
           contactName={selectedContact.name}
+          contactPersons={selectedContact.contact_persons}
           contacts={contacts}
           suppliers={suppliers}
           onClose={() => {
