@@ -16,18 +16,27 @@ interface PriorityPanelProps {
   priorityExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
   panelSpacing?: number;
+  customPriorityLabels?: Record<number, string>;
 }
 
-const PRIORITY_LABELS: Record<number, { label: string; color: string; bgColor: string; borderColor: string }> = {
-  0: { label: 'Client', color: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
-  1: { label: 'Highest', color: 'text-red-700', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
-  2: { label: 'High', color: 'text-orange-700', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
-  3: { label: 'Medium', color: 'text-yellow-700', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
-  4: { label: 'Low', color: 'text-blue-700', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
-  5: { label: 'Lowest', color: 'text-gray-700', bgColor: 'bg-gray-50', borderColor: 'border-gray-200' },
+const PRIORITY_STYLES: Record<number, { color: string; bgColor: string; borderColor: string }> = {
+  0: { color: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
+  1: { color: 'text-red-700', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
+  2: { color: 'text-orange-700', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
+  3: { color: 'text-yellow-700', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
+  4: { color: 'text-blue-700', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
+  5: { color: 'text-gray-700', bgColor: 'bg-gray-50', borderColor: 'border-gray-200' },
 };
 
-export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad, panelOrder = ['notes', 'goals', 'priority'], showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, panelSpacing = 2 }: PriorityPanelProps) {
+export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad, panelOrder = ['notes', 'goals', 'priority'], showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, panelSpacing = 2, customPriorityLabels }: PriorityPanelProps) {
+  const priorityLabels = customPriorityLabels || {
+    0: 'Client',
+    1: 'Highest',
+    2: 'High',
+    3: 'Medium',
+    4: 'Low',
+    5: 'Lowest'
+  };
   const [isExpanded, setIsExpanded] = useState(priorityExpanded);
   const [selectedPriority, setSelectedPriority] = useState<number | null>(null);
 
@@ -179,7 +188,7 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
                   const contactsInPriority = groupedByPriority[priority];
                   if (contactsInPriority.length === 0) return null;
 
-                  const priorityConfig = PRIORITY_LABELS[priority];
+                  const priorityStyles = PRIORITY_STYLES[priority];
                   const isSelected = selectedPriority === priority;
 
                   // Check if this is the last visible priority group
@@ -189,12 +198,12 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
                     <div key={priority} className={`border-b border-gray-200 last:border-b-0 flex-none ${isLastGroup && isSelected ? 'pb-0 mb-0' : ''}`}>
                       <button
                         onClick={() => setSelectedPriority(isSelected ? null : priority)}
-                        className={`w-full px-4 py-2.5 flex items-center justify-between ${priorityConfig.bgColor} hover:opacity-80 transition-opacity flex-none`}
+                        className={`w-full px-4 py-2.5 flex items-center justify-between ${priorityStyles.bgColor} hover:opacity-80 transition-opacity flex-none`}
                       >
                         <div className="flex items-center gap-2">
-                          <span className={`font-bold ${priorityConfig.color} text-lg`}>{priority}</span>
-                          <span className={`text-sm font-medium ${priorityConfig.color}`}>
-                            {priorityConfig.label}
+                          <span className={`font-bold ${priorityStyles.color} text-lg`}>{priority}</span>
+                          <span className={`text-sm font-medium ${priorityStyles.color}`}>
+                            {priorityLabels[priority]}
                           </span>
                         </div>
                         <span className="text-xs text-gray-600 font-medium">

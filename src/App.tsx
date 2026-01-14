@@ -14,6 +14,7 @@ import CallModal from './components/CallModal';
 import EmailModal from './components/EmailModal';
 import ImportModal from './components/ImportModal';
 import SettingsModal from './components/SettingsModal';
+import PriorityLabelSettings from './components/PriorityLabelSettings';
 import VesselModal from './components/VesselModal';
 import FuelDealModal from './components/FuelDealModal';
 import SupplierList from './components/SupplierList';
@@ -209,6 +210,7 @@ function App() {
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showNotepad, setShowNotepad] = useState(false);
   const [showPriorityPanel, setShowPriorityPanel] = useState(false);
+  const [showPriorityLabelSettings, setShowPriorityLabelSettings] = useState(false);
   const [notepadExpanded, setNotepadExpanded] = useState(true);
   const [goalsExpanded, setGoalsExpanded] = useState(true);
   const [priorityExpanded, setPriorityExpanded] = useState(true);
@@ -218,6 +220,14 @@ function App() {
   const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact', 'alerts', 'stats']);
   const [panelOrder, setPanelOrder] = useState<string[]>(['notes', 'goals', 'priority']);
   const [panelSpacing, setPanelSpacing] = useState<number>(2);
+  const [customPriorityLabels, setCustomPriorityLabels] = useState<Record<number, string>>({
+    0: 'Client',
+    1: 'Highest',
+    2: 'High',
+    3: 'Medium',
+    4: 'Low',
+    5: 'Lowest'
+  });
   const { user, loading: authLoading, signOut } = useAuth();
 
   useEffect(() => {
@@ -254,16 +264,6 @@ function App() {
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
 
-      // Priority level mapping
-      const priorityLabels: Record<number, string> = {
-        0: 'client',
-        1: 'highest',
-        2: 'high',
-        3: 'medium',
-        4: 'low',
-        5: 'lowest'
-      };
-
       // Check if searching for "none" variations
       const isNoneSearch = ['none', 'no ', 'empty', 'blank', 'null', 'missing'].some(keyword => query.includes(keyword));
 
@@ -271,7 +271,7 @@ function App() {
         (contact) => {
           const priorityMatch = contact.priority_rank !== null && contact.priority_rank !== undefined && (
             contact.priority_rank.toString().includes(query) ||
-            priorityLabels[contact.priority_rank]?.includes(query)
+            customPriorityLabels[contact.priority_rank]?.toLowerCase().includes(query)
           );
 
           // Check for "none" searches across all fields
@@ -2628,7 +2628,7 @@ function App() {
     try {
       const { data, error } = await supabase
         .from('user_preferences')
-        .select('button_order, visible_filters, panel_order, panel_spacing')
+        .select('button_order, visible_filters, panel_order, panel_spacing, custom_priority_labels')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -2648,6 +2648,17 @@ function App() {
         }
         if (data.panel_spacing !== null && data.panel_spacing !== undefined) {
           setPanelSpacing(data.panel_spacing);
+        }
+        if (data.custom_priority_labels) {
+          const defaultLabels = {
+            0: 'Client',
+            1: 'Highest',
+            2: 'High',
+            3: 'Medium',
+            4: 'Low',
+            5: 'Lowest'
+          };
+          setCustomPriorityLabels({ ...defaultLabels, ...data.custom_priority_labels });
         }
       }
     } catch (error) {
@@ -4338,6 +4349,7 @@ function App() {
             onContactClick={handleContactClick}
             onEditContact={handleEditContact}
             onDeleteContact={handleDeleteContact}
+            customPriorityLabels={customPriorityLabels}
           />
         ) : null}
       </div>
@@ -4487,6 +4499,17 @@ function App() {
           onClose={() => setShowSettingsModal(false)}
           panelSpacing={panelSpacing}
           onSavePanelSpacing={handleSavePanelSpacing}
+          onOpenPriorityLabels={() => {
+            setShowSettingsModal(false);
+            setShowPriorityLabelSettings(true);
+          }}
+        />
+      )}
+
+      {showPriorityLabelSettings && user && (
+        <PriorityLabelSettings
+          onClose={() => setShowPriorityLabelSettings(false)}
+          userId={user.id}
         />
       )}
 
@@ -4834,6 +4857,7 @@ function App() {
         priorityExpanded={priorityExpanded}
         onExpandedChange={setPriorityExpanded}
         panelSpacing={panelSpacing}
+        customPriorityLabels={customPriorityLabels}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { X, Mail, Bell, Save, Plus, Trash2, GripVertical } from 'lucide-react';
+import { X, Mail, Bell, Save, Plus, Trash2, GripVertical, List } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
@@ -22,9 +22,10 @@ interface SettingsModalProps {
   onClose: () => void;
   panelSpacing?: number;
   onSavePanelSpacing?: (spacing: number) => void;
+  onOpenPriorityLabels?: () => void;
 }
 
-export default function SettingsModal({ onClose, panelSpacing = 8, onSavePanelSpacing }: SettingsModalProps) {
+export default function SettingsModal({ onClose, panelSpacing = 8, onSavePanelSpacing, onOpenPriorityLabels }: SettingsModalProps) {
   const [spacing, setSpacing] = useState(panelSpacing);
   const [phoneTypes, setPhoneTypes] = useState<PhoneType[]>([]);
   const [newPhoneTypeLabel, setNewPhoneTypeLabel] = useState('');
@@ -156,6 +157,27 @@ export default function SettingsModal({ onClose, panelSpacing = 8, onSavePanelSp
 
         <div className="p-6 space-y-5">
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Priority Labels
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenPriorityLabels) {
+                  onOpenPriorityLabels();
+                }
+              }}
+              className="w-full px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm"
+            >
+              <List className="w-4 h-4" />
+              Customize Priority Labels
+            </button>
+            <p className="text-xs text-gray-500 mt-2">
+              Change the labels for priority ranks (0-5) to match your workflow
+            </p>
+          </div>
+
+          <div className="border-t border-gray-200 pt-5">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Panel Spacing
             </label>
