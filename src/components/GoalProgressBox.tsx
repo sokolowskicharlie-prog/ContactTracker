@@ -328,7 +328,8 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
         contact_id: replaceContactId,
         contact_name: contact.name,
         timezone_label: contact.timezone || null,
-        contact_status: currentStatus
+        contact_status: currentStatus,
+        priority_rank: contact.priority_rank || null
       })
       .eq('id', scheduleId);
 
@@ -398,6 +399,7 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
           is_suggested: false,
           completed: false,
           call_duration_mins: 20,
+          priority_rank: contact.priority_rank || null,
           timezone_label: contact.timezone || null,
           display_order: maxDisplayOrder + 1,
           user_id: user!.id
@@ -1374,6 +1376,9 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                                       onClick={() => onSelectContact?.(schedule.contact_id)}
                                       className="font-semibold text-gray-900 hover:text-blue-600 underline decoration-transparent hover:decoration-blue-600 transition-all"
                                     >
+                                      {schedule.priority_rank !== null && schedule.priority_rank !== undefined && (
+                                        <span className="text-blue-600 font-bold mr-1">P{schedule.priority_rank}</span>
+                                      )}
                                       {schedule.contact_name}
                                     </button>
                                     <span className={`ml-2 px-2 py-0.5 text-xs font-medium rounded border ${statusColors[currentStatus]}`}>
