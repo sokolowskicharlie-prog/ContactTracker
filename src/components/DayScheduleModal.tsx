@@ -1,5 +1,13 @@
-import { X, CheckCircle2, Circle, Clock, Plus, Phone, Mail, Fuel } from 'lucide-react';
+import { X, CheckCircle2, Circle, Clock, Plus, Phone, Mail, Fuel, Bell } from 'lucide-react';
 import { TaskWithRelated, Call, Email, FuelDeal } from '../lib/supabase';
+
+interface FollowUp {
+  id: string;
+  contact_id: string;
+  contact_name: string;
+  follow_up_date: string;
+  follow_up_reason?: string;
+}
 
 interface DayScheduleModalProps {
   date: Date;
@@ -7,6 +15,7 @@ interface DayScheduleModalProps {
   calls: (Call & { contact_name: string; contact_id: string })[];
   emails: (Email & { contact_name: string; contact_id: string })[];
   fuelDeals: (FuelDeal & { contact_name: string; contact_id: string })[];
+  followUps?: FollowUp[];
   onClose: () => void;
   onTaskClick: (task: TaskWithRelated) => void;
   onCreateTask: () => void;
@@ -17,7 +26,7 @@ interface DayScheduleModalProps {
   onFuelDealClick: (deal: FuelDeal) => void;
 }
 
-export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals, onClose, onTaskClick, onCreateTask, onToggleTask, onContactClick, onCallClick, onEmailClick, onFuelDealClick }: DayScheduleModalProps) {
+export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals, followUps = [], onClose, onTaskClick, onCreateTask, onToggleTask, onContactClick, onCallClick, onEmailClick, onFuelDealClick }: DayScheduleModalProps) {
   const dateStr = date.toISOString().split('T')[0];
   const dayTasks = tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr));
   const dueTasks = dayTasks.filter(task => !task.completed);
@@ -25,6 +34,7 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
   const dayCalls = calls.filter(call => call.call_date.startsWith(dateStr));
   const dayEmails = emails.filter(email => email.email_date.startsWith(dateStr));
   const dayDeals = fuelDeals.filter(deal => deal.deal_date.startsWith(dateStr));
+  const dayFollowUps = followUps.filter(followUp => followUp.follow_up_date.startsWith(dateStr));
 
   const sortedDueTasks = [...dueTasks].sort((a, b) => {
     const timeA = a.due_date ? new Date(a.due_date).getTime() : 0;
@@ -69,7 +79,7 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
     }
   };
 
-  const totalActivities = dueTasks.length + completedTasks.length + dayCalls.length + dayEmails.length + dayDeals.length;
+  const totalActivities = dueTasks.length + completedTasks.length + dayCalls.length + dayEmails.length + dayDeals.length + dayFollowUps.length;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -107,6 +117,37 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
             </div>
           ) : (
             <div className="space-y-6">
+              {dayFollowUps.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-amber-600" />
+                    Follow-Ups Scheduled ({dayFollowUps.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {dayFollowUps.map((followUp) => (
+                      <div
+                        key={followUp.id}
+                        className="p-3 rounded-lg border bg-amber-50 hover:border-amber-300 transition-all cursor-pointer"
+                        onClick={() => {
+                          onContactClick(followUp.contact_id);
+                          onClose();
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Bell className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-gray-900">{followUp.contact_name}</h4>
+                            {followUp.follow_up_reason && (
+                              <p className="text-sm text-gray-700 mt-1">{followUp.follow_up_reason}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {sortedDueTasks.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">

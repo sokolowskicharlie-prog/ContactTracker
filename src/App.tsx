@@ -4640,6 +4640,15 @@ function App() {
             contact_name: c.name,
             contact_id: c.id
           })))}
+          followUps={contacts
+            .filter(c => c.follow_up_date)
+            .map(c => ({
+              id: c.id,
+              contact_id: c.id,
+              contact_name: c.name || c.company || 'Unknown',
+              follow_up_date: c.follow_up_date!,
+              follow_up_reason: c.follow_up_reason,
+            }))}
           onClose={() => {
             setShowDayScheduleModal(false);
             setSelectedDate(null);
