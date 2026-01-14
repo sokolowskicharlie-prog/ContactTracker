@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Phone, Mail, CheckSquare, Circle, CheckCircle2, DollarSign, Calendar as CalendarIcon, Plus, X, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Phone, Mail, CheckSquare, Circle, CheckCircle2, DollarSign, Calendar as CalendarIcon, Plus, X, Clock, Bell } from 'lucide-react';
 import { TaskWithRelated, Holiday, Meeting, supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
@@ -27,11 +27,20 @@ interface FuelDeal {
   created_at: string;
 }
 
+interface FollowUp {
+  id: string;
+  contact_id: string;
+  contact_name: string;
+  follow_up_date: string;
+  follow_up_reason?: string;
+}
+
 interface CalendarViewProps {
   tasks: TaskWithRelated[];
   goals: DailyGoal[];
   communications: Communication[];
   fuelDeals?: FuelDeal[];
+  followUps?: FollowUp[];
   onTaskClick?: (task: TaskWithRelated) => void;
   onDateClick?: (date: Date) => void;
 }
@@ -45,7 +54,7 @@ interface CalendarEvent {
   data: any;
 }
 
-export default function CalendarView({ tasks, goals, communications, fuelDeals = [], onTaskClick, onDateClick }: CalendarViewProps) {
+export default function CalendarView({ tasks, goals, communications, fuelDeals = [], followUps = [], onTaskClick, onDateClick }: CalendarViewProps) {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -286,6 +295,7 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
     const dealsCount = fuelDeals.filter(deal => deal.created_at && deal.created_at.startsWith(dateStr)).length;
     const holidaysForDate = holidays.filter(holiday => isDateInRange(dateStr, holiday.date, holiday.end_date || undefined));
     const meetingsForDate = meetings.filter(meeting => meeting.date === dateStr);
+    const followUpsForDate = followUps.filter(followUp => followUp.follow_up_date && followUp.follow_up_date.startsWith(dateStr));
 
     return {
       tasksDue: tasksDueCount,
@@ -295,6 +305,7 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
       deals: dealsCount,
       holidays: holidaysForDate,
       meetings: meetingsForDate,
+      followUps: followUpsForDate,
     };
   };
 
@@ -420,6 +431,10 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
           <div className="flex items-center gap-1.5">
             <Clock className="w-3 h-3 text-violet-600" />
             <span className="text-gray-600">Meetings</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Bell className="w-3 h-3 text-amber-600" />
+            <span className="text-gray-600">Follow-Ups</span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -551,6 +566,25 @@ export default function CalendarView({ tasks, goals, communications, fuelDeals =
                           >
                             Delete
                           </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {counts.followUps.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    {counts.followUps.map(followUp => (
+                      <div key={followUp.id} className="flex items-start gap-1 mb-1">
+                        <Bell className="w-3 h-3 flex-shrink-0 mt-0.5 text-amber-600" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs truncate text-amber-700 font-semibold" title={followUp.contact_name}>
+                            {followUp.contact_name}
+                          </div>
+                          {followUp.follow_up_reason && (
+                            <div className="text-[10px] text-amber-600 truncate" title={followUp.follow_up_reason}>
+                              {followUp.follow_up_reason}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

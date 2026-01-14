@@ -4309,6 +4309,15 @@ function App() {
               }))),
             ]}
             fuelDeals={contacts.flatMap(c => c.fuel_deals)}
+            followUps={contacts
+              .filter(c => c.follow_up_date)
+              .map(c => ({
+                id: c.id,
+                contact_id: c.id,
+                contact_name: c.name || c.company || 'Unknown',
+                follow_up_date: c.follow_up_date!,
+                follow_up_reason: c.follow_up_reason,
+              }))}
             onTaskClick={handleEditTask}
             onDateClick={(date) => {
               setSelectedDate(date);
