@@ -1378,10 +1378,12 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                                     >
                                       {schedule.contact_name}
                                     </button>
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
                                     {schedule.priority_rank !== null && schedule.priority_rank !== undefined && (
-                                      <span className="ml-2 text-blue-600 font-bold text-xs">P{schedule.priority_rank}</span>
+                                      <span className="text-blue-600 font-bold text-xs">P{schedule.priority_rank}</span>
                                     )}
-                                    <span className={`ml-2 px-2 py-0.5 text-xs font-medium rounded border ${statusColors[currentStatus]}`}>
+                                    <span className={`px-2 py-0.5 text-xs font-medium rounded border ${statusColors[currentStatus]}`}>
                                       {statusLabels[currentStatus]}
                                     </span>
                                   </div>
