@@ -3,7 +3,7 @@ import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutG
 import { useAuth } from './lib/auth';
 import { Workspace, getWorkspaces, getOrCreateDefaultWorkspace } from './lib/workspaces';
 import AuthForm from './components/AuthForm';
-import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, SupplierPort, Task, TaskWithRelated, Contact, DailyGoal } from './lib/supabase';
+import { supabase, ContactWithActivity, ContactPerson, Vessel, FuelDeal, Call, Email, SupplierWithOrders, Supplier, SupplierOrder, SupplierContact, SupplierPort, Task, TaskWithRelated, Contact, DailyGoal, CallSchedule } from './lib/supabase';
 import { getTimezoneForCountry } from './lib/timezones';
 import * as XLSX from 'xlsx';
 import ContactList from './components/ContactList';
@@ -102,6 +102,7 @@ function App() {
   const [editingFuelDeal, setEditingFuelDeal] = useState<FuelDeal | undefined>();
   const [editingCall, setEditingCall] = useState<Call | undefined>();
   const [editingEmail, setEditingEmail] = useState<Email | undefined>();
+  const [scheduleData, setScheduleData] = useState<Partial<CallSchedule> | undefined>();
   const [editingContact, setEditingContact] = useState<ContactWithActivity | undefined>();
   const [selectedContact, setSelectedContact] = useState<ContactWithActivity | undefined>();
   const [editingSupplier, setEditingSupplier] = useState<Supplier | undefined>();
@@ -2632,20 +2633,22 @@ function App() {
     }
   };
 
-  const handleLogCallFromSchedule = (contactId: string) => {
+  const handleLogCallFromSchedule = (contactId: string, scheduleInfo?: Partial<CallSchedule>) => {
     const contact = contacts.find(c => c.id === contactId);
     if (contact) {
       setSelectedContact(contact);
       setEditingCall(undefined);
+      setScheduleData(scheduleInfo);
       setShowCallModal(true);
     }
   };
 
-  const handleLogEmailFromSchedule = (contactId: string) => {
+  const handleLogEmailFromSchedule = (contactId: string, scheduleInfo?: Partial<CallSchedule>) => {
     const contact = contacts.find(c => c.id === contactId);
     if (contact) {
       setSelectedContact(contact);
       setEditingEmail(undefined);
+      setScheduleData(scheduleInfo);
       setShowEmailModal(true);
     }
   };
@@ -4492,9 +4495,11 @@ function App() {
           contactPersons={selectedContact.contact_persons}
           contacts={contacts}
           suppliers={suppliers}
+          scheduleData={scheduleData}
           onClose={() => {
             setShowCallModal(false);
             setEditingCall(undefined);
+            setScheduleData(undefined);
           }}
           onSave={handleSaveCall}
         />
@@ -4508,9 +4513,11 @@ function App() {
           contactPersons={selectedContact.contact_persons}
           contacts={contacts}
           suppliers={suppliers}
+          scheduleData={scheduleData}
           onClose={() => {
             setShowEmailModal(false);
             setEditingEmail(undefined);
+            setScheduleData(undefined);
           }}
           onSave={handleSaveEmail}
         />
