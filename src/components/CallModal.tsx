@@ -1,6 +1,6 @@
 import { X, User, Phone, CheckSquare, MessageSquare, Mail, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Call, ContactPerson, Contact, Supplier, CallSchedule } from '../lib/supabase';
+import { Call, ContactPerson, Contact, Supplier } from '../lib/supabase';
 
 interface CallModalProps {
   call?: Call;
@@ -9,14 +9,13 @@ interface CallModalProps {
   contactPersons?: ContactPerson[];
   contacts: Contact[];
   suppliers: Supplier[];
-  scheduleData?: Partial<CallSchedule>;
   onClose: () => void;
   onSave: (call: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string; communication_type?: string }, newPIC?: { name: string; phone: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }, callType?: 'regular' | 'no_answer' | 'call_later_today') => void;
 }
 
 type CommunicationType = 'phone_call' | 'whatsapp' | 'email';
 
-export default function CallModal({ call, contactId, contactName, contactPersons = [], contacts, suppliers, scheduleData, onClose, onSave }: CallModalProps) {
+export default function CallModal({ call, contactId, contactName, contactPersons = [], contacts, suppliers, onClose, onSave }: CallModalProps) {
   const [communicationType, setCommunicationType] = useState<CommunicationType>('phone_call');
   const [callDate, setCallDate] = useState(
     new Date().toISOString().slice(0, 16)
@@ -59,21 +58,6 @@ export default function CallModal({ call, contactId, contactName, contactPersons
       }
     }
   }, [call, contactPersons]);
-
-  useEffect(() => {
-    if (scheduleData && !call) {
-      if (scheduleData.communication_type) {
-        setCommunicationType(scheduleData.communication_type as CommunicationType);
-      }
-      if (scheduleData.contact_person_name) {
-        setUseManualEntry(true);
-        setManualName(scheduleData.contact_person_name);
-      }
-      if (scheduleData.whatsapp_message) {
-        setNotes(scheduleData.whatsapp_message);
-      }
-    }
-  }, [scheduleData, call]);
 
   useEffect(() => {
     if (noAnswer) {
