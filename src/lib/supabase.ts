@@ -291,7 +291,7 @@ export type CallSchedule = {
   contact_id?: string;
   contact_name: string;
   priority_label: 'Warm' | 'Follow-Up' | 'High Value' | 'Cold';
-  contact_status?: 'jammed' | 'traction' | 'client' | 'none';
+  contact_status?: 'jammed' | 'traction' | 'client' | 'none' | 'dead';
   is_suggested: boolean;
   completed: boolean;
   completed_at?: string;
@@ -299,6 +299,7 @@ export type CallSchedule = {
   timezone_label?: string;
   notes?: string;
   display_order: number;
+  priority_rank?: number;
   user_id: string;
   created_at: string;
   updated_at: string;

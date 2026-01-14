@@ -373,6 +373,7 @@ export function generateCallSchedule(
       timezone_label: timezoneLabel,
       notes: getReasonText(firstContact, priorityLabel),
       display_order: 0,
+      priority_rank: firstContact.priority_rank,
       user_id: userId
     });
 
@@ -432,6 +433,7 @@ export function generateCallSchedule(
       timezone_label: timezoneLabel,
       notes: task.notes || 'Scheduled task',
       display_order: 0,
+      priority_rank: contact?.priority_rank,
       user_id: userId
     });
   });
@@ -535,6 +537,7 @@ export function generateCallSchedule(
           timezone_label: tzLabel,
           notes: s.reason,
           display_order: schedule.length,
+          priority_rank: s.contact?.priority_rank,
           user_id: userId
         });
 
@@ -602,6 +605,7 @@ export function generateCallSchedule(
             timezone_label: tzLabel,
             notes: getReasonText(contact, priority),
             display_order: schedule.length,
+            priority_rank: contact.priority_rank,
             user_id: userId
           });
 
@@ -795,6 +799,7 @@ function generateSimpleSchedule(
       timezone_label: timezoneLabel,
       notes: notes,
       display_order: schedule.length,
+      priority_rank: contact?.priority_rank,
       user_id: userId
     });
 

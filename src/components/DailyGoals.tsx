@@ -390,7 +390,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
         contact_id: replaceContactId,
         contact_name: contact.name,
         timezone_label: contact.timezone || null,
-        contact_status: currentStatus
+        contact_status: currentStatus,
+        priority_rank: contact.priority_rank || null
       })
       .eq('id', scheduleId);
 
@@ -474,6 +475,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
           is_suggested: false,
           completed: false,
           call_duration_mins: callDuration,
+          priority_rank: contact.priority_rank || null,
           timezone_label: contact.timezone || null,
           display_order: maxDisplayOrder + 1,
           user_id: user!.id
@@ -2393,6 +2395,9 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                       onClick={() => schedule.contact_id && onSelectContact?.(schedule.contact_id)}
                                       className="font-semibold text-gray-900 hover:text-blue-600 underline decoration-transparent hover:decoration-blue-600 transition-colors"
                                     >
+                                      {schedule.priority_rank !== null && schedule.priority_rank !== undefined && (
+                                        <span className="text-blue-600 font-bold mr-1">P{schedule.priority_rank}</span>
+                                      )}
                                       {schedule.contact_name}
                                     </button>
                                   </div>
