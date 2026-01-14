@@ -1100,24 +1100,53 @@ function App() {
         if (picError) throw picError;
       }
 
-      if (callData.id) {
-        const { id, ...updateData } = callData;
-        const { error } = await supabase
-          .from('calls')
-          .update(updateData)
-          .eq('id', id);
+      if (callData.communication_type === 'email') {
+        const emailData = {
+          email_date: callData.call_date,
+          emailed_to: callData.spoke_with,
+          email_address: callData.phone_number,
+          notes: callData.notes,
+        };
 
-        if (error) throw error;
+        if (callData.id) {
+          const { id, ...updateData } = emailData;
+          const { error } = await supabase
+            .from('emails')
+            .update(updateData)
+            .eq('id', callData.id);
+
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('emails').insert([
+            {
+              user_id: user.id,
+              contact_id: selectedContact.id,
+              ...emailData,
+            },
+          ]);
+
+          if (error) throw error;
+        }
       } else {
-        const { error } = await supabase.from('calls').insert([
-          {
-            user_id: user.id,
-            contact_id: selectedContact.id,
-            ...callData,
-          },
-        ]);
+        if (callData.id) {
+          const { id, ...updateData } = callData;
+          const { error } = await supabase
+            .from('calls')
+            .update(updateData)
+            .eq('id', id);
 
-        if (error) throw error;
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('calls').insert([
+            {
+              user_id: user.id,
+              contact_id: selectedContact.id,
+              ...callData,
+            },
+          ]);
+
+          if (error) throw error;
+        }
       }
 
       if (task) {
@@ -1150,18 +1179,32 @@ function App() {
         await loadTasks();
       }
 
-      const { data: allCalls } = await supabase
-        .from('calls')
-        .select('call_date')
-        .eq('contact_id', selectedContact.id)
-        .order('call_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
       const contactUpdates: any = {};
 
-      if (allCalls) {
-        contactUpdates.last_called = allCalls.call_date;
+      if (callData.communication_type === 'email') {
+        const { data: allEmails } = await supabase
+          .from('emails')
+          .select('email_date')
+          .eq('contact_id', selectedContact.id)
+          .order('email_date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (allEmails) {
+          contactUpdates.last_emailed = allEmails.email_date;
+        }
+      } else {
+        const { data: allCalls } = await supabase
+          .from('calls')
+          .select('call_date')
+          .eq('contact_id', selectedContact.id)
+          .order('call_date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (allCalls) {
+          contactUpdates.last_called = allCalls.call_date;
+        }
       }
 
       if (callType && !callData.id) {
@@ -1205,11 +1248,12 @@ function App() {
 
       if (!callData.id) {
         const today = new Date().toISOString().split('T')[0];
+        const goalType = callData.communication_type === 'email' ? 'emails' : 'calls';
         const { data: activeGoal } = await supabase
           .from('daily_goals')
           .select('id, manual_count')
           .eq('user_id', user.id)
-          .eq('goal_type', 'calls')
+          .eq('goal_type', goalType)
           .eq('target_date', today)
           .eq('is_active', true)
           .maybeSingle();

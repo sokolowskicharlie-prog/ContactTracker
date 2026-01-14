@@ -233,7 +233,7 @@ export default function CallModal({ call, contactId, contactName, contactPersons
       call_date: new Date(callDate).toISOString(),
       duration: duration ? parseInt(duration) : null,
       spoke_with: spokeWith || null,
-      phone_number: phoneNumber || null,
+      phone_number: communicationType === 'email' ? emailAddress || null : phoneNumber || null,
       notes: notes.trim() || null,
       communication_type: communicationType,
     }, newPIC, taskData, callType);
