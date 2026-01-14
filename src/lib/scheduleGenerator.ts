@@ -295,6 +295,16 @@ export function generateCallSchedule(
     });
   }
 
+  // Filter out contacts with future follow-up dates
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  activeContacts = activeContacts.filter(c => {
+    if (!c.follow_up_date) return true; // Include if no follow-up date
+    const followUpDate = new Date(c.follow_up_date);
+    followUpDate.setHours(0, 0, 0, 0);
+    return followUpDate <= today; // Include if today or in the past
+  });
+
   // Group contacts by timezone
   const contactsByTimezone: Record<string, (Contact | ContactWithActivity)[]> = {};
   activeContacts.forEach(c => {
@@ -692,6 +702,16 @@ function generateSimpleSchedule(
       return !c.country || !excludedCountries.includes(c.country);
     });
   }
+
+  // Filter out contacts with future follow-up dates
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  activeContacts = activeContacts.filter(c => {
+    if (!c.follow_up_date) return true; // Include if no follow-up date
+    const followUpDate = new Date(c.follow_up_date);
+    followUpDate.setHours(0, 0, 0, 0);
+    return followUpDate <= today; // Include if today or in the past
+  });
 
   // Sort contacts by priority
   const sortedContacts = [...activeContacts].sort((a, b) => {
