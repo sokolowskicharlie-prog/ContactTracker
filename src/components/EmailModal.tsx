@@ -61,14 +61,31 @@ export default function EmailModal({ email, contactId, contactName, contactPerso
         setSubject(scheduleData.email_subject);
       }
       if (scheduleData.contact_person_name) {
-        setUseManualEntry(true);
-        setManualName(scheduleData.contact_person_name);
-      }
-      if (scheduleData.contact_person_email) {
-        setSelectedEmailAddress(scheduleData.contact_person_email);
+        // Try to find a matching PIC first
+        const matchingPerson = contactPersons.find(
+          p => p.name.toLowerCase() === scheduleData.contact_person_name?.toLowerCase()
+        );
+
+        if (matchingPerson) {
+          // Found a matching PIC, select it
+          setUseManualEntry(false);
+          setSelectedPersonId(matchingPerson.id);
+          if (scheduleData.contact_person_email) {
+            setSelectedEmailAddress(scheduleData.contact_person_email);
+          } else if (matchingPerson.email) {
+            setSelectedEmailAddress(matchingPerson.email);
+          }
+        } else {
+          // No matching PIC, use manual entry
+          setUseManualEntry(true);
+          setManualName(scheduleData.contact_person_name);
+          if (scheduleData.contact_person_email) {
+            setSelectedEmailAddress(scheduleData.contact_person_email);
+          }
+        }
       }
     }
-  }, [scheduleData, email]);
+  }, [scheduleData, email, contactPersons]);
 
   const getEmailAddresses = (personId: string) => {
     const person = contactPersons.find(p => p.id === personId);
