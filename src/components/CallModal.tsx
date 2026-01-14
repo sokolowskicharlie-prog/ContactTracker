@@ -1,4 +1,4 @@
-import { X, User, Phone, CheckSquare, MessageSquare, Mail } from 'lucide-react';
+import { X, User, Phone, CheckSquare, MessageSquare, Mail, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Call, ContactPerson, Contact, Supplier } from '../lib/supabase';
 
@@ -39,6 +39,7 @@ export default function CallModal({ call, contactId, contactName, contactPersons
   const [taskContactId, setTaskContactId] = useState(contactId);
   const [taskSupplierId, setTaskSupplierId] = useState('');
   const [noAnswer, setNoAnswer] = useState(false);
+  const [callLaterToday, setCallLaterToday] = useState(false);
 
   useEffect(() => {
     if (call) {
@@ -85,6 +86,27 @@ export default function CallModal({ call, contactId, contactName, contactPersons
       }
     }
   }, [noAnswer, callDate, contactId]);
+
+  useEffect(() => {
+    if (callLaterToday) {
+      setCreateTask(true);
+      setTaskType('call_back');
+      const callDateTime = new Date(callDate);
+      const laterToday = new Date(callDateTime);
+      laterToday.setHours(laterToday.getHours() + 3);
+      setTaskDueDate(laterToday.toISOString().slice(0, 16));
+      setTaskTitle('Call back later today');
+      setTaskNotes('Follow up call scheduled for later today');
+      setTaskContactId(contactId);
+      setTaskEntityType('contact');
+    } else {
+      // Reset task fields when callLaterToday is unchecked
+      if (taskTitle === 'Call back later today') {
+        setTaskTitle('');
+        setTaskNotes('');
+      }
+    }
+  }, [callLaterToday, callDate, contactId]);
 
   const getPhoneNumbers = (personId: string) => {
     const person = contactPersons.find(p => p.id === personId);
@@ -349,22 +371,52 @@ export default function CallModal({ call, contactId, contactName, contactPersons
             />
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={noAnswer}
-                onChange={(e) => setNoAnswer(e.target.checked)}
-                className="w-4 h-4 text-amber-600 rounded focus:ring-2 focus:ring-amber-500"
-              />
-              <Phone className="w-4 h-4 text-amber-600" />
-              <span className="text-sm font-medium text-gray-700">Nobody picked up</span>
-            </label>
-            {noAnswer && (
-              <p className="text-xs text-amber-700 mt-1.5 ml-6">
-                A follow-up call task will be created for tomorrow at the same time
-              </p>
-            )}
+          <div className="space-y-2">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={noAnswer}
+                  onChange={(e) => {
+                    setNoAnswer(e.target.checked);
+                    if (e.target.checked) {
+                      setCallLaterToday(false);
+                    }
+                  }}
+                  className="w-4 h-4 text-amber-600 rounded focus:ring-2 focus:ring-amber-500"
+                />
+                <Phone className="w-4 h-4 text-amber-600" />
+                <span className="text-sm font-medium text-gray-700">Nobody picked up</span>
+              </label>
+              {noAnswer && (
+                <p className="text-xs text-amber-700 mt-1.5 ml-6">
+                  A follow-up call task will be created for tomorrow at the same time
+                </p>
+              )}
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={callLaterToday}
+                  onChange={(e) => {
+                    setCallLaterToday(e.target.checked);
+                    if (e.target.checked) {
+                      setNoAnswer(false);
+                    }
+                  }}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <Clock className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-gray-700">Call me later today</span>
+              </label>
+              {callLaterToday && (
+                <p className="text-xs text-blue-700 mt-1.5 ml-6">
+                  A follow-up call task will be created for 3 hours from now
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="border-t pt-4">
@@ -376,20 +428,30 @@ export default function CallModal({ call, contactId, contactName, contactPersons
                   setCreateTask(e.target.checked);
                   if (!e.target.checked) {
                     setNoAnswer(false);
+                    setCallLaterToday(false);
                   }
                 }}
                 className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                disabled={noAnswer}
+                disabled={noAnswer || callLaterToday}
               />
               <CheckSquare className="w-4 h-4 text-blue-600" />
               <span className="text-sm font-medium text-gray-700">Create follow-up task</span>
             </label>
 
             {createTask && (
-              <div className={`mt-4 space-y-3 pl-6 border-l-2 ${noAnswer ? 'border-amber-300 bg-amber-50/30' : 'border-blue-200'}`}>
+              <div className={`mt-4 space-y-3 pl-6 border-l-2 ${
+                noAnswer ? 'border-amber-300 bg-amber-50/30' :
+                callLaterToday ? 'border-blue-300 bg-blue-50/30' :
+                'border-blue-200'
+              }`}>
                 {noAnswer && (
                   <div className="text-xs text-amber-700 font-medium mb-2">
                     Auto-filled from "Nobody picked up" - you can edit if needed
+                  </div>
+                )}
+                {callLaterToday && (
+                  <div className="text-xs text-blue-700 font-medium mb-2">
+                    Auto-filled from "Call me later today" - you can edit if needed
                   </div>
                 )}
                 <div>
