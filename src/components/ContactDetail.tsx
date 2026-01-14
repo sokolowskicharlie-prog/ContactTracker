@@ -317,6 +317,52 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
     await onEditContact(updatedContact);
   };
 
+  const getNextWorkingDay = async () => {
+    const { data: holidays } = await supabase
+      .from('holidays')
+      .select('date, end_date')
+      .gte('date', new Date().toISOString().split('T')[0]);
+
+    const holidayDates = new Set<string>();
+    holidays?.forEach(holiday => {
+      const start = new Date(holiday.date);
+      const end = holiday.end_date ? new Date(holiday.end_date) : start;
+
+      let current = new Date(start);
+      while (current <= end) {
+        holidayDates.add(current.toISOString().split('T')[0]);
+        current.setDate(current.getDate() + 1);
+      }
+    });
+
+    let nextDay = new Date();
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    while (true) {
+      const dayOfWeek = nextDay.getDay();
+      const dateStr = nextDay.toISOString().split('T')[0];
+
+      if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidayDates.has(dateStr)) {
+        break;
+      }
+
+      nextDay.setDate(nextDay.getDate() + 1);
+    }
+
+    return nextDay.toISOString();
+  };
+
+  const setNextWorkingDay = async () => {
+    const nextWorkingDay = await getNextWorkingDay();
+    setFollowUpDate(nextWorkingDay);
+    const updatedContact = {
+      ...contact,
+      follow_up_date: nextWorkingDay,
+      follow_up_reason: followUpReason || null
+    };
+    await onEditContact(updatedContact);
+  };
+
   const getTaskTypeLabel = (taskType: string) => {
     switch (taskType) {
       case 'call_back':
@@ -413,6 +459,13 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                   onBlur={saveFollowUpDate}
                   className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                <button
+                  onClick={setNextWorkingDay}
+                  className="px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                  title="Set to next working day"
+                >
+                  Tomorrow
+                </button>
                 {followUpDate && (
                   <button
                     onClick={() => {
