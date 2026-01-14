@@ -10,7 +10,7 @@ interface CallModalProps {
   contacts: Contact[];
   suppliers: Supplier[];
   onClose: () => void;
-  onSave: (call: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string; communication_type?: string }, newPIC?: { name: string; phone: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => void;
+  onSave: (call: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string; communication_type?: string }, newPIC?: { name: string; phone: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }, callType?: 'regular' | 'no_answer' | 'call_later_today') => void;
 }
 
 type CommunicationType = 'phone_call' | 'whatsapp' | 'email';
@@ -162,6 +162,11 @@ export default function CallModal({ call, contactId, contactName, contactPersons
       supplier_id: taskEntityType === 'supplier' ? taskSupplierId : undefined,
     } : undefined;
 
+    const callType: 'regular' | 'no_answer' | 'call_later_today' =
+      noAnswer ? 'no_answer' :
+      callLaterToday ? 'call_later_today' :
+      'regular';
+
     onSave({
       ...(call ? { id: call.id } : {}),
       call_date: new Date(callDate).toISOString(),
@@ -170,7 +175,7 @@ export default function CallModal({ call, contactId, contactName, contactPersons
       phone_number: phoneNumber || null,
       notes: notes.trim() || null,
       communication_type: communicationType,
-    }, newPIC, taskData);
+    }, newPIC, taskData, callType);
 
     onClose();
   };

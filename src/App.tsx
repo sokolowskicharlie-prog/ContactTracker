@@ -1079,7 +1079,7 @@ function App() {
     }
   };
 
-  const handleSaveCall = async (callData: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string; communication_type?: string }, newPIC?: { name: string; phone: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => {
+  const handleSaveCall = async (callData: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string; communication_type?: string }, newPIC?: { name: string; phone: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }, callType?: 'regular' | 'no_answer' | 'call_later_today') => {
     if (!selectedContact) return;
 
     try {
@@ -1154,10 +1154,38 @@ function App() {
         .limit(1)
         .maybeSingle();
 
+      const contactUpdates: any = {};
+
       if (allCalls) {
+        contactUpdates.last_called = allCalls.call_date;
+      }
+
+      if (callType && !callData.id) {
+        const callDateTime = new Date(callData.call_date);
+        let followUpDate: Date;
+
+        switch (callType) {
+          case 'no_answer':
+            followUpDate = new Date(callDateTime);
+            followUpDate.setDate(followUpDate.getDate() + 1);
+            break;
+          case 'call_later_today':
+            followUpDate = new Date(callDateTime);
+            break;
+          case 'regular':
+          default:
+            followUpDate = new Date(callDateTime);
+            followUpDate.setDate(followUpDate.getDate() + 7);
+            break;
+        }
+
+        contactUpdates.follow_up_date = followUpDate.toISOString();
+      }
+
+      if (Object.keys(contactUpdates).length > 0) {
         const { error: updateError } = await supabase
           .from('contacts')
-          .update({ last_called: allCalls.call_date })
+          .update(contactUpdates)
           .eq('id', selectedContact.id);
 
         if (updateError) throw updateError;
