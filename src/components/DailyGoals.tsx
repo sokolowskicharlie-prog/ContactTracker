@@ -2416,11 +2416,18 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                       {schedule.contact_name}
                                     </button>
                                   </div>
-                                  {schedule.contact_status && (
-                                    <span className={`px-2 py-0.5 text-xs font-medium rounded border ${statusColors[schedule.contact_status]}`}>
-                                      {statusLabels[schedule.contact_status]}
-                                    </span>
-                                  )}
+                                  <div className="flex items-center gap-2">
+                                    {schedule.priority_label && (
+                                      <span className="px-2 py-0.5 text-xs font-semibold rounded bg-blue-100 text-blue-800 border border-blue-300">
+                                        {schedule.priority_label}
+                                      </span>
+                                    )}
+                                    {schedule.contact_status && (
+                                      <span className={`px-2 py-0.5 text-xs font-medium rounded border ${statusColors[schedule.contact_status]}`}>
+                                        {statusLabels[schedule.contact_status]}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                                 {schedule.communication_type === 'email' && (
                                   <div className="text-xs text-gray-700 mt-1">
