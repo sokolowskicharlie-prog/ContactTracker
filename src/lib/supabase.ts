@@ -300,6 +300,11 @@ export type CallSchedule = {
   notes?: string;
   display_order: number;
   priority_rank?: number;
+  communication_type?: 'phone_call' | 'email' | 'whatsapp';
+  contact_person_name?: string;
+  contact_person_email?: string;
+  email_subject?: string;
+  whatsapp_message?: string;
   user_id: string;
   created_at: string;
   updated_at: string;

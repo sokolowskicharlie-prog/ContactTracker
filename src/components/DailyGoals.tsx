@@ -367,8 +367,14 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
           : s
       ));
 
-      if (isMarkingComplete && schedule.contact_id && onLogCall) {
-        onLogCall(schedule.contact_id);
+      if (isMarkingComplete && schedule.contact_id) {
+        const communicationType = schedule.communication_type || 'phone_call';
+
+        if (communicationType === 'email' && onLogEmail) {
+          onLogEmail(schedule.contact_id);
+        } else if ((communicationType === 'phone_call' || communicationType === 'whatsapp') && onLogCall) {
+          onLogCall(schedule.contact_id);
+        }
       }
     }
   };
@@ -2391,6 +2397,15 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                       {schedTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} GMT
                                     </span>
                                     <span className="mx-2 text-gray-400">–</span>
+                                    {schedule.communication_type === 'email' && (
+                                      <Mail className="w-4 h-4 inline-block mr-1 text-purple-600" />
+                                    )}
+                                    {schedule.communication_type === 'whatsapp' && (
+                                      <Phone className="w-4 h-4 inline-block mr-1 text-green-600" />
+                                    )}
+                                    {(!schedule.communication_type || schedule.communication_type === 'phone_call') && (
+                                      <Phone className="w-4 h-4 inline-block mr-1 text-blue-600" />
+                                    )}
                                     <button
                                       onClick={() => schedule.contact_id && onSelectContact?.(schedule.contact_id)}
                                       className="font-semibold text-gray-900 hover:text-blue-600 underline decoration-transparent hover:decoration-blue-600 transition-colors"
@@ -2407,6 +2422,29 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                     </span>
                                   )}
                                 </div>
+                                {schedule.communication_type === 'email' && (
+                                  <div className="text-xs text-gray-700 mt-1">
+                                    {schedule.contact_person_name && (
+                                      <div className="font-medium">Contact: {schedule.contact_person_name}</div>
+                                    )}
+                                    {schedule.contact_person_email && (
+                                      <div className="text-gray-600">Email: {schedule.contact_person_email}</div>
+                                    )}
+                                    {schedule.email_subject && (
+                                      <div className="text-gray-900 font-medium mt-1">Subject: {schedule.email_subject}</div>
+                                    )}
+                                  </div>
+                                )}
+                                {schedule.communication_type === 'whatsapp' && (
+                                  <div className="text-xs text-gray-700 mt-1">
+                                    {schedule.contact_person_name && (
+                                      <div className="font-medium">Contact: {schedule.contact_person_name}</div>
+                                    )}
+                                    {schedule.whatsapp_message && (
+                                      <div className="text-gray-600 mt-1 italic">{schedule.whatsapp_message}</div>
+                                    )}
+                                  </div>
+                                )}
                                 <div className="flex flex-col gap-1">
                                   <div className="flex items-center gap-3 text-xs text-gray-600">
                                     {schedule.timezone_label && localTime && (
