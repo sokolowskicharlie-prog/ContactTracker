@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, Plus, Trash2, Bell, BellOff, Clock, TrendingUp, TrendingDown, Minus, CheckCircle, Edit2, X, Phone, Mail, Fuel, User, Calendar, CheckSquare, Check, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
+import { Target, Plus, Trash2, Bell, BellOff, Clock, TrendingUp, TrendingDown, Minus, CheckCircle, CreditCard as Edit2, X, Phone, Mail, Fuel, User, Calendar, CheckSquare, Check, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 import { supabase, DailyGoal, GoalNotificationSettings, Call, Email, FuelDeal, Contact, ContactPerson, CallSchedule, Task } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { generateCallSchedule, ScheduleParams } from '../lib/scheduleGenerator';
