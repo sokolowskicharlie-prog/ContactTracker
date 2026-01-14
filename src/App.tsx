@@ -4452,6 +4452,7 @@ function App() {
           onDeleteTask={handleDeleteTask}
           onEditNote={handleEditSavedNote}
           onDeleteNote={handleDeleteSavedNote}
+          onDelete={handleDeleteContact}
         />
       )}
 

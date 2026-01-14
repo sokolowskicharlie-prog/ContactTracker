@@ -37,9 +37,10 @@ interface ContactDetailProps {
   onDeleteTask: (taskId: string) => void;
   onEditNote: (note: SavedNote) => void;
   onDeleteNote: (noteId: string) => void;
+  onDelete: (contactId: string) => void;
 }
 
-export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, onEditContact, onLogCall, onLogEmail, onEditCall, onEditEmail, onDeleteCall, onDeleteEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask, onEditNote, onDeleteNote }: ContactDetailProps) {
+export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, onEditContact, onLogCall, onLogEmail, onEditCall, onEditEmail, onDeleteCall, onDeleteEmail, onAddVessel, onEditVessel, onDeleteVessel, onAddFuelDeal, onEditFuelDeal, onDeleteFuelDeal, onUpdateStatus, onAddTask, onToggleTaskComplete, onEditTask, onDeleteTask, onEditNote, onDeleteNote, onDelete }: ContactDetailProps) {
   const [expandedStatusNote, setExpandedStatusNote] = useState<'jammed' | 'client' | 'traction' | 'dead' | null>(null);
   const [isEditingStatusNote, setIsEditingStatusNote] = useState(false);
   const [statusNoteValue, setStatusNoteValue] = useState('');
@@ -355,6 +356,18 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                 title="Edit contact"
               >
                 <Edit2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  if (window.confirm(`Are you sure you want to delete ${contact.name}? This action cannot be undone.`)) {
+                    onDelete(contact.id);
+                    onClose();
+                  }
+                }}
+                className="p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-colors"
+                title="Delete contact"
+              >
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
             {/* Priority Rank */}
