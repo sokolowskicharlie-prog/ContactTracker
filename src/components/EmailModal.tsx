@@ -1,6 +1,6 @@
 import { X, User, Mail, CheckSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Email, ContactPerson, Contact, Supplier } from '../lib/supabase';
+import { Email, ContactPerson, Contact, Supplier, CallSchedule } from '../lib/supabase';
 
 interface EmailModalProps {
   email?: Email;
@@ -9,11 +9,12 @@ interface EmailModalProps {
   contactPersons?: ContactPerson[];
   contacts: Contact[];
   suppliers: Supplier[];
+  scheduleData?: Partial<CallSchedule>;
   onClose: () => void;
   onSave: (email: { id?: string; email_date: string; subject?: string; emailed_to?: string; email_address?: string; notes?: string }, newPIC?: { name: string; email: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }) => void;
 }
 
-export default function EmailModal({ email, contactId, contactName, contactPersons = [], contacts, suppliers, onClose, onSave }: EmailModalProps) {
+export default function EmailModal({ email, contactId, contactName, contactPersons = [], contacts, suppliers, scheduleData, onClose, onSave }: EmailModalProps) {
   const [emailDate, setEmailDate] = useState(
     new Date().toISOString().slice(0, 16)
   );
@@ -53,6 +54,21 @@ export default function EmailModal({ email, contactId, contactName, contactPerso
       }
     }
   }, [email, contactPersons]);
+
+  useEffect(() => {
+    if (scheduleData && !email) {
+      if (scheduleData.email_subject) {
+        setSubject(scheduleData.email_subject);
+      }
+      if (scheduleData.contact_person_name) {
+        setUseManualEntry(true);
+        setManualName(scheduleData.contact_person_name);
+      }
+      if (scheduleData.contact_person_email) {
+        setSelectedEmailAddress(scheduleData.contact_person_email);
+      }
+    }
+  }, [scheduleData, email]);
 
   const getEmailAddresses = (personId: string) => {
     const person = contactPersons.find(p => p.id === personId);

@@ -11,8 +11,8 @@ interface DailyGoalsProps {
   contacts?: Contact[];
   onAddTask?: () => void;
   onSelectContact?: (contactId: string) => void;
-  onLogCall?: (contactId: string) => void;
-  onLogEmail?: (contactId: string) => void;
+  onLogCall?: (contactId: string, scheduleData?: Partial<CallSchedule>) => void;
+  onLogEmail?: (contactId: string, scheduleData?: Partial<CallSchedule>) => void;
 }
 
 type GoalType = 'calls' | 'emails' | 'deals';
@@ -371,9 +371,9 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
         const communicationType = schedule.communication_type || 'phone_call';
 
         if (communicationType === 'email' && onLogEmail) {
-          onLogEmail(schedule.contact_id);
+          onLogEmail(schedule.contact_id, schedule);
         } else if ((communicationType === 'phone_call' || communicationType === 'whatsapp') && onLogCall) {
-          onLogCall(schedule.contact_id);
+          onLogCall(schedule.contact_id, schedule);
         }
       }
     }
