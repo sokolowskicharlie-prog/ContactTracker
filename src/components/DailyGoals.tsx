@@ -2410,17 +2410,12 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                                       onClick={() => schedule.contact_id && onSelectContact?.(schedule.contact_id)}
                                       className="font-semibold text-gray-900 hover:text-blue-600 underline decoration-transparent hover:decoration-blue-600 transition-colors"
                                     >
-                                      {schedule.priority_rank !== null && schedule.priority_rank !== undefined && (
-                                        <span className="text-blue-600 font-bold mr-1">P{schedule.priority_rank}</span>
-                                      )}
                                       {schedule.contact_name}
                                     </button>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    {schedule.priority_label && (
-                                      <span className="px-2 py-0.5 text-xs font-semibold rounded bg-blue-100 text-blue-800 border border-blue-300">
-                                        {schedule.priority_label}
-                                      </span>
+                                    {schedule.priority_rank !== null && schedule.priority_rank !== undefined && (
+                                      <span className="text-blue-600 font-bold text-xs">P{schedule.priority_rank}</span>
                                     )}
                                     {schedule.contact_status && (
                                       <span className={`px-2 py-0.5 text-xs font-medium rounded border ${statusColors[schedule.contact_status]}`}>
