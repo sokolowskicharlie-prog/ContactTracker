@@ -11,7 +11,7 @@ interface CallModalProps {
   suppliers: Supplier[];
   scheduleData?: Partial<CallSchedule>;
   onClose: () => void;
-  onSave: (call: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string; communication_type?: string }, newPIC?: { name: string; phone: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }, callType?: 'regular' | 'no_answer' | 'call_later_today') => void;
+  onSave: (call: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string; communication_type?: string }, newPIC?: { name: string; phone?: string; email?: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }, callType?: 'regular' | 'no_answer' | 'call_later_today') => void;
 }
 
 type CommunicationType = 'phone_call' | 'whatsapp' | 'email';
@@ -25,6 +25,7 @@ export default function CallModal({ call, contactId, contactName, contactPersons
   const [selectedPersonId, setSelectedPersonId] = useState('');
   const [manualName, setManualName] = useState('');
   const [selectedPhoneNumber, setSelectedPhoneNumber] = useState('');
+  const [selectedEmailAddress, setSelectedEmailAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [useManualEntry, setUseManualEntry] = useState(false);
   const [createTask, setCreateTask] = useState(false);
@@ -66,14 +67,36 @@ export default function CallModal({ call, contactId, contactName, contactPersons
         setCommunicationType(scheduleData.communication_type as CommunicationType);
       }
       if (scheduleData.contact_person_name) {
-        setUseManualEntry(true);
-        setManualName(scheduleData.contact_person_name);
+        const matchingPerson = contactPersons.find(
+          p => p.name.toLowerCase() === scheduleData.contact_person_name?.toLowerCase()
+        );
+
+        if (matchingPerson) {
+          setUseManualEntry(false);
+          setSelectedPersonId(matchingPerson.id);
+          if (scheduleData.communication_type === 'email') {
+            if (scheduleData.contact_person_email) {
+              setSelectedEmailAddress(scheduleData.contact_person_email);
+            } else if (matchingPerson.email) {
+              setSelectedEmailAddress(matchingPerson.email);
+            }
+          }
+        } else {
+          setUseManualEntry(true);
+          setManualName(scheduleData.contact_person_name);
+          if (scheduleData.communication_type === 'email' && scheduleData.contact_person_email) {
+            setSelectedEmailAddress(scheduleData.contact_person_email);
+          }
+        }
       }
       if (scheduleData.whatsapp_message) {
         setNotes(scheduleData.whatsapp_message);
       }
+      if (scheduleData.email_subject) {
+        setNotes(scheduleData.email_subject);
+      }
     }
-  }, [scheduleData, call]);
+  }, [scheduleData, call, contactPersons]);
 
   useEffect(() => {
     if (noAnswer) {
@@ -135,15 +158,32 @@ export default function CallModal({ call, contactId, contactName, contactPersons
     return phones;
   };
 
+  const getEmailAddresses = (personId: string) => {
+    const person = contactPersons.find(p => p.id === personId);
+    if (!person) return [];
+
+    const emails: { label: string; address: string }[] = [];
+    if (person.email) emails.push({ label: 'Email', address: person.email });
+    return emails;
+  };
+
   const handlePersonChange = (personId: string) => {
     setSelectedPersonId(personId);
     if (personId) {
-      const phones = getPhoneNumbers(personId);
-      if (phones.length > 0) {
-        setSelectedPhoneNumber(phones[0].number);
+      if (communicationType === 'email') {
+        const emails = getEmailAddresses(personId);
+        if (emails.length > 0) {
+          setSelectedEmailAddress(emails[0].address);
+        }
+      } else {
+        const phones = getPhoneNumbers(personId);
+        if (phones.length > 0) {
+          setSelectedPhoneNumber(phones[0].number);
+        }
       }
     } else {
       setSelectedPhoneNumber('');
+      setSelectedEmailAddress('');
     }
   };
 
@@ -152,16 +192,21 @@ export default function CallModal({ call, contactId, contactName, contactPersons
 
     let spokeWith = '';
     let phoneNumber = selectedPhoneNumber.trim();
+    let emailAddress = selectedEmailAddress.trim();
     let newPIC = undefined;
 
     if (useManualEntry) {
       spokeWith = manualName.trim();
-      if (spokeWith && phoneNumber && !call) {
+      if (spokeWith && !call) {
         const existingPerson = contactPersons.find(p =>
           p.name.toLowerCase() === spokeWith.toLowerCase()
         );
         if (!existingPerson) {
-          newPIC = { name: spokeWith, phone: phoneNumber };
+          if (communicationType === 'email' && emailAddress) {
+            newPIC = { name: spokeWith, email: emailAddress };
+          } else if (phoneNumber) {
+            newPIC = { name: spokeWith, phone: phoneNumber };
+          }
         }
       }
     } else if (selectedPersonId) {
@@ -349,35 +394,67 @@ export default function CallModal({ call, contactId, contactName, contactPersons
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone Number
-            </label>
-            {selectedPhones.length > 0 ? (
-              <select
-                value={selectedPhoneNumber}
-                onChange={(e) => setSelectedPhoneNumber(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {selectedPhones.map((phone, idx) => (
-                  <option key={idx} value={phone.number}>
-                    {phone.label}: {phone.number}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="tel"
+          {communicationType === 'email' ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
+              {selectedPersonId && getEmailAddresses(selectedPersonId).length > 0 ? (
+                <select
+                  value={selectedEmailAddress}
+                  onChange={(e) => setSelectedEmailAddress(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {getEmailAddresses(selectedPersonId).map((email, idx) => (
+                    <option key={idx} value={email.address}>
+                      {email.label}: {email.address}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="email"
+                    value={selectedEmailAddress}
+                    onChange={(e) => setSelectedEmailAddress(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="email@example.com"
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Phone Number
+              </label>
+              {selectedPhones.length > 0 ? (
+                <select
                   value={selectedPhoneNumber}
                   onChange={(e) => setSelectedPhoneNumber(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Phone number used"
-                />
-              </div>
-            )}
-          </div>
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {selectedPhones.map((phone, idx) => (
+                    <option key={idx} value={phone.number}>
+                      {phone.label}: {phone.number}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="tel"
+                    value={selectedPhoneNumber}
+                    onChange={(e) => setSelectedPhoneNumber(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Phone number used"
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

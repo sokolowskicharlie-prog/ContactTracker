@@ -1080,19 +1080,22 @@ function App() {
     }
   };
 
-  const handleSaveCall = async (callData: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string; communication_type?: string }, newPIC?: { name: string; phone: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }, callType?: 'regular' | 'no_answer' | 'call_later_today') => {
+  const handleSaveCall = async (callData: { id?: string; call_date: string; duration?: number; spoke_with?: string; phone_number?: string; notes?: string; communication_type?: string }, newPIC?: { name: string; phone?: string; email?: string }, task?: { task_type: string; title: string; due_date?: string; notes: string; contact_id?: string; supplier_id?: string }, callType?: 'regular' | 'no_answer' | 'call_later_today') => {
     if (!selectedContact) return;
 
     try {
       if (newPIC) {
+        const picData: any = {
+          user_id: user.id,
+          contact_id: selectedContact.id,
+          name: newPIC.name,
+        };
+        if (newPIC.phone) picData.phone = newPIC.phone;
+        if (newPIC.email) picData.email = newPIC.email;
+
         const { error: picError } = await supabase
           .from('contact_persons')
-          .insert([{
-            user_id: user.id,
-            contact_id: selectedContact.id,
-            name: newPIC.name,
-            phone: newPIC.phone,
-          }]);
+          .insert([picData]);
 
         if (picError) throw picError;
       }
