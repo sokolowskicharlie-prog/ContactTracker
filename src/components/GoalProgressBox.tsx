@@ -1376,11 +1376,11 @@ export default function GoalProgressBox({ onSelectContact, onLogCall, onLogEmail
                                       onClick={() => onSelectContact?.(schedule.contact_id)}
                                       className="font-semibold text-gray-900 hover:text-blue-600 underline decoration-transparent hover:decoration-blue-600 transition-all"
                                     >
-                                      {schedule.priority_rank !== null && schedule.priority_rank !== undefined && (
-                                        <span className="text-blue-600 font-bold mr-1">P{schedule.priority_rank}</span>
-                                      )}
                                       {schedule.contact_name}
                                     </button>
+                                    {schedule.priority_rank !== null && schedule.priority_rank !== undefined && (
+                                      <span className="ml-2 text-blue-600 font-bold text-xs">P{schedule.priority_rank}</span>
+                                    )}
                                     <span className={`ml-2 px-2 py-0.5 text-xs font-medium rounded border ${statusColors[currentStatus]}`}>
                                       {statusLabels[currentStatus]}
                                     </span>
