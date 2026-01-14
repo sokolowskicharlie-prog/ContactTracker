@@ -1,4 +1,4 @@
-import { X, CheckCircle2, Circle, Clock, Plus, Phone, Mail, Fuel, Bell } from 'lucide-react';
+import { X, CheckCircle2, Circle, Clock, Plus, Phone, Mail, Fuel, Bell, TrendingUp } from 'lucide-react';
 import { TaskWithRelated, Call, Email, FuelDeal } from '../lib/supabase';
 
 interface FollowUp {
@@ -7,14 +7,15 @@ interface FollowUp {
   contact_name: string;
   follow_up_date: string;
   follow_up_reason?: string;
+  priority_rank?: number;
 }
 
 interface DayScheduleModalProps {
   date: Date;
   tasks: TaskWithRelated[];
-  calls: (Call & { contact_name: string; contact_id: string })[];
-  emails: (Email & { contact_name: string; contact_id: string })[];
-  fuelDeals: (FuelDeal & { contact_name: string; contact_id: string })[];
+  calls: (Call & { contact_name: string; contact_id: string; priority_rank?: number })[];
+  emails: (Email & { contact_name: string; contact_id: string; priority_rank?: number })[];
+  fuelDeals: (FuelDeal & { contact_name: string; contact_id: string; priority_rank?: number })[];
   followUps?: FollowUp[];
   onClose: () => void;
   onTaskClick: (task: TaskWithRelated) => void;
@@ -24,9 +25,41 @@ interface DayScheduleModalProps {
   onCallClick: (call: Call) => void;
   onEmailClick: (email: Email) => void;
   onFuelDealClick: (deal: FuelDeal) => void;
+  customPriorityLabels?: Record<number, string>;
 }
 
-export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals, followUps = [], onClose, onTaskClick, onCreateTask, onToggleTask, onContactClick, onCallClick, onEmailClick, onFuelDealClick }: DayScheduleModalProps) {
+export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals, followUps = [], onClose, onTaskClick, onCreateTask, onToggleTask, onContactClick, onCallClick, onEmailClick, onFuelDealClick, customPriorityLabels }: DayScheduleModalProps) {
+  const priorityLabels = customPriorityLabels || {
+    0: 'Client',
+    1: 'Highest',
+    2: 'High',
+    3: 'Medium',
+    4: 'Low',
+    5: 'Lowest'
+  };
+
+  const getPriorityBadge = (priority?: number) => {
+    if (priority === null || priority === undefined) return null;
+
+    const colors: Record<number, { bg: string; text: string; border: string }> = {
+      0: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200' },
+      1: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200' },
+      2: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' },
+      3: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-200' },
+      4: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' },
+      5: { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' },
+    };
+
+    const style = colors[priority] || colors[5];
+    const label = priorityLabels[priority] || `P${priority}`;
+
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text} border ${style.border}`}>
+        <TrendingUp className="w-3 h-3" />
+        P{priority} - {label}
+      </span>
+    );
+  };
   const dateStr = date.toISOString().split('T')[0];
   const dayTasks = tasks.filter(task => task.due_date && task.due_date.startsWith(dateStr));
   const dueTasks = dayTasks.filter(task => !task.completed);
@@ -136,7 +169,10 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
                         <div className="flex items-start gap-3">
                           <Bell className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-gray-900">{followUp.contact_name}</h4>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-medium text-gray-900">{followUp.contact_name}</h4>
+                              {getPriorityBadge(followUp.priority_rank)}
+                            </div>
                             {followUp.follow_up_reason && (
                               <p className="text-sm text-gray-700 mt-1">{followUp.follow_up_reason}</p>
                             )}
@@ -285,7 +321,7 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
                               onClose();
                             }}
                           >
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span className="text-xs text-gray-600">{formatTime(call.call_date)}</span>
                               {call.communication_type && (
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
@@ -293,18 +329,21 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
                                 </span>
                               )}
                             </div>
-                            <h4 className="font-medium text-gray-900">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onContactClick(call.contact_id);
-                                  onClose();
-                                }}
-                                className="text-blue-600 hover:underline"
-                              >
-                                {call.contact_name}
-                              </button>
-                            </h4>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-medium text-gray-900">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onContactClick(call.contact_id);
+                                    onClose();
+                                  }}
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {call.contact_name}
+                                </button>
+                              </h4>
+                              {getPriorityBadge(call.priority_rank)}
+                            </div>
                             {call.spoke_with && (
                               <p className="text-sm text-gray-600 mt-1">Spoke with: {call.spoke_with}</p>
                             )}
@@ -340,18 +379,21 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs text-gray-600">{formatTime(email.email_date)}</span>
                             </div>
-                            <h4 className="font-medium text-gray-900">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onContactClick(email.contact_id);
-                                  onClose();
-                                }}
-                                className="text-blue-600 hover:underline"
-                              >
-                                {email.contact_name}
-                              </button>
-                            </h4>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-medium text-gray-900">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onContactClick(email.contact_id);
+                                    onClose();
+                                  }}
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {email.contact_name}
+                                </button>
+                              </h4>
+                              {getPriorityBadge(email.priority_rank)}
+                            </div>
                             {email.subject && (
                               <p className="text-sm text-gray-700 mt-1 font-medium">Subject: {email.subject}</p>
                             )}
@@ -390,7 +432,10 @@ export default function DayScheduleModal({ date, tasks, calls, emails, fuelDeals
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs text-gray-600">{formatTime(deal.deal_date)}</span>
                             </div>
-                            <h4 className="font-medium text-gray-900">{deal.vessel_name}</h4>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-medium text-gray-900">{deal.vessel_name}</h4>
+                              {deal.priority_rank !== null && deal.priority_rank !== undefined && getPriorityBadge(deal.priority_rank)}
+                            </div>
                             <p className="text-sm text-gray-700 mt-1">
                               {deal.fuel_quantity} MT of {deal.fuel_type} at {deal.port}
                               {deal.contact_name && (
