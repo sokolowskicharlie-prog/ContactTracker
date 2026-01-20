@@ -39,7 +39,10 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
 
   const [newGoalType, setNewGoalType] = useState<GoalType>('calls');
   const [newGoalAmount, setNewGoalAmount] = useState(10);
-  const [newGoalStartTime, setNewGoalStartTime] = useState('09:00');
+  const [newGoalStartTime, setNewGoalStartTime] = useState(() => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  });
   const [newGoalTime, setNewGoalTime] = useState('17:00');
   const [newGoalDate, setNewGoalDate] = useState(new Date().toISOString().split('T')[0]);
   const [newGoalNotes, setNewGoalNotes] = useState('');
@@ -103,7 +106,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   const [callSchedules, setCallSchedules] = useState<CallSchedule[]>([]);
   const [scheduledTasks, setScheduledTasks] = useState<Task[]>([]);
   const [autoGenerateSchedule, setAutoGenerateSchedule] = useState(false);
-  const [scheduleDuration, setScheduleDuration] = useState(20);
+  const [scheduleDuration, setScheduleDuration] = useState(10);
   const [emailDuration, setEmailDuration] = useState(15);
   const [dealDuration, setDealDuration] = useState(30);
   const [statusFilters, setStatusFilters] = useState<('none' | 'jammed' | 'traction' | 'client' | 'dead')[]>(['none', 'traction', 'client']);
@@ -901,12 +904,13 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   const resetForm = () => {
     setNewGoalType('calls');
     setNewGoalAmount(10);
-    setNewGoalStartTime('09:00');
+    const now = new Date();
+    setNewGoalStartTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
     setNewGoalTime('17:00');
     setNewGoalDate(new Date().toISOString().split('T')[0]);
     setNewGoalNotes('');
     setAutoGenerateSchedule(false);
-    setScheduleDuration(20);
+    setScheduleDuration(10);
     setEmailDuration(15);
     setDealDuration(30);
     setIncludedTimezones([]);
