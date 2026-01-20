@@ -661,6 +661,26 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
     setExcludedMatchedTerms(newExcluded);
   };
 
+  const addToPermanentExclusion = async (term: string) => {
+    const lowerTerm = term.toLowerCase().trim();
+
+    if (permanentExcludedTerms.includes(lowerTerm)) {
+      alert('This term is already permanently excluded');
+      return;
+    }
+
+    const newTerms = [...permanentExcludedTerms, lowerTerm];
+    const success = await saveExcludedTerms(newTerms);
+    if (success) {
+      setPermanentExcludedTerms(newTerms);
+      setExcludedMatchedTerms(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(lowerTerm);
+        return newSet;
+      });
+    }
+  };
+
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
@@ -1104,7 +1124,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                     <Filter className="w-4 h-4 text-amber-600" />
                     <h3 className="font-semibold text-amber-900">Matched Terms ({getUniqueMatchedTerms().length})</h3>
                     <span className="ml-auto text-xs text-amber-700">
-                      Click to exclude from results
+                      Click to permanently exclude
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1114,16 +1134,16 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                       return (
                         <button
                           key={term}
-                          onClick={() => toggleExcludedTerm(term)}
+                          onClick={() => addToPermanentExclusion(term)}
                           disabled={isPermanentlyExcluded}
                           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                             isPermanentlyExcluded
                               ? 'bg-gray-200 text-gray-500 border-2 border-gray-300 line-through cursor-not-allowed'
                               : isExcluded
-                              ? 'bg-red-100 text-red-800 border-2 border-red-300 line-through opacity-60'
+                              ? 'bg-red-100 text-red-800 border-2 border-red-300 line-through opacity-60 hover:bg-red-200'
                               : 'bg-white text-amber-800 border-2 border-amber-300 hover:bg-amber-100'
                           }`}
-                          title={isPermanentlyExcluded ? `Permanently excluded in settings. Found in: ${field}` : `Found in: ${field}`}
+                          title={isPermanentlyExcluded ? `Permanently excluded in settings. Found in: ${field}` : `Click to add to permanent exclusion list. Found in: ${field}`}
                         >
                           {term} ({count})
                           {isPermanentlyExcluded && <span className="ml-1">🔒</span>}
@@ -1187,7 +1207,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    toggleExcludedTerm(result.matchedTerm!);
+                                    addToPermanentExclusion(result.matchedTerm!);
                                   }}
                                   className={`text-xs px-2 py-1 rounded-full font-medium border transition-colors cursor-pointer ${
                                     isPermanentlyExcluded
@@ -1199,13 +1219,11 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                                   title={
                                     isPermanentlyExcluded
                                       ? 'Permanently excluded (manage in settings)'
-                                      : isExcluded
-                                      ? 'Click to include this term'
-                                      : 'Click to exclude this term from results'
+                                      : 'Click to add to permanent exclusion list'
                                   }
                                   disabled={isPermanentlyExcluded}
                                 >
-                                  {isExcluded || isPermanentlyExcluded ? '✕ ' : ''}Matched: "{result.matchedTerm}" in {result.matchedField}
+                                  {isPermanentlyExcluded ? '🔒 ' : ''}Matched: "{result.matchedTerm}" in {result.matchedField}
                                 </button>
                               );
                             })()}
