@@ -114,17 +114,32 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
   const addPermanentExcludedTerm = async () => {
     if (!newExcludedTerm.trim()) return;
 
-    const term = newExcludedTerm.trim().toLowerCase();
-    if (permanentExcludedTerms.includes(term)) {
-      alert('This term is already in the exclusion list');
+    const inputTerms = newExcludedTerm
+      .split(';')
+      .map(term => term.trim().toLowerCase())
+      .filter(term => term.length > 0);
+
+    if (inputTerms.length === 0) return;
+
+    const duplicates = inputTerms.filter(term => permanentExcludedTerms.includes(term));
+    const uniqueTerms = inputTerms.filter(term => !permanentExcludedTerms.includes(term));
+
+    if (uniqueTerms.length === 0) {
+      alert(duplicates.length === 1
+        ? 'This term is already in the exclusion list'
+        : 'All these terms are already in the exclusion list');
       return;
     }
 
-    const newTerms = [...permanentExcludedTerms, term];
+    const newTerms = [...permanentExcludedTerms, ...uniqueTerms];
     const success = await saveExcludedTerms(newTerms);
     if (success) {
       setPermanentExcludedTerms(newTerms);
       setNewExcludedTerm('');
+
+      if (duplicates.length > 0) {
+        alert(`Added ${uniqueTerms.length} term(s). ${duplicates.length} term(s) were already in the list and skipped.`);
+      }
     }
   };
 
@@ -1406,6 +1421,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                       <li>If a result matches an excluded term, it will not appear in your search results</li>
                       <li>This is useful for filtering out generic or irrelevant terms</li>
                       <li>Terms are case-insensitive (e.g., "Marine" = "marine")</li>
+                      <li>Add multiple terms at once by separating them with semicolons</li>
                     </ul>
                   </div>
                 </div>
@@ -1413,7 +1429,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
 
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Add New Excluded Term
+                  Add New Excluded Term(s)
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -1425,7 +1441,7 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                         addPermanentExcludedTerm();
                       }
                     }}
-                    placeholder="Enter a term to exclude..."
+                    placeholder="Enter term(s) to exclude (separate with semicolon for multiple)..."
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
@@ -1436,6 +1452,9 @@ export default function BulkSearchModal({ contacts, onClose, onSelectContact, cu
                     Add
                   </button>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Tip: Add multiple terms at once by separating them with semicolons (e.g., "marine; shipping; logistics")
+                </p>
               </div>
 
               <div>
