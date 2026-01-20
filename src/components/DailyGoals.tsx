@@ -109,6 +109,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   const [statusFilters, setStatusFilters] = useState<('none' | 'jammed' | 'traction' | 'client' | 'dead')[]>(['none', 'traction', 'client']);
   const [excludedCountries, setExcludedCountries] = useState<string[]>([]);
   const [availableCountries, setAvailableCountries] = useState<string[]>([]);
+  const [includedTimezones, setIncludedTimezones] = useState<string[]>([]);
+  const [availableTimezones, setAvailableTimezones] = useState<string[]>([]);
   const [replacingScheduleId, setReplacingScheduleId] = useState<string | null>(null);
   const [replaceContactId, setReplaceContactId] = useState<string>('');
   const [isAddingCall, setIsAddingCall] = useState(false);
@@ -125,12 +127,17 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
   useEffect(() => {
     if (contacts.length > 0) {
       const countries = new Set<string>();
+      const timezones = new Set<string>();
       contacts.forEach(c => {
         if (c.country) {
           countries.add(c.country);
         }
+        if (c.timezone) {
+          timezones.add(c.timezone);
+        }
       });
       setAvailableCountries(Array.from(countries).sort());
+      setAvailableTimezones(Array.from(timezones).sort());
     }
   }, [contacts]);
 
@@ -698,7 +705,8 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
           fillRestOfDay: true,
           simpleMode: true,
           statusFilters: statusFilters.length > 0 ? statusFilters : undefined,
-          excludedCountries: excludedCountries.length > 0 ? excludedCountries : undefined
+          excludedCountries: excludedCountries.length > 0 ? excludedCountries : undefined,
+          includedTimezones: includedTimezones.length > 0 ? includedTimezones : undefined
         };
 
         // Fetch call_back tasks that are not completed and due today
@@ -901,6 +909,7 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
     setScheduleDuration(20);
     setEmailDuration(15);
     setDealDuration(30);
+    setIncludedTimezones([]);
   };
 
   const getActivityForDate = (type: GoalType, targetDate: string, targetTime: string): number => {
@@ -1277,6 +1286,36 @@ export default function DailyGoals({ calls, emails, deals, contacts = [], onAddT
                       ))}
                     </div>
                   </div>
+                  {availableTimezones.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">Include Timezones</label>
+                      <div className="max-h-32 overflow-y-auto p-2 bg-white border border-gray-200 rounded-lg">
+                        <div className="flex flex-wrap gap-2">
+                          {availableTimezones.map(timezone => (
+                            <label key={timezone} className="flex items-center gap-1.5 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={includedTimezones.includes(timezone)}
+                                onChange={(e) => {
+                                  const newIncluded = e.target.checked
+                                    ? [...includedTimezones, timezone]
+                                    : includedTimezones.filter(tz => tz !== timezone);
+                                  setIncludedTimezones(newIncluded);
+                                }}
+                                className="w-3.5 h-3.5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                              />
+                              <span className="text-xs font-medium px-2 py-0.5 rounded border bg-blue-50 text-blue-800 border-blue-300">
+                                {timezone}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Only contacts from selected timezones will be included. Leave empty to include all timezones.
+                      </p>
+                    </div>
+                  )}
                   {availableCountries.length > 0 && (
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-2">Exclude Countries</label>

@@ -33,6 +33,7 @@ export interface ScheduleParams {
   priorityDistribution?: Record<PriorityLabel, number>;
   statusFilters?: ('none' | 'jammed' | 'traction' | 'client' | 'dead')[];
   excludedCountries?: string[];
+  includedTimezones?: string[];
 }
 
 export interface SuggestedContact {
@@ -229,7 +230,7 @@ export function generateCallSchedule(
   goalId: string,
   tasks: Task[] = []
 ): Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] {
-  const { totalCalls, startTimeGMT, deadlineGMT, callDurationMins, fillRestOfDay, simpleMode, statusFilters, excludedCountries } = params;
+  const { totalCalls, startTimeGMT, deadlineGMT, callDurationMins, fillRestOfDay, simpleMode, statusFilters, excludedCountries, includedTimezones } = params;
 
   // Use startTimeGMT if provided, otherwise use current time
   const startTime = startTimeGMT ? new Date(startTimeGMT) : new Date();
@@ -265,7 +266,8 @@ export function generateCallSchedule(
       userId,
       goalId,
       statusFilters,
-      excludedCountries
+      excludedCountries,
+      includedTimezones
     );
   }
 
@@ -292,6 +294,14 @@ export function generateCallSchedule(
   if (excludedCountries && excludedCountries.length > 0) {
     activeContacts = activeContacts.filter(c => {
       return !c.country || !excludedCountries.includes(c.country);
+    });
+  }
+
+  // Filter by included timezones
+  if (includedTimezones && includedTimezones.length > 0) {
+    activeContacts = activeContacts.filter(c => {
+      const contactTz = c.timezone || 'GMT+0';
+      return includedTimezones.includes(contactTz);
     });
   }
 
@@ -680,7 +690,8 @@ function generateSimpleSchedule(
   userId: string,
   goalId: string,
   statusFilters?: ('none' | 'jammed' | 'traction' | 'client' | 'dead')[],
-  excludedCountries?: string[]
+  excludedCountries?: string[],
+  includedTimezones?: string[]
 ): Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] {
   const schedule: Omit<CallSchedule, 'id' | 'created_at' | 'updated_at'>[] = [];
 
@@ -704,6 +715,14 @@ function generateSimpleSchedule(
   if (excludedCountries && excludedCountries.length > 0) {
     activeContacts = activeContacts.filter(c => {
       return !c.country || !excludedCountries.includes(c.country);
+    });
+  }
+
+  // Filter by included timezones
+  if (includedTimezones && includedTimezones.length > 0) {
+    activeContacts = activeContacts.filter(c => {
+      const contactTz = c.timezone || 'GMT+0';
+      return includedTimezones.includes(contactTz);
     });
   }
 
