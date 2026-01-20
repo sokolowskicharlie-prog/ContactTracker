@@ -363,6 +363,19 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
     await onEditContact(updatedContact);
   };
 
+  const setNextWeek = async () => {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const nextWeekDate = nextWeek.toISOString();
+    setFollowUpDate(nextWeekDate);
+    const updatedContact = {
+      ...contact,
+      follow_up_date: nextWeekDate,
+      follow_up_reason: followUpReason || null
+    };
+    await onEditContact(updatedContact);
+  };
+
   const getTaskTypeLabel = (taskType: string) => {
     switch (taskType) {
       case 'call_back':
@@ -465,6 +478,13 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                   title="Set to next working day"
                 >
                   Tomorrow
+                </button>
+                <button
+                  onClick={setNextWeek}
+                  className="px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                  title="Set to one week from today"
+                >
+                  Next Week
                 </button>
                 {followUpDate && (
                   <button
