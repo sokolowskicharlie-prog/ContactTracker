@@ -175,23 +175,14 @@ export function suggestContacts(
 ): SuggestedContact[] {
   const filtered = contacts.filter(c => analyzeContactPriority(c) === priorityLabel);
 
-  // Sort by relevance
-  const sorted = filtered.sort((a, b) => {
-    if (priorityLabel === 'Warm' || priorityLabel === 'Follow-Up') {
-      // For warm/follow-up, prioritize recent activity
-      const aTime = 'last_call_date' in a ? new Date(a.last_call_date || 0).getTime() : 0;
-      const bTime = 'last_call_date' in b ? new Date(b.last_call_date || 0).getTime() : 0;
-      return bTime - aTime;
-    } else if (priorityLabel === 'High Value') {
-      // For high value, prioritize clients and those with deals
-      const aScore = (a.is_client ? 10 : 0) + ('total_deals' in a ? a.total_deals : 0);
-      const bScore = (b.is_client ? 10 : 0) + ('total_deals' in b ? b.total_deals : 0);
-      return bScore - aScore;
-    }
-    return 0;
-  });
+  // Randomize contacts using Fisher-Yates shuffle
+  const shuffled = [...filtered];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
 
-  return sorted.slice(0, count).map(c => ({
+  return shuffled.slice(0, count).map(c => ({
     contact: c,
     contactName: c.name || c.company || 'Unknown',
     priorityLabel,
@@ -348,12 +339,36 @@ export function generateCallSchedule(
 
   // ALWAYS add first call at EXACT current time
   if (activeContacts.length > 0) {
-    const sortedByPriority = [...activeContacts].sort((a, b) => {
-      const aPriority = analyzeContactPriority(a);
-      const bPriority = analyzeContactPriority(b);
-      const priorityOrder = { 'Warm': 0, 'Follow-Up': 1, 'High Value': 2, 'Cold': 3 };
-      return priorityOrder[aPriority] - priorityOrder[bPriority];
+    // Group contacts by priority
+    const contactsByPriority: Record<PriorityLabel, (Contact | ContactWithActivity)[]> = {
+      'Warm': [],
+      'Follow-Up': [],
+      'High Value': [],
+      'Cold': []
+    };
+
+    activeContacts.forEach(contact => {
+      const priority = analyzeContactPriority(contact);
+      contactsByPriority[priority].push(contact);
     });
+
+    // Shuffle contacts within each priority group
+    Object.keys(contactsByPriority).forEach(priority => {
+      const group = contactsByPriority[priority as PriorityLabel];
+      // Fisher-Yates shuffle
+      for (let i = group.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [group[i], group[j]] = [group[j], group[i]];
+      }
+    });
+
+    // Combine back in priority order with randomized contacts within each priority
+    const sortedByPriority = [
+      ...contactsByPriority['Warm'],
+      ...contactsByPriority['Follow-Up'],
+      ...contactsByPriority['High Value'],
+      ...contactsByPriority['Cold']
+    ];
 
     const firstContact = sortedByPriority[0];
     const priorityLabel = analyzeContactPriority(firstContact);
@@ -736,13 +751,36 @@ function generateSimpleSchedule(
     return followUpDate <= today; // Include if today or in the past
   });
 
-  // Sort contacts by priority
-  const sortedContacts = [...activeContacts].sort((a, b) => {
-    const aPriority = analyzeContactPriority(a);
-    const bPriority = analyzeContactPriority(b);
-    const priorityOrder = { 'Warm': 0, 'Follow-Up': 1, 'High Value': 2, 'Cold': 3 };
-    return priorityOrder[aPriority] - priorityOrder[bPriority];
+  // Group contacts by priority and randomize within each group
+  const contactsByPriority: Record<PriorityLabel, (Contact | ContactWithActivity)[]> = {
+    'Warm': [],
+    'Follow-Up': [],
+    'High Value': [],
+    'Cold': []
+  };
+
+  activeContacts.forEach(contact => {
+    const priority = analyzeContactPriority(contact);
+    contactsByPriority[priority].push(contact);
   });
+
+  // Shuffle contacts within each priority group
+  Object.keys(contactsByPriority).forEach(priority => {
+    const group = contactsByPriority[priority as PriorityLabel];
+    // Fisher-Yates shuffle
+    for (let i = group.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [group[i], group[j]] = [group[j], group[i]];
+    }
+  });
+
+  // Combine back in priority order with randomized contacts within each priority
+  const sortedContacts = [
+    ...contactsByPriority['Warm'],
+    ...contactsByPriority['Follow-Up'],
+    ...contactsByPriority['High Value'],
+    ...contactsByPriority['Cold']
+  ];
 
   // First call starts at the selected start time
   let currentTime = new Date(startTime);
