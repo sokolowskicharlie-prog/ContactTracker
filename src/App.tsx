@@ -3255,7 +3255,7 @@ function App() {
                 title={showMGOPrices ? 'Hide Oil Prices' : 'Show Oil Prices'}
               >
                 <BarChart3 className="w-5 h-5" />
-                <span className="hidden sm:inline whitespace-nowrap">MGO Prices</span>
+                <span className="hidden sm:inline whitespace-nowrap">Oil Prices</span>
               </button>
               <button
                 onClick={() => setShowAccountSettings(true)}
