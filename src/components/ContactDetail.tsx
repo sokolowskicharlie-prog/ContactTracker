@@ -1385,11 +1385,11 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                           <Ship className="w-4 h-4 text-blue-600" />
                           <span>{vessel.vessel_name}</span>
                           <a
-                            href={`https://www.marinetraffic.com/en/ais/home/centerx:1.9/centery:51.6/zoom:6`}
+                            href={`https://www.marinetraffic.com/en/ais/index/search/all?keyword=${encodeURIComponent(vessel.vessel_name)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-gray-400 hover:text-blue-600 transition-colors"
-                            title="Search vessel on Marine Traffic"
+                            title={`Search "${vessel.vessel_name}" on Marine Traffic`}
                             onClick={(e) => e.stopPropagation()}
                           >
                             <Search className="w-4 h-4" />
