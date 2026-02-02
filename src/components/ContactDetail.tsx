@@ -1,5 +1,4 @@
-import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, CreditCard as Edit2, StickyNote, AlertTriangle, Package, Skull, MapPin, Search, BarChart3 } from 'lucide-react';
-import MGOPricesModal from './MGOPricesModal';
+import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, CreditCard as Edit2, StickyNote, AlertTriangle, Package, Skull, MapPin, Search } from 'lucide-react';
 import { ContactWithActivity, Vessel, FuelDeal, Call, Email, TaskWithRelated, CustomJammedReason, supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 
@@ -62,7 +61,6 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
   const [customDeadReasons, setCustomDeadReasons] = useState<CustomJammedReason[]>([]);
   const [isAddingNewReason, setIsAddingNewReason] = useState(false);
   const [newReasonText, setNewReasonText] = useState('');
-  const [showMGOPrices, setShowMGOPrices] = useState(false);
 
   const defaultJammedReasons = [
     'Direct with suppliers',
@@ -1200,22 +1198,12 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowMGOPrices(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-              title="View oil and fuel prices"
-            >
-              <BarChart3 className="w-4 h-4" />
-              MGO Prices
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -1985,10 +1973,6 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
           </div>
         </div>
       </div>
-
-      {showMGOPrices && (
-        <MGOPricesModal onClose={() => setShowMGOPrices(false)} />
-      )}
     </div>
   );
 }
