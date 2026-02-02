@@ -315,7 +315,7 @@ export default function MGOPricesModal({
   return (
     <div
       className="fixed right-4 z-40 w-96"
-      style={{ top: `${calculateTopPosition()}px` }}
+      style={{ top: `${isExpanded ? 16 : calculateTopPosition()}px` }}
     >
       <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 flex items-center justify-between">
