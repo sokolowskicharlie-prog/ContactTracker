@@ -190,6 +190,106 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
   }
 }
 
+async function fetchPriceFromWSJ(url: string): Promise<{ price: number; change: number; changePercent: number } | null> {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.wsj.com/',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to fetch from WSJ ${url}: ${response.status}`);
+      return null;
+    }
+
+    const html = await response.text();
+
+    let price: number | null = null;
+    let change: number | null = null;
+    let changePercent: number | null = null;
+
+    const pricePatterns = [
+      /"lastPrice":"([0-9.]+)"/i,
+      /"last":"([0-9.]+)"/i,
+      /data-value="([0-9.]+)"/i,
+      /<span[^>]*class="[^"]*WSJTheme--value[^"]*"[^>]*>([0-9.,]+)</i,
+      /lastPrice["\s:]+([0-9.]+)/i,
+    ];
+
+    for (const pattern of pricePatterns) {
+      const match = html.match(pattern);
+      if (match && match[1]) {
+        const parsedPrice = parseFloat(match[1].replace(',', ''));
+        if (!isNaN(parsedPrice) && parsedPrice > 0) {
+          price = parsedPrice;
+          console.log(`Found WSJ price: ${price}`);
+          break;
+        }
+      }
+    }
+
+    const changePatterns = [
+      /"priceChange":"([+-]?[0-9.]+)"/i,
+      /"change":"([+-]?[0-9.]+)"/i,
+      /priceChange["\s:]+([+-]?[0-9.]+)/i,
+    ];
+
+    for (const pattern of changePatterns) {
+      const match = html.match(pattern);
+      if (match && match[1]) {
+        const parsedChange = parseFloat(match[1]);
+        if (!isNaN(parsedChange)) {
+          change = parsedChange;
+          console.log(`Found WSJ change: ${change}`);
+          break;
+        }
+      }
+    }
+
+    const percentPatterns = [
+      /"percentChange":"([+-]?[0-9.]+)"/i,
+      /"changePercent":"([+-]?[0-9.]+)"/i,
+      /percentChange["\s:]+([+-]?[0-9.]+)/i,
+    ];
+
+    for (const pattern of percentPatterns) {
+      const match = html.match(pattern);
+      if (match && match[1]) {
+        const parsedPercent = parseFloat(match[1]);
+        if (!isNaN(parsedPercent)) {
+          changePercent = parsedPercent;
+          console.log(`Found WSJ changePercent: ${changePercent}`);
+          break;
+        }
+      }
+    }
+
+    if (changePercent !== null && price !== null && change === null) {
+      change = (price * changePercent) / (100 + changePercent);
+      console.log(`Calculated WSJ change from percent: ${change}`);
+    }
+
+    if (price !== null) {
+      console.log(`Successfully fetched from WSJ: price=${price}, change=${change || 0}, changePercent=${changePercent || 0}`);
+      return {
+        price,
+        change: change || 0,
+        changePercent: changePercent || 0,
+      };
+    }
+
+    console.error(`Could not extract price from WSJ ${url}`);
+    return null;
+  } catch (error) {
+    console.error(`Error fetching price from WSJ ${url}:`, error);
+    return null;
+  }
+}
+
 async function fetchBunkerPricesFromShipAndBunker(): Promise<{ mgo: any; vlsfo: any; ifo380: any }> {
   try {
     const response = await fetch('https://shipandbunker.com/prices/av/global/av-g20-global-20-ports-average', {
@@ -268,10 +368,11 @@ async function fetchBunkerPricesFromShipAndBunker(): Promise<{ mgo: any; vlsfo: 
 
 async function fetchOilPrices(): Promise<OilPricesResponse> {
   try {
-    const [wtiData, brentData, bunkerPrices] = await Promise.all([
+    const [wtiData, brentData, bunkerPrices, gasoilData] = await Promise.all([
       fetchPriceFromTradingEconomics('https://tradingeconomics.com/commodity/crude-oil'),
       fetchPriceFromTradingEconomics('https://tradingeconomics.com/commodity/brent-crude-oil'),
       fetchBunkerPricesFromShipAndBunker(),
+      fetchPriceFromWSJ('https://www.wsj.com/market-data/quotes/futures/UK/IFEU/GAS00'),
     ]);
 
     const mgoPrice = bunkerPrices.mgo?.price || 850;
@@ -306,6 +407,16 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
         unit: 'per barrel',
         url: 'https://tradingeconomics.com/commodity/brent-crude-oil',
         history: generateIntradayHistory(brentData?.price || 74.20, 0.018),
+      },
+      {
+        name: 'Low Sulphur Gasoil',
+        price: gasoilData?.price || 780,
+        change: gasoilData?.change || 10.20,
+        changePercent: gasoilData?.changePercent || 1.32,
+        currency: 'USD',
+        unit: 'per metric ton',
+        url: 'https://www.wsj.com/market-data/quotes/futures/UK/IFEU/GAS00',
+        history: generateIntradayHistory(gasoilData?.price || 780, 0.023),
       },
       {
         name: 'MGO (Global Average)',
@@ -367,6 +478,16 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
           unit: 'per barrel',
           url: 'https://tradingeconomics.com/commodity/brent-crude-oil',
           history: generateIntradayHistory(74.20, 0.018),
+        },
+        {
+          name: 'Low Sulphur Gasoil',
+          price: 780,
+          change: 10.20,
+          changePercent: 1.32,
+          currency: 'USD',
+          unit: 'per metric ton',
+          url: 'https://www.wsj.com/market-data/quotes/futures/UK/IFEU/GAS00',
+          history: generateIntradayHistory(780, 0.023),
         },
         {
           name: 'MGO (Global Average)',
