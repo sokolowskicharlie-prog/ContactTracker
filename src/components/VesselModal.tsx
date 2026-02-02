@@ -56,6 +56,18 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
   }, [vessel]);
 
   useEffect(() => {
+    if (!vesselName.trim() || isMultipleVessels || vessel || imoNumber) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      handleSearchIMO();
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [vesselName, isMultipleVessels]);
+
+  useEffect(() => {
     if (imoNumber && imoNumber.length >= 7 && !marineTrafficUrl) {
       const cleanImo = imoNumber.replace(/[^0-9]/g, '');
       if (cleanImo.length === 7) {

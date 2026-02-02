@@ -19,7 +19,7 @@ interface VesselSearchResponse {
 
 async function searchVesselIMO(vesselName: string): Promise<VesselSearchResponse> {
   try {
-    const searchQuery = `${vesselName} IMO vessel ship`;
+    const searchQuery = `${vesselName} IMO`;
     const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
 
     const response = await fetch(searchUrl, {
@@ -36,31 +36,53 @@ async function searchVesselIMO(vesselName: string): Promise<VesselSearchResponse
 
     const html = await response.text();
 
-    const imoPatterns = [
-      /IMO\s*[:\-]?\s*(\d{7})/gi,
-      /IMO\s+number\s*[:\-]?\s*(\d{7})/gi,
-      /\bIMO(\d{7})\b/gi,
-      /\b(\d{7})\s*IMO\b/gi,
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if (titleMatch) {
+      const title = titleMatch[1];
+      const titleImoMatch = title.match(/\(IMO\s*(\d{7})\)/i);
+      if (titleImoMatch) {
+        return {
+          imo: titleImoMatch[1],
+          vesselName,
+        };
+      }
+    }
+
+    const h3Patterns = [
+      /<h3[^>]*>([^<]*\(IMO\s*(\d{7})\)[^<]*)<\/h3>/gi,
+      /<div[^>]*class="[^"]*BNeawe[^"]*"[^>]*>([^<]*\(IMO\s*(\d{7})\)[^<]*)<\/div>/gi,
     ];
 
-    const foundIMOs = new Set<string>();
-
-    for (const pattern of imoPatterns) {
+    for (const pattern of h3Patterns) {
       let match;
       while ((match = pattern.exec(html)) !== null) {
-        const imo = match[1];
+        const imo = match[2];
         if (imo && imo.length === 7 && /^\d{7}$/.test(imo)) {
-          foundIMOs.add(imo);
+          return {
+            imo,
+            vesselName,
+          };
         }
       }
     }
 
-    if (foundIMOs.size > 0) {
-      const imo = Array.from(foundIMOs)[0];
-      return {
-        imo,
-        vesselName,
-      };
+    const imoPatterns = [
+      /IMO\s*[:\-]?\s*(\d{7})/i,
+      /\(IMO\s*(\d{7})\)/i,
+      /IMO\s+number\s*[:\-]?\s*(\d{7})/i,
+    ];
+
+    for (const pattern of imoPatterns) {
+      const match = html.match(pattern);
+      if (match && match[1]) {
+        const imo = match[1];
+        if (imo.length === 7 && /^\d{7}$/.test(imo)) {
+          return {
+            imo,
+            vesselName,
+          };
+        }
+      }
     }
 
     return {
