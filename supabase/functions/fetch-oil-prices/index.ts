@@ -198,6 +198,7 @@ async function fetchPriceFromWSJ(url: string): Promise<{ price: number; change: 
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
         'Referer': 'https://www.wsj.com/',
+        'Cache-Control': 'no-cache',
       },
     });
 
@@ -207,74 +208,117 @@ async function fetchPriceFromWSJ(url: string): Promise<{ price: number; change: 
     }
 
     const html = await response.text();
+    console.log('WSJ HTML length:', html.length);
 
     let price: number | null = null;
     let change: number | null = null;
     let changePercent: number | null = null;
 
-    const pricePatterns = [
-      /"lastPrice":"([0-9.]+)"/i,
-      /"last":"([0-9.]+)"/i,
-      /data-value="([0-9.]+)"/i,
-      /<span[^>]*class="[^"]*WSJTheme--value[^"]*"[^>]*>([0-9.,]+)</i,
-      /lastPrice["\s:]+([0-9.]+)/i,
+    // Try to find JSON data embedded in the page
+    const jsonDataPatterns = [
+      /"instrumentData":\s*({[^}]+})/i,
+      /"quoteData":\s*({[^}]+})/i,
+      /window\.__STATE__\s*=\s*({.+?});/i,
+      /"data":\s*({[^}]*"lastPrice"[^}]+})/i,
     ];
 
-    for (const pattern of pricePatterns) {
+    for (const pattern of jsonDataPatterns) {
       const match = html.match(pattern);
       if (match && match[1]) {
-        const parsedPrice = parseFloat(match[1].replace(',', ''));
-        if (!isNaN(parsedPrice) && parsedPrice > 0) {
-          price = parsedPrice;
-          console.log(`Found WSJ price: ${price}`);
-          break;
+        try {
+          const jsonData = JSON.parse(match[1]);
+          if (jsonData.lastPrice || jsonData.last) {
+            price = parseFloat(jsonData.lastPrice || jsonData.last);
+            change = parseFloat(jsonData.priceChange || jsonData.change || 0);
+            changePercent = parseFloat(jsonData.percentChange || jsonData.changePercent || 0);
+            console.log(`Found WSJ data from JSON: price=${price}, change=${change}, changePercent=${changePercent}`);
+            break;
+          }
+        } catch (e) {
+          console.log('Failed to parse JSON data from pattern');
         }
       }
     }
 
-    const changePatterns = [
-      /"priceChange":"([+-]?[0-9.]+)"/i,
-      /"change":"([+-]?[0-9.]+)"/i,
-      /priceChange["\s:]+([+-]?[0-9.]+)/i,
-    ];
+    // Fallback to regex patterns if JSON parsing failed
+    if (price === null) {
+      const pricePatterns = [
+        /"lastPrice"\s*:\s*"?([0-9.]+)"?/i,
+        /"last"\s*:\s*"?([0-9.]+)"?/i,
+        /"price"\s*:\s*"?([0-9.]+)"?/i,
+        /data-value="([0-9.,]+)"/i,
+        /<span[^>]*class="[^"]*WSJTheme--value[^"]*"[^>]*>\$?([0-9.,]+)</i,
+        /lastPrice["\s:]+([0-9.,]+)/i,
+        /"value"\s*:\s*"?([0-9.]+)"?/i,
+      ];
 
-    for (const pattern of changePatterns) {
-      const match = html.match(pattern);
-      if (match && match[1]) {
-        const parsedChange = parseFloat(match[1]);
-        if (!isNaN(parsedChange)) {
-          change = parsedChange;
-          console.log(`Found WSJ change: ${change}`);
-          break;
+      for (const pattern of pricePatterns) {
+        const match = html.match(pattern);
+        if (match && match[1]) {
+          const parsedPrice = parseFloat(match[1].replace(/,/g, ''));
+          if (!isNaN(parsedPrice) && parsedPrice > 0) {
+            price = parsedPrice;
+            console.log(`Found WSJ price from HTML: ${price}`);
+            break;
+          }
         }
       }
     }
 
-    const percentPatterns = [
-      /"percentChange":"([+-]?[0-9.]+)"/i,
-      /"changePercent":"([+-]?[0-9.]+)"/i,
-      /percentChange["\s:]+([+-]?[0-9.]+)/i,
-    ];
+    if (change === null) {
+      const changePatterns = [
+        /"priceChange"\s*:\s*"?([+-]?[0-9.]+)"?/i,
+        /"change"\s*:\s*"?([+-]?[0-9.]+)"?/i,
+        /priceChange["\s:]+([+-]?[0-9.,]+)/i,
+        /"netChange"\s*:\s*"?([+-]?[0-9.]+)"?/i,
+      ];
 
-    for (const pattern of percentPatterns) {
-      const match = html.match(pattern);
-      if (match && match[1]) {
-        const parsedPercent = parseFloat(match[1]);
-        if (!isNaN(parsedPercent)) {
-          changePercent = parsedPercent;
-          console.log(`Found WSJ changePercent: ${changePercent}`);
-          break;
+      for (const pattern of changePatterns) {
+        const match = html.match(pattern);
+        if (match && match[1]) {
+          const parsedChange = parseFloat(match[1].replace(/,/g, ''));
+          if (!isNaN(parsedChange)) {
+            change = parsedChange;
+            console.log(`Found WSJ change from HTML: ${change}`);
+            break;
+          }
         }
       }
     }
 
+    if (changePercent === null) {
+      const percentPatterns = [
+        /"percentChange"\s*:\s*"?([+-]?[0-9.]+)"?/i,
+        /"changePercent"\s*:\s*"?([+-]?[0-9.]+)"?/i,
+        /percentChange["\s:]+([+-]?[0-9.]+)/i,
+        /"pctChange"\s*:\s*"?([+-]?[0-9.]+)"?/i,
+      ];
+
+      for (const pattern of percentPatterns) {
+        const match = html.match(pattern);
+        if (match && match[1]) {
+          const parsedPercent = parseFloat(match[1]);
+          if (!isNaN(parsedPercent)) {
+            changePercent = parsedPercent;
+            console.log(`Found WSJ changePercent from HTML: ${changePercent}`);
+            break;
+          }
+        }
+      }
+    }
+
+    // Calculate missing values if we have enough data
     if (changePercent !== null && price !== null && change === null) {
       change = (price * changePercent) / (100 + changePercent);
       console.log(`Calculated WSJ change from percent: ${change}`);
+    } else if (change !== null && price !== null && changePercent === null) {
+      const previousPrice = price - change;
+      changePercent = previousPrice !== 0 ? (change / previousPrice) * 100 : 0;
+      console.log(`Calculated WSJ changePercent from change: ${changePercent}`);
     }
 
     if (price !== null) {
-      console.log(`Successfully fetched from WSJ: price=${price}, change=${change || 0}, changePercent=${changePercent || 0}`);
+      console.log(`✓ Successfully scraped WSJ: price=${price}, change=${change || 0}, changePercent=${changePercent || 0}`);
       return {
         price,
         change: change || 0,
@@ -282,10 +326,10 @@ async function fetchPriceFromWSJ(url: string): Promise<{ price: number; change: 
       };
     }
 
-    console.error(`Could not extract price from WSJ ${url}`);
+    console.error(`✗ Could not extract price from WSJ ${url} - will use fallback values`);
     return null;
   } catch (error) {
-    console.error(`Error fetching price from WSJ ${url}:`, error);
+    console.error(`✗ Error fetching price from WSJ ${url}:`, error);
     return null;
   }
 }
