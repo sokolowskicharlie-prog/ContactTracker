@@ -1,4 +1,4 @@
-import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, CreditCard as Edit2, StickyNote, AlertTriangle, Package, Skull, MapPin } from 'lucide-react';
+import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, CreditCard as Edit2, StickyNote, AlertTriangle, Package, Skull, MapPin, Search } from 'lucide-react';
 import { ContactWithActivity, Vessel, FuelDeal, Call, Email, TaskWithRelated, CustomJammedReason, supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 
@@ -1380,10 +1380,20 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                     className="bg-white border border-gray-200 rounded-lg p-4"
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <div>
+                      <div className="flex-1">
                         <div className="font-medium text-gray-900 flex items-center gap-2">
                           <Ship className="w-4 h-4 text-blue-600" />
-                          {vessel.vessel_name}
+                          <span>{vessel.vessel_name}</span>
+                          <a
+                            href={`https://www.marinetraffic.com/en/ais/home/centerx:1.9/centery:51.6/zoom:6`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-400 hover:text-blue-600 transition-colors"
+                            title="Search vessel on Marine Traffic"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Search className="w-4 h-4" />
+                          </a>
                         </div>
                         {vessel.vessel_type && (
                           <div className="text-xs text-gray-500 mt-1">

@@ -1,4 +1,4 @@
-import { X, Ship, Hash, ExternalLink, MapPin, Calendar } from 'lucide-react';
+import { X, Ship, Hash, ExternalLink, MapPin, Calendar, Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Vessel } from '../lib/supabase';
 
@@ -122,6 +122,18 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="mb-3 pb-3 border-b border-gray-100">
+            <a
+              href="https://www.marinetraffic.com/en/ais/home/centerx:1.9/centery:51.6/zoom:6"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              <Search className="w-4 h-4" />
+              Search for vessels on Marine Traffic
+            </a>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Vessel Name{isMultipleVessels ? 's' : ''} *
