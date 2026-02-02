@@ -13,6 +13,7 @@ interface OilPrice {
   changePercent: number;
   currency: string;
   unit: string;
+  url: string;
   history?: Array<{ time: string; price: number }>;
 }
 
@@ -68,6 +69,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
         changePercent: 1.08,
         currency: 'USD',
         unit: 'per barrel',
+        url: 'https://www.marketwatch.com/investing/future/crude%20oil%20-%20electronic',
         history: generateIntradayHistory(70.50, 0.02),
       },
       {
@@ -77,6 +79,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
         changePercent: 1.12,
         currency: 'USD',
         unit: 'per barrel',
+        url: 'https://www.marketwatch.com/investing/future/bz00',
         history: generateIntradayHistory(74.20, 0.018),
       },
       {
@@ -86,6 +89,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
         changePercent: 1.49,
         currency: 'USD',
         unit: 'per metric ton',
+        url: 'https://shipandbunker.com/prices',
         history: generateIntradayHistory(850, 0.025),
       },
     ];
@@ -115,6 +119,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
           changePercent: 1.08,
           currency: 'USD',
           unit: 'per barrel',
+          url: 'https://www.marketwatch.com/investing/future/crude%20oil%20-%20electronic',
           history: generateIntradayHistory(70.50, 0.02),
         },
         {
@@ -124,6 +129,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
           changePercent: 1.12,
           currency: 'USD',
           unit: 'per barrel',
+          url: 'https://www.marketwatch.com/investing/future/bz00',
           history: generateIntradayHistory(74.20, 0.018),
         },
         {
@@ -133,6 +139,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
           changePercent: 1.49,
           currency: 'USD',
           unit: 'per metric ton',
+          url: 'https://shipandbunker.com/prices',
           history: generateIntradayHistory(850, 0.025),
         },
       ],

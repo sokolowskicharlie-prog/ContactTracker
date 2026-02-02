@@ -21,6 +21,7 @@ interface OilPrice {
   changePercent: number;
   currency: string;
   unit: string;
+  url: string;
   history?: Array<{ time: string; price: number }>;
 }
 
@@ -376,9 +377,14 @@ export default function MGOPricesModal({
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
-                          <h3 className="text-xs font-medium text-gray-600 mb-0.5">
+                          <a
+                            href={price.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline mb-0.5 inline-block cursor-pointer transition-colors"
+                          >
                             {price.name}
-                          </h3>
+                          </a>
                           <p className="text-xl font-bold text-gray-900">
                             ${price.price.toFixed(2)}
                           </p>
