@@ -32,6 +32,7 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
   const [imoNumber, setImoNumber] = useState('');
   const [vesselType, setVesselType] = useState('');
   const [marineTrafficUrl, setMarineTrafficUrl] = useState('');
+  const [marineTrafficId, setMarineTrafficId] = useState('');
   const [notes, setNotes] = useState('');
   const [destination, setDestination] = useState('');
   const [eta, setEta] = useState('');
@@ -45,6 +46,7 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
       setImoNumber(vessel.imo_number || '');
       setVesselType(vessel.vessel_type || '');
       setMarineTrafficUrl(vessel.marine_traffic_url || '');
+      setMarineTrafficId(vessel.marine_traffic_id || '');
       setNotes(vessel.notes || '');
       setDestination(vessel.destination || '');
       setEta(vessel.eta ? vessel.eta.split('T')[0] : '');
@@ -60,12 +62,21 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
     }
   }, [imoNumber]);
 
-  // Extract IMO from Marine Traffic URL when pasted
+  // Extract IMO and Ship ID from Marine Traffic URL when pasted
   useEffect(() => {
-    if (marineTrafficUrl && !imoNumber) {
-      const imoMatch = marineTrafficUrl.match(/imo[:\-]?(\d{7})/i);
-      if (imoMatch) {
-        setImoNumber(imoMatch[1]);
+    if (marineTrafficUrl) {
+      // Extract IMO if not already set
+      if (!imoNumber) {
+        const imoMatch = marineTrafficUrl.match(/imo[:\-]?(\d{7})/i);
+        if (imoMatch) {
+          setImoNumber(imoMatch[1]);
+        }
+      }
+
+      // Extract ship ID
+      const shipIdMatch = marineTrafficUrl.match(/shipid[:\-]?(\d+)/i);
+      if (shipIdMatch) {
+        setMarineTrafficId(shipIdMatch[1]);
       }
     }
   }, [marineTrafficUrl]);
@@ -80,6 +91,7 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
         imo_number: null,
         vessel_type: vesselType || null,
         marine_traffic_url: null,
+        marine_traffic_id: null,
         notes: notes.trim() || null,
         destination: destination.trim() || null,
         eta: eta ? new Date(eta).toISOString() : null,
@@ -93,6 +105,7 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
         imo_number: imoNumber.trim() || null,
         vessel_type: vesselType || null,
         marine_traffic_url: marineTrafficUrl.trim() || null,
+        marine_traffic_id: marineTrafficId.trim() || null,
         notes: notes.trim() || null,
         destination: destination.trim() || null,
         eta: eta ? new Date(eta).toISOString() : null,
@@ -210,34 +223,52 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
           </div>
 
           {!isMultipleVessels && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                Marine Traffic URL
-                {marineTrafficUrl && (
-                  <a
-                    href={marineTrafficUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                )}
-              </label>
-              <input
-                type="url"
-                value={marineTrafficUrl}
-                onChange={(e) => setMarineTrafficUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Auto-generated from IMO or enter custom URL"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                {imoNumber
-                  ? 'URL will be auto-generated from IMO number'
-                  : 'Paste Marine Traffic URL to auto-extract IMO number, or enter IMO above to auto-generate link'}
-              </p>
-            </div>
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                  Marine Traffic URL
+                  {marineTrafficUrl && (
+                    <a
+                      href={marineTrafficUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
+                </label>
+                <input
+                  type="url"
+                  value={marineTrafficUrl}
+                  onChange={(e) => setMarineTrafficUrl(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., https://www.marinetraffic.com/en/ais/details/ships/shipid:5437592"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Paste the Marine Traffic vessel page URL - Ship ID will be extracted automatically
+                </p>
+              </div>
+
+              {marineTrafficId && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Marine Traffic Ship ID
+                  </label>
+                  <input
+                    type="text"
+                    value={marineTrafficId}
+                    onChange={(e) => setMarineTrafficId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., 5437592"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Extracted from Marine Traffic URL
+                  </p>
+                </div>
+              )}
+            </>
           )}
 
           <div>

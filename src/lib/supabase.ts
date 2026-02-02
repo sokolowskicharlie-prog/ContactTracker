@@ -96,6 +96,7 @@ export type Vessel = {
   imo_number?: string;
   vessel_type?: string;
   marine_traffic_url?: string;
+  marine_traffic_id?: string;
   notes?: string;
   destination?: string;
   eta?: string;
