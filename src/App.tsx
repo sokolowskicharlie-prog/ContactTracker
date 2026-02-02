@@ -223,7 +223,7 @@ function App() {
   const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact', 'alerts', 'stats']);
   const [panelOrder, setPanelOrder] = useState<string[]>(['notes', 'goals', 'priority', 'mgo']);
   const [panelSpacing, setPanelSpacing] = useState<number>(2);
-  const [oilPricesOrder, setOilPricesOrder] = useState<string[]>(['WTI', 'Brent', 'MGO']);
+  const [oilPricesOrder, setOilPricesOrder] = useState<string[]>(['WTI', 'Brent', 'MGO', 'VLSFO', 'IFO 380']);
   const [customPriorityLabels, setCustomPriorityLabels] = useState<Record<number, string>>({
     0: 'Client',
     1: 'Highest',
@@ -2805,7 +2805,11 @@ function App() {
           setCustomPriorityLabels({ ...defaultLabels, ...data.custom_priority_labels });
         }
         if (data.oil_prices_order) {
-          setOilPricesOrder(data.oil_prices_order);
+          const defaultOrder = ['WTI', 'Brent', 'MGO', 'VLSFO', 'IFO 380'];
+          const existingOrder = data.oil_prices_order;
+          const newTypes = defaultOrder.filter(type => !existingOrder.includes(type));
+          const mergedOrder = [...existingOrder, ...newTypes];
+          setOilPricesOrder(mergedOrder);
         }
       }
     } catch (error) {

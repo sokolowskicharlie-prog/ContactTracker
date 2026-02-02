@@ -220,7 +220,7 @@ export default function MGOPricesModal({
   priorityExpanded = true,
   panelSpacing = 2,
   isOpen,
-  oilPricesOrder = ['WTI', 'Brent', 'MGO'],
+  oilPricesOrder = ['WTI', 'Brent', 'MGO', 'VLSFO', 'IFO 380'],
   onOilPricesOrderChange
 }: MGOPricesModalProps) {
   const [data, setData] = useState<OilPricesData | null>(null);
