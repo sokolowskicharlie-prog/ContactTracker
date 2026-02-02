@@ -1,4 +1,4 @@
-import { X, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 
 interface MGOPricesModalProps {
@@ -12,6 +12,8 @@ interface MGOPricesModalProps {
   priorityExpanded?: boolean;
   panelSpacing?: number;
   isOpen: boolean;
+  oilPricesOrder?: string[];
+  onOilPricesOrderChange?: (order: string[]) => void;
 }
 
 interface OilPrice {
@@ -217,7 +219,9 @@ export default function MGOPricesModal({
   goalsExpanded = true,
   priorityExpanded = true,
   panelSpacing = 2,
-  isOpen
+  isOpen,
+  oilPricesOrder = ['WTI', 'Brent', 'MGO'],
+  onOilPricesOrderChange
 }: MGOPricesModalProps) {
   const [data, setData] = useState<OilPricesData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -363,69 +367,124 @@ export default function MGOPricesModal({
             {data && !loading && (
               <div className="space-y-3">
                 <div className="space-y-2">
-                {data.prices.map((price, index) => {
-                  const chartColor = index === 0
-                    ? '#3b82f6'
-                    : index === 1
-                    ? '#f97316'
-                    : '#10b981';
+                {(() => {
+                  const getOilTypeName = (priceName: string): string => {
+                    if (priceName.includes('WTI')) return 'WTI';
+                    if (priceName.includes('Brent')) return 'Brent';
+                    if (priceName.includes('MGO')) return 'MGO';
+                    return priceName;
+                  };
 
-                  return (
-                    <div
-                      key={index}
-                      className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-3"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <a
-                            href={price.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline mb-0.5 inline-block cursor-pointer transition-colors"
-                          >
-                            {price.name}
-                          </a>
-                          <p className="text-xl font-bold text-gray-900">
-                            ${price.price.toFixed(2)}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {price.currency} {price.unit}
-                          </p>
+                  const sortedPrices = [...data.prices].sort((a, b) => {
+                    const aType = getOilTypeName(a.name);
+                    const bType = getOilTypeName(b.name);
+                    const aIndex = oilPricesOrder.indexOf(aType);
+                    const bIndex = oilPricesOrder.indexOf(bType);
+                    return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+                  });
+
+                  const handleMoveUp = (currentIndex: number) => {
+                    if (currentIndex === 0 || !onOilPricesOrderChange) return;
+                    const newOrder = [...oilPricesOrder];
+                    [newOrder[currentIndex], newOrder[currentIndex - 1]] = [newOrder[currentIndex - 1], newOrder[currentIndex]];
+                    onOilPricesOrderChange(newOrder);
+                  };
+
+                  const handleMoveDown = (currentIndex: number) => {
+                    if (currentIndex === oilPricesOrder.length - 1 || !onOilPricesOrderChange) return;
+                    const newOrder = [...oilPricesOrder];
+                    [newOrder[currentIndex], newOrder[currentIndex + 1]] = [newOrder[currentIndex + 1], newOrder[currentIndex]];
+                    onOilPricesOrderChange(newOrder);
+                  };
+
+                  return sortedPrices.map((price, displayIndex) => {
+                    const oilType = getOilTypeName(price.name);
+                    const orderIndex = oilPricesOrder.indexOf(oilType);
+                    const chartColor = oilType === 'WTI'
+                      ? '#3b82f6'
+                      : oilType === 'Brent'
+                      ? '#f97316'
+                      : '#10b981';
+
+                    return (
+                      <div
+                        key={displayIndex}
+                        className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-3"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <a
+                              href={price.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline mb-0.5 inline-block cursor-pointer transition-colors"
+                            >
+                              {price.name}
+                            </a>
+                            <p className="text-xl font-bold text-gray-900">
+                              ${price.price.toFixed(2)}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {price.currency} {price.unit}
+                            </p>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <div
+                              className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${
+                                price.changePercent >= 0
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-red-100 text-red-700'
+                              }`}
+                            >
+                              {price.changePercent >= 0 ? (
+                                <TrendingUp className="w-3 h-3" />
+                              ) : (
+                                <TrendingDown className="w-3 h-3" />
+                              )}
+                              <span className="text-xs font-medium">
+                                {price.changePercent >= 0 ? '+' : ''}{price.changePercent.toFixed(2)}%
+                              </span>
+                            </div>
+                            {onOilPricesOrderChange && (
+                              <div className="flex gap-0.5">
+                                <button
+                                  onClick={() => handleMoveUp(orderIndex)}
+                                  disabled={orderIndex === 0}
+                                  className="p-0.5 hover:bg-gray-200 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                  title="Move up"
+                                >
+                                  <ArrowUp className="w-3 h-3 text-gray-600" />
+                                </button>
+                                <button
+                                  onClick={() => handleMoveDown(orderIndex)}
+                                  disabled={orderIndex === oilPricesOrder.length - 1}
+                                  className="p-0.5 hover:bg-gray-200 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                  title="Move down"
+                                >
+                                  <ArrowDown className="w-3 h-3 text-gray-600" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div
-                          className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${
-                            price.changePercent >= 0
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}
-                        >
-                          {price.changePercent >= 0 ? (
-                            <TrendingUp className="w-3 h-3" />
-                          ) : (
-                            <TrendingDown className="w-3 h-3" />
-                          )}
-                          <span className="text-xs font-medium">
-                            {price.changePercent >= 0 ? '+' : ''}{price.changePercent.toFixed(2)}%
+                        <div className="flex justify-between text-xs pt-2 border-t border-gray-200">
+                          <span className="text-gray-600">Change:</span>
+                          <span
+                            className={`font-medium ${
+                              price.change >= 0 ? 'text-green-600' : 'text-red-600'
+                            }`}
+                          >
+                            {price.change >= 0 ? '+' : ''}
+                            ${price.change.toFixed(2)}
                           </span>
                         </div>
+                        {price.history && price.history.length > 0 && (
+                          <MiniChart data={price.history} color={chartColor} />
+                        )}
                       </div>
-                      <div className="flex justify-between text-xs pt-2 border-t border-gray-200">
-                        <span className="text-gray-600">Change:</span>
-                        <span
-                          className={`font-medium ${
-                            price.change >= 0 ? 'text-green-600' : 'text-red-600'
-                          }`}
-                        >
-                          {price.change >= 0 ? '+' : ''}
-                          ${price.change.toFixed(2)}
-                        </span>
-                      </div>
-                      {price.history && price.history.length > 0 && (
-                        <MiniChart data={price.history} color={chartColor} />
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </div>
             </div>
           )}

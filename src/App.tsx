@@ -223,6 +223,7 @@ function App() {
   const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact', 'alerts', 'stats']);
   const [panelOrder, setPanelOrder] = useState<string[]>(['notes', 'goals', 'priority', 'mgo']);
   const [panelSpacing, setPanelSpacing] = useState<number>(2);
+  const [oilPricesOrder, setOilPricesOrder] = useState<string[]>(['WTI', 'Brent', 'MGO']);
   const [customPriorityLabels, setCustomPriorityLabels] = useState<Record<number, string>>({
     0: 'Client',
     1: 'Highest',
@@ -2771,7 +2772,7 @@ function App() {
     try {
       const { data, error } = await supabase
         .from('user_preferences')
-        .select('button_order, visible_filters, panel_order, panel_spacing, custom_priority_labels')
+        .select('button_order, visible_filters, panel_order, panel_spacing, custom_priority_labels, oil_prices_order')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -2802,6 +2803,9 @@ function App() {
             5: 'Lowest'
           };
           setCustomPriorityLabels({ ...defaultLabels, ...data.custom_priority_labels });
+        }
+        if (data.oil_prices_order) {
+          setOilPricesOrder(data.oil_prices_order);
         }
       }
     } catch (error) {
@@ -2835,6 +2839,37 @@ function App() {
       setButtonOrder(order);
     } catch (error) {
       console.error('Error saving button order:', error);
+    }
+  };
+
+  const handleSaveOilPricesOrder = async (order: string[]) => {
+    if (!user) return;
+
+    try {
+      const { data: existing } = await supabase
+        .from('user_preferences')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('user_preferences')
+          .update({ oil_prices_order: order })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_preferences')
+          .insert([{ user_id: user.id, oil_prices_order: order }]);
+
+        if (error) throw error;
+      }
+
+      setOilPricesOrder(order);
+    } catch (error) {
+      console.error('Error saving oil prices order:', error);
     }
   };
 
@@ -4974,6 +5009,8 @@ function App() {
         goalsExpanded={goalsExpanded}
         priorityExpanded={priorityExpanded}
         panelSpacing={panelSpacing}
+        oilPricesOrder={oilPricesOrder}
+        onOilPricesOrderChange={handleSaveOilPricesOrder}
       />
 
       <WorkspaceModal
