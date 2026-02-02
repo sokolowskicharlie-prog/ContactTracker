@@ -314,7 +314,7 @@ export default function MGOPricesModal({
 
   return (
     <div
-      className={`fixed right-4 w-96 ${isExpanded ? 'z-60' : 'z-40'}`}
+      className="fixed right-4 z-[60] w-96"
       style={{ top: `${isExpanded ? 16 : calculateTopPosition()}px` }}
     >
       <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden">
