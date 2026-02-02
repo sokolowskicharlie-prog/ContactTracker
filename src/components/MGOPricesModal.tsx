@@ -222,9 +222,9 @@ export default function MGOPricesModal({
   priorityExpanded = true,
   panelSpacing = 2,
   isOpen,
-  oilPricesOrder = ['WTI', 'Brent', 'MGO', 'VLSFO', 'IFO 380'],
+  oilPricesOrder = ['WTI', 'Brent', 'Gasoil', 'MGO', 'VLSFO', 'IFO 380'],
   onOilPricesOrderChange,
-  visibleOilPrices = ['WTI', 'Brent', 'MGO', 'VLSFO', 'IFO 380'],
+  visibleOilPrices = ['WTI', 'Brent', 'Gasoil', 'MGO', 'VLSFO', 'IFO 380'],
   onVisibleOilPricesChange
 }: MGOPricesModalProps) {
   const [data, setData] = useState<OilPricesData | null>(null);
@@ -385,6 +385,7 @@ export default function MGOPricesModal({
                   const getOilTypeName = (priceName: string): string => {
                     if (priceName.includes('WTI')) return 'WTI';
                     if (priceName.includes('Brent')) return 'Brent';
+                    if (priceName.includes('Gasoil')) return 'Gasoil';
                     if (priceName.includes('MGO')) return 'MGO';
                     if (priceName.includes('VLSFO')) return 'VLSFO';
                     if (priceName.includes('IFO 380')) return 'IFO 380';
@@ -434,6 +435,8 @@ export default function MGOPricesModal({
                       ? '#3b82f6'
                       : oilType === 'Brent'
                       ? '#f97316'
+                      : oilType === 'Gasoil'
+                      ? '#8b5cf6'
                       : '#10b981';
 
                     return (
@@ -528,7 +531,7 @@ export default function MGOPricesModal({
                 })()}
               </div>
               {onVisibleOilPricesChange && (() => {
-                const allOilTypes = ['WTI', 'Brent', 'MGO', 'VLSFO', 'IFO 380'];
+                const allOilTypes = ['WTI', 'Brent', 'Gasoil', 'MGO', 'VLSFO', 'IFO 380'];
                 const hiddenTypes = allOilTypes.filter(type => !visibleOilPrices.includes(type));
 
                 if (hiddenTypes.length === 0) return null;
