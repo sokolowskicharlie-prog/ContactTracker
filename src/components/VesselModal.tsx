@@ -36,6 +36,8 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
   const [notes, setNotes] = useState('');
   const [destination, setDestination] = useState('');
   const [eta, setEta] = useState('');
+  const [isSearchingIMO, setIsSearchingIMO] = useState(false);
+  const [imoSearchError, setImoSearchError] = useState('');
 
   const vesselNames = vesselName.split(';').map(name => name.trim()).filter(name => name.length > 0);
   const isMultipleVessels = vesselNames.length > 1;
@@ -80,6 +82,47 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
       }
     }
   }, [marineTrafficUrl]);
+
+  const handleSearchIMO = async () => {
+    if (!vesselName.trim() || isMultipleVessels) return;
+
+    setIsSearchingIMO(true);
+    setImoSearchError('');
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-vessel-imo`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ vesselName: vesselName.trim() }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to search for vessel');
+      }
+
+      const data = await response.json();
+
+      if (data.error) {
+        setImoSearchError(data.error);
+      } else if (data.imo) {
+        setImoNumber(data.imo);
+        if (data.mmsi) {
+          setMarineTrafficUrl(`https://www.marinetraffic.com/en/ais/details/ships/imo:${data.imo}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error searching for IMO:', error);
+      setImoSearchError('Failed to search for vessel. Please try manually.');
+    } finally {
+      setIsSearchingIMO(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,17 +194,36 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Vessel Name{isMultipleVessels ? 's' : ''} *
             </label>
-            <div className="relative">
-              <Ship className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                value={vesselName}
-                onChange={(e) => setVesselName(e.target.value)}
-                required
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., MSC Gulsun or Ship1; Ship2; Ship3"
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Ship className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  value={vesselName}
+                  onChange={(e) => {
+                    setVesselName(e.target.value);
+                    setImoSearchError('');
+                  }}
+                  required
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., MSC Gulsun or Ship1; Ship2; Ship3"
+                />
+              </div>
+              {!isMultipleVessels && vesselName.trim() && (
+                <button
+                  type="button"
+                  onClick={handleSearchIMO}
+                  disabled={isSearchingIMO}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                >
+                  <Search className="w-4 h-4" />
+                  {isSearchingIMO ? 'Searching...' : 'Find IMO'}
+                </button>
+              )}
             </div>
+            {imoSearchError && (
+              <p className="text-xs text-red-600 mt-1">{imoSearchError}</p>
+            )}
             <p className="text-xs text-gray-500 mt-1">
               Separate multiple vessel names with semicolons (;) to add them all at once
             </p>

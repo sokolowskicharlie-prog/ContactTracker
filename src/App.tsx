@@ -1986,12 +1986,52 @@ function App() {
     XLSX.writeFile(workbook, `CRM_Export_${timestamp}.xlsx`);
   };
 
+  const searchVesselIMO = async (vesselName: string): Promise<string | null> => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-vessel-imo`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ vesselName }),
+        }
+      );
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      return data.imo || null;
+    } catch (error) {
+      console.error('Error searching for IMO:', error);
+      return null;
+    }
+  };
+
   const handleSaveVessel = async (vesselData: Partial<Vessel> | Partial<Vessel>[]) => {
     if (!selectedContact) return;
 
     try {
       if (Array.isArray(vesselData)) {
-        const vesselsToInsert = vesselData.map(vessel => ({
+        const vesselsWithIMO = await Promise.all(
+          vesselData.map(async (vessel) => {
+            if (!vessel.imo_number && vessel.vessel_name) {
+              const imo = await searchVesselIMO(vessel.vessel_name);
+              if (imo) {
+                return {
+                  ...vessel,
+                  imo_number: imo,
+                  marine_traffic_url: `https://www.marinetraffic.com/en/ais/details/ships/imo:${imo}`,
+                };
+              }
+            }
+            return vessel;
+          })
+        );
+
+        const vesselsToInsert = vesselsWithIMO.map(vessel => ({
           user_id: user.id,
           contact_id: selectedContact.id,
           ...vessel,
@@ -2008,11 +2048,23 @@ function App() {
 
           if (error) throw error;
         } else {
+          let vesselToInsert = vesselData;
+          if (!vesselData.imo_number && vesselData.vessel_name) {
+            const imo = await searchVesselIMO(vesselData.vessel_name);
+            if (imo) {
+              vesselToInsert = {
+                ...vesselData,
+                imo_number: imo,
+                marine_traffic_url: vesselData.marine_traffic_url || `https://www.marinetraffic.com/en/ais/details/ships/imo:${imo}`,
+              };
+            }
+          }
+
           const { error } = await supabase.from('vessels').insert([
             {
               user_id: user.id,
               contact_id: selectedContact.id,
-              ...vesselData,
+              ...vesselToInsert,
             },
           ]);
 
