@@ -1,8 +1,17 @@
-import { X, TrendingUp, TrendingDown, BarChart3, RefreshCw } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface MGOPricesModalProps {
   onClose: () => void;
+  showGoals?: boolean;
+  showNotepad?: boolean;
+  showPriority?: boolean;
+  panelOrder?: string[];
+  notepadExpanded?: boolean;
+  goalsExpanded?: boolean;
+  priorityExpanded?: boolean;
+  panelSpacing?: number;
+  isOpen: boolean;
 }
 
 interface OilPrice {
@@ -19,10 +28,24 @@ interface OilPricesData {
   lastUpdated: string;
 }
 
-export default function MGOPricesModal({ onClose }: MGOPricesModalProps) {
+export default function MGOPricesModal({
+  onClose,
+  showGoals = false,
+  showNotepad = false,
+  showPriority = false,
+  panelOrder = ['notes', 'goals', 'priority', 'mgo'],
+  notepadExpanded = true,
+  goalsExpanded = true,
+  priorityExpanded = true,
+  panelSpacing = 2,
+  isOpen
+}: MGOPricesModalProps) {
   const [data, setData] = useState<OilPricesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  if (!isOpen) return null;
 
   const fetchPrices = async () => {
     setLoading(true);
@@ -70,128 +93,166 @@ export default function MGOPricesModal({ onClose }: MGOPricesModalProps) {
 
   const maxPrice = data ? Math.max(...data.prices.map(p => p.price)) : 100;
 
+  const calculateTopPosition = () => {
+    let top = 16;
+    const PANEL_HEADER_HEIGHT = 52;
+    const spacing = panelSpacing * 16;
+
+    const mgoIndex = panelOrder.indexOf('mgo');
+
+    panelOrder.forEach((panel, index) => {
+      if (index < mgoIndex) {
+        if (panel === 'notes' && showNotepad) {
+          top += PANEL_HEADER_HEIGHT + spacing;
+          if (notepadExpanded) {
+            top += 400;
+          }
+        } else if (panel === 'goals' && showGoals) {
+          top += PANEL_HEADER_HEIGHT + spacing;
+          if (goalsExpanded) {
+            top += 400;
+          }
+        } else if (panel === 'priority' && showPriority) {
+          top += PANEL_HEADER_HEIGHT + spacing;
+          if (priorityExpanded) {
+            top += 400;
+          }
+        }
+      }
+    });
+
+    return top;
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[70]">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <BarChart3 className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Oil & Fuel Prices</h2>
-              {data && (
-                <p className="text-sm text-gray-600">
-                  Last updated: {formatDate(data.lastUpdated)}
-                </p>
-              )}
-            </div>
+    <div
+      className="fixed right-4 z-40 w-96"
+      style={{ top: `${calculateTopPosition()}px` }}
+    >
+      <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5" />
+            <h3 className="font-semibold">Oil & Fuel Prices</h3>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={fetchPrices}
               disabled={loading}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+              className="p-1 hover:bg-white/20 rounded transition-colors disabled:opacity-50"
               title="Refresh prices"
             >
-              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1 hover:bg-white/20 rounded transition-colors"
+              title={isExpanded ? 'Collapse' : 'Expand'}
+            >
+              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-1 hover:bg-white/20 rounded transition-colors"
+              title="Close"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <div className="p-6">
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-          )}
+        {isExpanded && (
+          <div className="p-3 max-h-[600px] overflow-y-auto">
+            {data && (
+              <div className="mb-2 text-xs text-gray-600">
+                Updated: {formatDate(data.lastUpdated)}
+              </div>
+            )}
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-              <p className="text-red-800">{error}</p>
-            </div>
-          )}
+            {loading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            )}
 
-          {data && !loading && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
+
+            {data && !loading && (
+              <div className="space-y-3">
+                <div className="space-y-2">
                 {data.prices.map((price, index) => (
                   <div
                     key={index}
-                    className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
+                    className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-3"
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-600 mb-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h3 className="text-xs font-medium text-gray-600 mb-0.5">
                           {price.name}
                         </h3>
-                        <p className="text-3xl font-bold text-gray-900">
+                        <p className="text-xl font-bold text-gray-900">
                           ${price.price.toFixed(2)}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500">
                           {price.currency} {price.unit}
                         </p>
                       </div>
                       <div
-                        className={`flex items-center gap-1 px-2 py-1 rounded-lg ${
+                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${
                           price.change >= 0
                             ? 'bg-green-100 text-green-700'
                             : 'bg-red-100 text-red-700'
                         }`}
                       >
                         {price.change >= 0 ? (
-                          <TrendingUp className="w-4 h-4" />
+                          <TrendingUp className="w-3 h-3" />
                         ) : (
-                          <TrendingDown className="w-4 h-4" />
+                          <TrendingDown className="w-3 h-3" />
                         )}
-                        <span className="text-sm font-medium">
+                        <span className="text-xs font-medium">
                           {Math.abs(price.changePercent).toFixed(2)}%
                         </span>
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Change:</span>
-                        <span
-                          className={`font-medium ${
-                            price.change >= 0 ? 'text-green-600' : 'text-red-600'
-                          }`}
-                        >
-                          {price.change >= 0 ? '+' : ''}
-                          ${price.change.toFixed(2)}
-                        </span>
-                      </div>
+                    <div className="flex justify-between text-xs pt-2 border-t border-gray-200">
+                      <span className="text-gray-600">Change:</span>
+                      <span
+                        className={`font-medium ${
+                          price.change >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {price.change >= 0 ? '+' : ''}
+                        ${price.change.toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Price Comparison</h3>
-                <div className="space-y-4">
+              <div className="bg-white border border-gray-200 rounded-lg p-3">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Price Comparison</h3>
+                <div className="space-y-3">
                   {data.prices.map((price, index) => {
                     const percentage = (price.price / maxPrice) * 100;
                     const isPositive = price.change >= 0;
 
                     return (
-                      <div key={index} className="space-y-2">
+                      <div key={index} className="space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-gray-700">
+                          <span className="text-xs font-medium text-gray-700">
                             {price.name}
                           </span>
-                          <span className="text-sm font-semibold text-gray-900">
+                          <span className="text-xs font-semibold text-gray-900">
                             ${price.price.toFixed(2)}
                           </span>
                         </div>
-                        <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                        <div className="relative h-6 bg-gray-100 rounded overflow-hidden">
                           <div
-                            className={`absolute inset-y-0 left-0 rounded-lg transition-all duration-500 ${
+                            className={`absolute inset-y-0 left-0 rounded transition-all duration-500 ${
                               index === 0
                                 ? 'bg-gradient-to-r from-blue-500 to-blue-600'
                                 : index === 1
@@ -200,10 +261,10 @@ export default function MGOPricesModal({ onClose }: MGOPricesModalProps) {
                             }`}
                             style={{ width: `${percentage}%` }}
                           >
-                            <div className="absolute inset-0 flex items-center justify-end pr-3">
+                            <div className="absolute inset-0 flex items-center justify-end pr-2">
                               <span className="text-xs font-medium text-white">
                                 {isPositive ? '+' : ''}
-                                {price.changePercent.toFixed(2)}%
+                                {price.changePercent.toFixed(1)}%
                               </span>
                             </div>
                           </div>
@@ -214,18 +275,19 @@ export default function MGOPricesModal({ onClose }: MGOPricesModalProps) {
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <h4 className="text-sm font-semibold text-blue-900 mb-2">About These Prices</h4>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• WTI: West Texas Intermediate crude oil benchmark</li>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <h4 className="text-xs font-semibold text-blue-900 mb-2">About These Prices</h4>
+                <ul className="text-xs text-blue-800 space-y-0.5">
+                  <li>• WTI: West Texas Intermediate crude oil</li>
                   <li>• Brent: International crude oil benchmark</li>
-                  <li>• MGO: Marine Gas Oil used for shipping fuel</li>
-                  <li>• Prices are indicative and may vary by location and supplier</li>
+                  <li>• MGO: Marine Gas Oil for shipping</li>
+                  <li>• Prices vary by location and supplier</li>
                 </ul>
               </div>
             </div>
           )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

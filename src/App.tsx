@@ -221,7 +221,7 @@ function App() {
   const [noteContent, setNoteContent] = useState('');
   const [noteId, setNoteId] = useState<string | undefined>();
   const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact', 'alerts', 'stats']);
-  const [panelOrder, setPanelOrder] = useState<string[]>(['notes', 'goals', 'priority']);
+  const [panelOrder, setPanelOrder] = useState<string[]>(['notes', 'goals', 'priority', 'mgo']);
   const [panelSpacing, setPanelSpacing] = useState<number>(2);
   const [customPriorityLabels, setCustomPriorityLabels] = useState<Record<number, string>>({
     0: 'Client',
@@ -4963,9 +4963,18 @@ function App() {
         contacts={contacts}
       />
 
-      {showMGOPrices && (
-        <MGOPricesModal onClose={() => setShowMGOPrices(false)} />
-      )}
+      <MGOPricesModal
+        isOpen={showMGOPrices}
+        onClose={() => setShowMGOPrices(false)}
+        showGoals={showGoalProgressBox && hasGoals}
+        showNotepad={showNotepad}
+        showPriority={showPriorityPanel}
+        panelOrder={panelOrder}
+        notepadExpanded={notepadExpanded}
+        goalsExpanded={goalsExpanded}
+        priorityExpanded={priorityExpanded}
+        panelSpacing={panelSpacing}
+      />
 
       <WorkspaceModal
         isOpen={showWorkspaceModal}
