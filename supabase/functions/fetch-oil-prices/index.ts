@@ -49,6 +49,7 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
       },
     });
 
@@ -59,39 +60,70 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
 
     const html = await response.text();
 
-    // Try multiple patterns to extract price
+    // Look for JSON data embedded in script tags
+    const jsonDataMatch = html.match(/var\s+chartData\s*=\s*({[^;]+});/);
+    if (jsonDataMatch) {
+      try {
+        const jsonData = JSON.parse(jsonDataMatch[1]);
+        if (jsonData && jsonData.series && jsonData.series[0] && jsonData.series[0].data) {
+          const latestData = jsonData.series[0].data[jsonData.series[0].data.length - 1];
+          if (latestData && typeof latestData.y === 'number') {
+            const price = latestData.y;
+            return {
+              price,
+              change: 0,
+              changePercent: 0,
+            };
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse JSON data:', e);
+      }
+    }
+
+    // Try to find the price in the page
     let price: number | null = null;
     let change: number | null = null;
     let changePercent: number | null = null;
 
-    // Pattern 1: Look for price in various formats
+    // Look for the actual price value - Trading Economics uses specific HTML structure
     const pricePatterns = [
-      /id="p"\s*>([0-9.]+)</,
-      /class="[^"]*price[^"]*"\s*>([0-9.]+)/i,
-      /"actual":\s*([0-9.]+)/,
-      /data-symbol="[^"]*"\s+data-last="([0-9.]+)"/,
+      // Main price display
+      /<div[^>]*id=["']p["'][^>]*>([0-9.]+)</i,
+      /<span[^>]*id=["']p["'][^>]*>([0-9.]+)</i,
+      // Alternative patterns
+      /"Last":\s*"?([0-9.]+)"?/i,
+      /"last":\s*([0-9.]+)/i,
+      /"price":\s*([0-9.]+)/i,
+      // Data attributes
+      /data-price=["']([0-9.]+)["']/i,
+      /data-last=["']([0-9.]+)["']/i,
+      // Table or list display
+      /<td[^>]*>Last<\/td>\s*<td[^>]*>([0-9.]+)</i,
     ];
 
     for (const pattern of pricePatterns) {
       const match = html.match(pattern);
-      if (match) {
+      if (match && match[1]) {
         const parsedPrice = parseFloat(match[1]);
-        if (!isNaN(parsedPrice)) {
+        if (!isNaN(parsedPrice) && parsedPrice > 0) {
           price = parsedPrice;
+          console.log(`Found price using pattern: ${pattern}, value: ${price}`);
           break;
         }
       }
     }
 
-    // Pattern for change values
+    // Look for change values
     const changePatterns = [
-      /id="change[^"]*"\s*>([+-]?[0-9.]+)/,
-      /"change":\s*([+-]?[0-9.]+)/,
+      /<div[^>]*id=["']ch["'][^>]*>([+-]?[0-9.]+)</i,
+      /<span[^>]*id=["']ch["'][^>]*>([+-]?[0-9.]+)</i,
+      /"change":\s*([+-]?[0-9.]+)/i,
     ];
 
     for (const pattern of changePatterns) {
       const match = html.match(pattern);
-      if (match) {
+      if (match && match[1]) {
         const parsedChange = parseFloat(match[1]);
         if (!isNaN(parsedChange)) {
           change = parsedChange;
@@ -100,15 +132,17 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
       }
     }
 
-    // Pattern for change percent
+    // Look for percent change
     const percentPatterns = [
+      /<div[^>]*id=["']pch["'][^>]*>([+-]?[0-9.]+)</i,
+      /<span[^>]*id=["']pch["'][^>]*>([+-]?[0-9.]+)</i,
       /\(([+-]?[0-9.]+)%\)/,
-      /"changepercent":\s*([+-]?[0-9.]+)/,
+      /"changePercent":\s*([+-]?[0-9.]+)/i,
     ];
 
     for (const pattern of percentPatterns) {
       const match = html.match(pattern);
-      if (match) {
+      if (match && match[1]) {
         const parsedPercent = parseFloat(match[1]);
         if (!isNaN(parsedPercent)) {
           changePercent = parsedPercent;
@@ -118,6 +152,7 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
     }
 
     if (price !== null) {
+      console.log(`Successfully fetched from ${url}: price=${price}, change=${change}, changePercent=${changePercent}`);
       return {
         price,
         change: change || 0,
@@ -125,6 +160,7 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
       };
     }
 
+    console.error(`Could not extract price from ${url}`);
     return null;
   } catch (error) {
     console.error(`Error fetching price from ${url}:`, error);
