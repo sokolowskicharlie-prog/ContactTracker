@@ -43,44 +43,123 @@ function generateIntradayHistory(basePrice: number, volatility: number = 0.015):
   return history;
 }
 
-async function fetchOilPrices(): Promise<OilPricesResponse> {
+async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: number; change: number; changePercent: number } | null> {
   try {
-    const response = await fetch(
-      'https://www.marketwatch.com/investing/future/crude%20oil%20-%20electronic',
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        },
-      }
-    );
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+    });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch oil prices: ${response.status}`);
+      console.error(`Failed to fetch from ${url}: ${response.status}`);
+      return null;
     }
 
     const html = await response.text();
 
+    // Try multiple patterns to extract price
+    let price: number | null = null;
+    let change: number | null = null;
+    let changePercent: number | null = null;
+
+    // Pattern 1: Look for price in various formats
+    const pricePatterns = [
+      /id="p"\s*>([0-9.]+)</,
+      /class="[^"]*price[^"]*"\s*>([0-9.]+)/i,
+      /"actual":\s*([0-9.]+)/,
+      /data-symbol="[^"]*"\s+data-last="([0-9.]+)"/,
+    ];
+
+    for (const pattern of pricePatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        const parsedPrice = parseFloat(match[1]);
+        if (!isNaN(parsedPrice)) {
+          price = parsedPrice;
+          break;
+        }
+      }
+    }
+
+    // Pattern for change values
+    const changePatterns = [
+      /id="change[^"]*"\s*>([+-]?[0-9.]+)/,
+      /"change":\s*([+-]?[0-9.]+)/,
+    ];
+
+    for (const pattern of changePatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        const parsedChange = parseFloat(match[1]);
+        if (!isNaN(parsedChange)) {
+          change = parsedChange;
+          break;
+        }
+      }
+    }
+
+    // Pattern for change percent
+    const percentPatterns = [
+      /\(([+-]?[0-9.]+)%\)/,
+      /"changepercent":\s*([+-]?[0-9.]+)/,
+    ];
+
+    for (const pattern of percentPatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        const parsedPercent = parseFloat(match[1]);
+        if (!isNaN(parsedPercent)) {
+          changePercent = parsedPercent;
+          break;
+        }
+      }
+    }
+
+    if (price !== null) {
+      return {
+        price,
+        change: change || 0,
+        changePercent: changePercent || 0,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error(`Error fetching price from ${url}:`, error);
+    return null;
+  }
+}
+
+async function fetchOilPrices(): Promise<OilPricesResponse> {
+  try {
+    // Fetch WTI and Brent prices in parallel
+    const [wtiData, brentData] = await Promise.all([
+      fetchPriceFromTradingEconomics('https://tradingeconomics.com/commodity/crude-oil'),
+      fetchPriceFromTradingEconomics('https://tradingeconomics.com/commodity/brent-crude-oil'),
+    ]);
+
     const prices: OilPrice[] = [
       {
         name: 'WTI Crude Oil',
-        price: 70.50,
-        change: 0.75,
-        changePercent: 1.08,
+        price: wtiData?.price || 70.50,
+        change: wtiData?.change || 0.75,
+        changePercent: wtiData?.changePercent || 1.08,
         currency: 'USD',
         unit: 'per barrel',
         url: 'https://tradingeconomics.com/commodity/crude-oil',
-        history: generateIntradayHistory(70.50, 0.02),
+        history: generateIntradayHistory(wtiData?.price || 70.50, 0.02),
       },
       {
         name: 'Brent Crude Oil',
-        price: 74.20,
-        change: 0.82,
-        changePercent: 1.12,
+        price: brentData?.price || 74.20,
+        change: brentData?.change || 0.82,
+        changePercent: brentData?.changePercent || 1.12,
         currency: 'USD',
         unit: 'per barrel',
         url: 'https://tradingeconomics.com/commodity/brent-crude-oil',
-        history: generateIntradayHistory(74.20, 0.018),
+        history: generateIntradayHistory(brentData?.price || 74.20, 0.018),
       },
       {
         name: 'Marine Gas Oil (MGO)',
@@ -93,15 +172,6 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
         history: generateIntradayHistory(850, 0.025),
       },
     ];
-
-    const priceMatch = html.match(/data-value="([0-9,.]+)"/);
-    if (priceMatch) {
-      const wtiPrice = parseFloat(priceMatch[1].replace(',', ''));
-      if (!isNaN(wtiPrice)) {
-        prices[0].price = wtiPrice;
-        prices[0].history = generateIntradayHistory(wtiPrice, 0.02);
-      }
-    }
 
     return {
       prices,
