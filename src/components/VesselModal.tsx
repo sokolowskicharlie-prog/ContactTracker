@@ -6,7 +6,7 @@ interface VesselModalProps {
   vessel?: Vessel;
   contactName: string;
   onClose: () => void;
-  onSave: (vessel: Partial<Vessel>) => void;
+  onSave: (vessel: Partial<Vessel> | Partial<Vessel>[]) => void;
 }
 
 const VESSEL_TYPES = [
@@ -34,6 +34,9 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
   const [marineTrafficUrl, setMarineTrafficUrl] = useState('');
   const [notes, setNotes] = useState('');
 
+  const vesselNames = vesselName.split(';').map(name => name.trim()).filter(name => name.length > 0);
+  const isMultipleVessels = vesselNames.length > 1;
+
   useEffect(() => {
     if (vessel) {
       setVesselName(vessel.vessel_name);
@@ -57,14 +60,25 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
     e.preventDefault();
     if (!vesselName.trim()) return;
 
-    onSave({
-      ...(vessel ? { id: vessel.id } : {}),
-      vessel_name: vesselName.trim(),
-      imo_number: imoNumber.trim() || null,
-      vessel_type: vesselType || null,
-      marine_traffic_url: marineTrafficUrl.trim() || null,
-      notes: notes.trim() || null,
-    });
+    if (isMultipleVessels) {
+      const vessels = vesselNames.map(name => ({
+        vessel_name: name,
+        imo_number: null,
+        vessel_type: vesselType || null,
+        marine_traffic_url: null,
+        notes: notes.trim() || null,
+      }));
+      onSave(vessels);
+    } else {
+      onSave({
+        ...(vessel ? { id: vessel.id } : {}),
+        vessel_name: vesselName.trim(),
+        imo_number: imoNumber.trim() || null,
+        vessel_type: vesselType || null,
+        marine_traffic_url: marineTrafficUrl.trim() || null,
+        notes: notes.trim() || null,
+      });
+    }
 
     onClose();
   };
@@ -90,7 +104,7 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Vessel Name *
+              Vessel Name{isMultipleVessels ? 's' : ''} *
             </label>
             <div className="relative">
               <Ship className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -100,34 +114,54 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
                 onChange={(e) => setVesselName(e.target.value)}
                 required
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., MSC Gulsun"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              IMO Number
-            </label>
-            <div className="relative">
-              <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                value={imoNumber}
-                onChange={(e) => setImoNumber(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., 9454436"
-                maxLength={7}
+                placeholder="e.g., MSC Gulsun or Ship1; Ship2; Ship3"
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              7-digit International Maritime Organization number
+              Separate multiple vessel names with semicolons (;) to add them all at once
             </p>
+            {isMultipleVessels && (
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm font-medium text-blue-900 mb-1">
+                  Will create {vesselNames.length} vessels:
+                </p>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  {vesselNames.map((name, index) => (
+                    <li key={index} className="flex items-center gap-2">
+                      <Ship className="w-3 h-3" />
+                      {name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
+
+          {!isMultipleVessels && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                IMO Number
+              </label>
+              <div className="relative">
+                <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  value={imoNumber}
+                  onChange={(e) => setImoNumber(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., 9454436"
+                  maxLength={7}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                7-digit International Maritime Organization number
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Vessel Type
+              Vessel Type{isMultipleVessels ? ' (applies to all)' : ''}
             </label>
             <select
               value={vesselType}
@@ -143,38 +177,40 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-              Marine Traffic URL
-              {marineTrafficUrl && (
-                <a
-                  href={marineTrafficUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              )}
-            </label>
-            <input
-              type="url"
-              value={marineTrafficUrl}
-              onChange={(e) => setMarineTrafficUrl(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Auto-generated from IMO or enter custom URL"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              {imoNumber
-                ? 'URL will be auto-generated from IMO number'
-                : 'Enter IMO number to auto-generate Marine Traffic link'}
-            </p>
-          </div>
+          {!isMultipleVessels && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                Marine Traffic URL
+                {marineTrafficUrl && (
+                  <a
+                    href={marineTrafficUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+              </label>
+              <input
+                type="url"
+                value={marineTrafficUrl}
+                onChange={(e) => setMarineTrafficUrl(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Auto-generated from IMO or enter custom URL"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {imoNumber
+                  ? 'URL will be auto-generated from IMO number'
+                  : 'Enter IMO number to auto-generate Marine Traffic link'}
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes
+              Notes{isMultipleVessels ? ' (applies to all)' : ''}
             </label>
             <textarea
               value={notes}
@@ -197,7 +233,7 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
               type="submit"
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              {vessel ? 'Update' : 'Add'} Vessel
+              {vessel ? 'Update' : 'Add'} {isMultipleVessels ? `${vesselNames.length} Vessels` : 'Vessel'}
             </button>
           </div>
         </form>

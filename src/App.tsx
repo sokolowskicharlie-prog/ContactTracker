@@ -1986,27 +1986,38 @@ function App() {
     XLSX.writeFile(workbook, `CRM_Export_${timestamp}.xlsx`);
   };
 
-  const handleSaveVessel = async (vesselData: Partial<Vessel>) => {
+  const handleSaveVessel = async (vesselData: Partial<Vessel> | Partial<Vessel>[]) => {
     if (!selectedContact) return;
 
     try {
-      if (vesselData.id) {
-        const { error } = await supabase
-          .from('vessels')
-          .update(vesselData)
-          .eq('id', vesselData.id);
+      if (Array.isArray(vesselData)) {
+        const vesselsToInsert = vesselData.map(vessel => ({
+          user_id: user.id,
+          contact_id: selectedContact.id,
+          ...vessel,
+        }));
 
+        const { error } = await supabase.from('vessels').insert(vesselsToInsert);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('vessels').insert([
-          {
-            user_id: user.id,
-            contact_id: selectedContact.id,
-            ...vesselData,
-          },
-        ]);
+        if (vesselData.id) {
+          const { error } = await supabase
+            .from('vessels')
+            .update(vesselData)
+            .eq('id', vesselData.id);
 
-        if (error) throw error;
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('vessels').insert([
+            {
+              user_id: user.id,
+              contact_id: selectedContact.id,
+              ...vesselData,
+            },
+          ]);
+
+          if (error) throw error;
+        }
       }
 
       await loadContacts();
