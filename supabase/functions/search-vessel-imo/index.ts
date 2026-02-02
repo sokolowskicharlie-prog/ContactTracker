@@ -19,30 +19,47 @@ interface VesselSearchResponse {
 
 async function searchVesselIMO(vesselName: string): Promise<VesselSearchResponse> {
   try {
-    const searchUrl = `https://www.marinetraffic.com/en/ais/index/search/all?keyword=${encodeURIComponent(vesselName)}`;
+    const searchQuery = `${vesselName} IMO vessel ship`;
+    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
 
     const response = await fetch(searchUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Marine Traffic search failed: ${response.status}`);
+      throw new Error(`Google search failed: ${response.status}`);
     }
 
     const html = await response.text();
 
-    const imoMatch = html.match(/IMO[:\s]+(\d{7})/i);
-    const mmsiMatch = html.match(/MMSI[:\s]+(\d{9})/i);
-    const nameMatch = html.match(/<title>([^<]+)\s*[-|]/i);
+    const imoPatterns = [
+      /IMO\s*[:\-]?\s*(\d{7})/gi,
+      /IMO\s+number\s*[:\-]?\s*(\d{7})/gi,
+      /\bIMO(\d{7})\b/gi,
+      /\b(\d{7})\s*IMO\b/gi,
+    ];
 
-    if (imoMatch) {
+    const foundIMOs = new Set<string>();
+
+    for (const pattern of imoPatterns) {
+      let match;
+      while ((match = pattern.exec(html)) !== null) {
+        const imo = match[1];
+        if (imo && imo.length === 7 && /^\d{7}$/.test(imo)) {
+          foundIMOs.add(imo);
+        }
+      }
+    }
+
+    if (foundIMOs.size > 0) {
+      const imo = Array.from(foundIMOs)[0];
       return {
-        imo: imoMatch[1],
-        mmsi: mmsiMatch ? mmsiMatch[1] : undefined,
-        vesselName: nameMatch ? nameMatch[1].trim() : vesselName,
+        imo,
+        vesselName,
       };
     }
 
