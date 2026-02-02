@@ -113,15 +113,15 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
 
     // Always look for change values in HTML - Trading Economics uses id="ch"
     const changePatterns = [
-      // Main change display
-      /<[^>]*id=["']ch["'][^>]*>([+-]?[0-9.]+)</i,
+      // Main change display with potential negative sign
+      /<[^>]*id=["']ch["'][^>]*>([+-]?[0-9.]+)/i,
+      // With explicit minus/plus in content
+      /<[^>]*id=["']ch["'][^>]*>[-+]?\s*([0-9.]+)/i,
       // Alternative patterns
       /"change":\s*"?([+-]?[0-9.]+)"?/i,
       /data-change=["']([+-]?[0-9.]+)["']/i,
       // In table format
       /<td[^>]*>Change<\/td>\s*<td[^>]*>([+-]?[0-9.]+)</i,
-      // Sometimes displayed with +/- prefix explicitly
-      /[>+\s]([0-9.]+)\s*<[^>]*>[^<]*<[^>]*id=["']pch["']/i,
     ];
 
     for (const pattern of changePatterns) {
