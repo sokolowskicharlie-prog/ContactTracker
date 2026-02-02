@@ -1,4 +1,4 @@
-import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, CreditCard as Edit2, StickyNote, AlertTriangle, Package, Skull } from 'lucide-react';
+import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, CreditCard as Edit2, StickyNote, AlertTriangle, Package, Skull, MapPin } from 'lucide-react';
 import { ContactWithActivity, Vessel, FuelDeal, Call, Email, TaskWithRelated, CustomJammedReason, supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 
@@ -1427,6 +1427,39 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                           <ExternalLink className="w-4 h-4 mr-2" />
                           Track on Marine Traffic
                         </a>
+                      )}
+                      {vessel.destination && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <MapPin className="w-4 h-4 mr-2" />
+                          Destination: {vessel.destination}
+                        </div>
+                      )}
+                      {vessel.eta && (
+                        <div className="flex items-center text-sm">
+                          <Calendar className="w-4 h-4 mr-2" />
+                          <span className="text-gray-600">
+                            ETA: {new Date(vessel.eta).toLocaleDateString()}
+                            <span className="ml-1 font-medium text-blue-600">
+                              ({(() => {
+                                const etaDate = new Date(vessel.eta);
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                etaDate.setHours(0, 0, 0, 0);
+                                const daysRemaining = Math.ceil((etaDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+                                if (daysRemaining < 0) {
+                                  return `arrived ${Math.abs(daysRemaining)} day${Math.abs(daysRemaining) === 1 ? '' : 's'} ago`;
+                                } else if (daysRemaining === 0) {
+                                  return 'arriving today';
+                                } else if (daysRemaining === 1) {
+                                  return 'arriving tomorrow';
+                                } else {
+                                  return `${daysRemaining} days`;
+                                }
+                              })()})
+                            </span>
+                          </span>
+                        </div>
                       )}
                       {vessel.notes && (
                         <p className="text-sm text-gray-600 mt-2 italic">

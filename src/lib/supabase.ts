@@ -97,6 +97,9 @@ export type Vessel = {
   vessel_type?: string;
   marine_traffic_url?: string;
   notes?: string;
+  destination?: string;
+  eta?: string;
+  last_updated?: string;
   created_at: string;
 };
 

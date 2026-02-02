@@ -1,4 +1,4 @@
-import { X, Ship, Hash, ExternalLink } from 'lucide-react';
+import { X, Ship, Hash, ExternalLink, MapPin, Calendar } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Vessel } from '../lib/supabase';
 
@@ -33,6 +33,8 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
   const [vesselType, setVesselType] = useState('');
   const [marineTrafficUrl, setMarineTrafficUrl] = useState('');
   const [notes, setNotes] = useState('');
+  const [destination, setDestination] = useState('');
+  const [eta, setEta] = useState('');
 
   const vesselNames = vesselName.split(';').map(name => name.trim()).filter(name => name.length > 0);
   const isMultipleVessels = vesselNames.length > 1;
@@ -44,6 +46,8 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
       setVesselType(vessel.vessel_type || '');
       setMarineTrafficUrl(vessel.marine_traffic_url || '');
       setNotes(vessel.notes || '');
+      setDestination(vessel.destination || '');
+      setEta(vessel.eta ? vessel.eta.split('T')[0] : '');
     }
   }, [vessel]);
 
@@ -56,6 +60,16 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
     }
   }, [imoNumber]);
 
+  // Extract IMO from Marine Traffic URL when pasted
+  useEffect(() => {
+    if (marineTrafficUrl && !imoNumber) {
+      const imoMatch = marineTrafficUrl.match(/imo[:\-]?(\d{7})/i);
+      if (imoMatch) {
+        setImoNumber(imoMatch[1]);
+      }
+    }
+  }, [marineTrafficUrl]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!vesselName.trim()) return;
@@ -67,6 +81,9 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
         vessel_type: vesselType || null,
         marine_traffic_url: null,
         notes: notes.trim() || null,
+        destination: destination.trim() || null,
+        eta: eta ? new Date(eta).toISOString() : null,
+        last_updated: new Date().toISOString(),
       }));
       onSave(vessels);
     } else {
@@ -77,6 +94,9 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
         vessel_type: vesselType || null,
         marine_traffic_url: marineTrafficUrl.trim() || null,
         notes: notes.trim() || null,
+        destination: destination.trim() || null,
+        eta: eta ? new Date(eta).toISOString() : null,
+        last_updated: new Date().toISOString(),
       });
     }
 
@@ -203,10 +223,62 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
               <p className="text-xs text-gray-500 mt-1">
                 {imoNumber
                   ? 'URL will be auto-generated from IMO number'
-                  : 'Enter IMO number to auto-generate Marine Traffic link'}
+                  : 'Paste Marine Traffic URL to auto-extract IMO number, or enter IMO above to auto-generate link'}
               </p>
             </div>
           )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Destination{isMultipleVessels ? ' (applies to all)' : ''}
+            </label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Port of Rotterdam"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              ETA{isMultipleVessels ? ' (applies to all)' : ''}
+            </label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="date"
+                value={eta}
+                onChange={(e) => setEta(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            {eta && (
+              <p className="text-xs text-gray-600 mt-1">
+                {(() => {
+                  const etaDate = new Date(eta);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  etaDate.setHours(0, 0, 0, 0);
+                  const daysRemaining = Math.ceil((etaDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+                  if (daysRemaining < 0) {
+                    return `Arrived ${Math.abs(daysRemaining)} day${Math.abs(daysRemaining) === 1 ? '' : 's'} ago`;
+                  } else if (daysRemaining === 0) {
+                    return 'Arriving today';
+                  } else if (daysRemaining === 1) {
+                    return 'Arriving tomorrow';
+                  } else {
+                    return `${daysRemaining} days remaining`;
+                  }
+                })()}
+              </p>
+            )}
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
