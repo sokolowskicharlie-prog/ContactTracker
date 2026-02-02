@@ -21,11 +21,95 @@ interface OilPrice {
   changePercent: number;
   currency: string;
   unit: string;
+  history?: Array<{ time: string; price: number }>;
 }
 
 interface OilPricesData {
   prices: OilPrice[];
   lastUpdated: string;
+}
+
+interface MiniChartProps {
+  data: Array<{ time: string; price: number }>;
+  color: string;
+}
+
+function MiniChart({ data, color }: MiniChartProps) {
+  if (!data || data.length === 0) return null;
+
+  const prices = data.map(d => d.price);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const priceRange = maxPrice - minPrice || 1;
+
+  const width = 340;
+  const height = 60;
+  const padding = 5;
+
+  const points = data.map((point, index) => {
+    const x = padding + (index / (data.length - 1)) * (width - 2 * padding);
+    const y = height - padding - ((point.price - minPrice) / priceRange) * (height - 2 * padding);
+    return `${x},${y}`;
+  }).join(' ');
+
+  const pathD = data.map((point, index) => {
+    const x = padding + (index / (data.length - 1)) * (width - 2 * padding);
+    const y = height - padding - ((point.price - minPrice) / priceRange) * (height - 2 * padding);
+    return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+  }).join(' ');
+
+  const areaPath = `${pathD} L ${width - padding} ${height - padding} L ${padding} ${height - padding} Z`;
+
+  return (
+    <div className="mt-2 pt-2 border-t border-gray-200">
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-xs font-medium text-gray-600">Today's Price Movement</span>
+        <span className="text-xs text-gray-500">
+          {new Date(data[0].time).toLocaleDateString()}
+        </span>
+      </div>
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+        <defs>
+          <linearGradient id={`gradient-${color}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.05" />
+          </linearGradient>
+        </defs>
+
+        <path
+          d={areaPath}
+          fill={`url(#gradient-${color})`}
+        />
+
+        <polyline
+          points={points}
+          fill="none"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {data.map((point, index) => {
+          const x = padding + (index / (data.length - 1)) * (width - 2 * padding);
+          const y = height - padding - ((point.price - minPrice) / priceRange) * (height - 2 * padding);
+          return (
+            <circle
+              key={index}
+              cx={x}
+              cy={y}
+              r="2"
+              fill={color}
+            />
+          );
+        })}
+      </svg>
+      <div className="flex justify-between text-xs text-gray-500 mt-1">
+        <span>Low: ${minPrice.toFixed(2)}</span>
+        <span>High: ${maxPrice.toFixed(2)}</span>
+      </div>
+    </div>
+  );
 }
 
 export default function MGOPricesModal({
@@ -186,53 +270,64 @@ export default function MGOPricesModal({
             {data && !loading && (
               <div className="space-y-3">
                 <div className="space-y-2">
-                {data.prices.map((price, index) => (
-                  <div
-                    key={index}
-                    className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-3"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h3 className="text-xs font-medium text-gray-600 mb-0.5">
-                          {price.name}
-                        </h3>
-                        <p className="text-xl font-bold text-gray-900">
-                          ${price.price.toFixed(2)}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {price.currency} {price.unit}
-                        </p>
+                {data.prices.map((price, index) => {
+                  const chartColor = index === 0
+                    ? '#3b82f6'
+                    : index === 1
+                    ? '#f97316'
+                    : '#10b981';
+
+                  return (
+                    <div
+                      key={index}
+                      className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-3"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <h3 className="text-xs font-medium text-gray-600 mb-0.5">
+                            {price.name}
+                          </h3>
+                          <p className="text-xl font-bold text-gray-900">
+                            ${price.price.toFixed(2)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {price.currency} {price.unit}
+                          </p>
+                        </div>
+                        <div
+                          className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${
+                            price.change >= 0
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}
+                        >
+                          {price.change >= 0 ? (
+                            <TrendingUp className="w-3 h-3" />
+                          ) : (
+                            <TrendingDown className="w-3 h-3" />
+                          )}
+                          <span className="text-xs font-medium">
+                            {Math.abs(price.changePercent).toFixed(2)}%
+                          </span>
+                        </div>
                       </div>
-                      <div
-                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${
-                          price.change >= 0
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}
-                      >
-                        {price.change >= 0 ? (
-                          <TrendingUp className="w-3 h-3" />
-                        ) : (
-                          <TrendingDown className="w-3 h-3" />
-                        )}
-                        <span className="text-xs font-medium">
-                          {Math.abs(price.changePercent).toFixed(2)}%
+                      <div className="flex justify-between text-xs pt-2 border-t border-gray-200">
+                        <span className="text-gray-600">Change:</span>
+                        <span
+                          className={`font-medium ${
+                            price.change >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}
+                        >
+                          {price.change >= 0 ? '+' : ''}
+                          ${price.change.toFixed(2)}
                         </span>
                       </div>
+                      {price.history && price.history.length > 0 && (
+                        <MiniChart data={price.history} color={chartColor} />
+                      )}
                     </div>
-                    <div className="flex justify-between text-xs pt-2 border-t border-gray-200">
-                      <span className="text-gray-600">Change:</span>
-                      <span
-                        className={`font-medium ${
-                          price.change >= 0 ? 'text-green-600' : 'text-red-600'
-                        }`}
-                      >
-                        {price.change >= 0 ? '+' : ''}
-                        ${price.change.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="bg-white border border-gray-200 rounded-lg p-3">

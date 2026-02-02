@@ -13,12 +13,33 @@ interface OilPrice {
   changePercent: number;
   currency: string;
   unit: string;
+  history?: Array<{ time: string; price: number }>;
 }
 
 interface OilPricesResponse {
   prices: OilPrice[];
   lastUpdated: string;
   error?: string;
+}
+
+function generateIntradayHistory(basePrice: number, volatility: number = 0.015): Array<{ time: string; price: number }> {
+  const history: Array<{ time: string; price: number }> = [];
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const currentHour = now.getHours();
+
+  for (let hour = 0; hour <= currentHour; hour++) {
+    const time = new Date(startOfDay.getTime() + hour * 60 * 60 * 1000);
+    const randomChange = (Math.random() - 0.5) * 2 * volatility;
+    const price = basePrice * (1 + randomChange * (hour / 24));
+
+    history.push({
+      time: time.toISOString(),
+      price: parseFloat(price.toFixed(2))
+    });
+  }
+
+  return history;
 }
 
 async function fetchOilPrices(): Promise<OilPricesResponse> {
@@ -47,6 +68,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
         changePercent: 1.08,
         currency: 'USD',
         unit: 'per barrel',
+        history: generateIntradayHistory(70.50, 0.02),
       },
       {
         name: 'Brent Crude Oil',
@@ -55,6 +77,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
         changePercent: 1.12,
         currency: 'USD',
         unit: 'per barrel',
+        history: generateIntradayHistory(74.20, 0.018),
       },
       {
         name: 'Marine Gas Oil (MGO)',
@@ -63,6 +86,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
         changePercent: 1.49,
         currency: 'USD',
         unit: 'per metric ton',
+        history: generateIntradayHistory(850, 0.025),
       },
     ];
 
@@ -71,6 +95,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
       const wtiPrice = parseFloat(priceMatch[1].replace(',', ''));
       if (!isNaN(wtiPrice)) {
         prices[0].price = wtiPrice;
+        prices[0].history = generateIntradayHistory(wtiPrice, 0.02);
       }
     }
 
@@ -90,6 +115,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
           changePercent: 1.08,
           currency: 'USD',
           unit: 'per barrel',
+          history: generateIntradayHistory(70.50, 0.02),
         },
         {
           name: 'Brent Crude Oil',
@@ -98,6 +124,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
           changePercent: 1.12,
           currency: 'USD',
           unit: 'per barrel',
+          history: generateIntradayHistory(74.20, 0.018),
         },
         {
           name: 'Marine Gas Oil (MGO)',
@@ -106,6 +133,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
           changePercent: 1.49,
           currency: 'USD',
           unit: 'per metric ton',
+          history: generateIntradayHistory(850, 0.025),
         },
       ],
       lastUpdated: new Date().toISOString(),
