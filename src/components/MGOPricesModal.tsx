@@ -43,22 +43,45 @@ function MiniChart({ data, color }: MiniChartProps) {
   const priceRange = maxPrice - minPrice || 1;
 
   const width = 340;
-  const height = 60;
-  const padding = 5;
+  const height = 120;
+  const paddingLeft = 35;
+  const paddingRight = 10;
+  const paddingTop = 10;
+  const paddingBottom = 25;
+
+  const chartWidth = width - paddingLeft - paddingRight;
+  const chartHeight = height - paddingTop - paddingBottom;
 
   const points = data.map((point, index) => {
-    const x = padding + (index / (data.length - 1)) * (width - 2 * padding);
-    const y = height - padding - ((point.price - minPrice) / priceRange) * (height - 2 * padding);
+    const x = paddingLeft + (index / (data.length - 1)) * chartWidth;
+    const y = paddingTop + chartHeight - ((point.price - minPrice) / priceRange) * chartHeight;
     return `${x},${y}`;
   }).join(' ');
 
   const pathD = data.map((point, index) => {
-    const x = padding + (index / (data.length - 1)) * (width - 2 * padding);
-    const y = height - padding - ((point.price - minPrice) / priceRange) * (height - 2 * padding);
+    const x = paddingLeft + (index / (data.length - 1)) * chartWidth;
+    const y = paddingTop + chartHeight - ((point.price - minPrice) / priceRange) * chartHeight;
     return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
   }).join(' ');
 
-  const areaPath = `${pathD} L ${width - padding} ${height - padding} L ${padding} ${height - padding} Z`;
+  const areaPath = `${pathD} L ${paddingLeft + chartWidth} ${paddingTop + chartHeight} L ${paddingLeft} ${paddingTop + chartHeight} Z`;
+
+  const yAxisTicks = 4;
+  const yTicks = Array.from({ length: yAxisTicks }, (_, i) => {
+    const value = minPrice + (priceRange * i / (yAxisTicks - 1));
+    const y = paddingTop + chartHeight - ((value - minPrice) / priceRange) * chartHeight;
+    return { value, y };
+  });
+
+  const xAxisTicks = Math.min(5, data.length);
+  const xTicks = Array.from({ length: xAxisTicks }, (_, i) => {
+    const dataIndex = Math.floor((i / (xAxisTicks - 1)) * (data.length - 1));
+    const point = data[dataIndex];
+    const x = paddingLeft + (dataIndex / (data.length - 1)) * chartWidth;
+    const time = new Date(point.time);
+    const label = time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return { x, label };
+  });
 
   return (
     <div className="mt-2 pt-2 border-t border-gray-200">
@@ -76,6 +99,77 @@ function MiniChart({ data, color }: MiniChartProps) {
           </linearGradient>
         </defs>
 
+        <line
+          x1={paddingLeft}
+          y1={paddingTop}
+          x2={paddingLeft}
+          y2={paddingTop + chartHeight}
+          stroke="#9CA3AF"
+          strokeWidth="1"
+        />
+
+        <line
+          x1={paddingLeft}
+          y1={paddingTop + chartHeight}
+          x2={paddingLeft + chartWidth}
+          y2={paddingTop + chartHeight}
+          stroke="#9CA3AF"
+          strokeWidth="1"
+        />
+
+        {yTicks.map((tick, i) => (
+          <g key={i}>
+            <line
+              x1={paddingLeft - 3}
+              y1={tick.y}
+              x2={paddingLeft}
+              y2={tick.y}
+              stroke="#9CA3AF"
+              strokeWidth="1"
+            />
+            <line
+              x1={paddingLeft}
+              y1={tick.y}
+              x2={paddingLeft + chartWidth}
+              y2={tick.y}
+              stroke="#E5E7EB"
+              strokeWidth="0.5"
+              strokeDasharray="2,2"
+            />
+            <text
+              x={paddingLeft - 6}
+              y={tick.y + 3}
+              textAnchor="end"
+              fontSize="9"
+              fill="#6B7280"
+            >
+              ${tick.value.toFixed(2)}
+            </text>
+          </g>
+        ))}
+
+        {xTicks.map((tick, i) => (
+          <g key={i}>
+            <line
+              x1={tick.x}
+              y1={paddingTop + chartHeight}
+              x2={tick.x}
+              y2={paddingTop + chartHeight + 3}
+              stroke="#9CA3AF"
+              strokeWidth="1"
+            />
+            <text
+              x={tick.x}
+              y={paddingTop + chartHeight + 14}
+              textAnchor="middle"
+              fontSize="9"
+              fill="#6B7280"
+            >
+              {tick.label}
+            </text>
+          </g>
+        ))}
+
         <path
           d={areaPath}
           fill={`url(#gradient-${color})`}
@@ -91,8 +185,8 @@ function MiniChart({ data, color }: MiniChartProps) {
         />
 
         {data.map((point, index) => {
-          const x = padding + (index / (data.length - 1)) * (width - 2 * padding);
-          const y = height - padding - ((point.price - minPrice) / priceRange) * (height - 2 * padding);
+          const x = paddingLeft + (index / (data.length - 1)) * chartWidth;
+          const y = paddingTop + chartHeight - ((point.price - minPrice) / priceRange) * chartHeight;
           return (
             <circle
               key={index}
@@ -104,10 +198,6 @@ function MiniChart({ data, color }: MiniChartProps) {
           );
         })}
       </svg>
-      <div className="flex justify-between text-xs text-gray-500 mt-1">
-        <span>Low: ${minPrice.toFixed(2)}</span>
-        <span>High: ${maxPrice.toFixed(2)}</span>
-      </div>
     </div>
   );
 }
