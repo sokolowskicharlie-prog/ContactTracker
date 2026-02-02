@@ -190,13 +190,101 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
   }
 }
 
+async function fetchBunkerPricesFromShipAndBunker(): Promise<{ mgo: any; vlsfo: any; ifo380: any }> {
+  try {
+    const response = await fetch('https://shipandbunker.com/prices/av/global/av-g20-global-20-ports-average', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to fetch bunker prices: ${response.status}`);
+      return { mgo: null, vlsfo: null, ifo380: null };
+    }
+
+    const html = await response.text();
+
+    const extractPriceData = (fuelType: string) => {
+      const patterns = [
+        new RegExp(`${fuelType}[^>]*>\\s*<[^>]*>\\s*([0-9.,]+)\\s*<[^>]*>\\s*([+-]?[0-9.,]+)`, 'i'),
+        new RegExp(`>${fuelType}<[^>]*>.*?([0-9.,]+).*?([+-]?[0-9.,]+)`, 'i'),
+        new RegExp(`data-fuel="${fuelType}"[^>]*data-price="([0-9.,]+)"[^>]*data-change="([+-]?[0-9.,]+)"`, 'i'),
+      ];
+
+      for (const pattern of patterns) {
+        const match = html.match(pattern);
+        if (match && match[1]) {
+          const price = parseFloat(match[1].replace(',', ''));
+          const change = match[2] ? parseFloat(match[2].replace(',', '')) : 0;
+          const changePercent = price > 0 ? (change / (price - change)) * 100 : 0;
+
+          if (!isNaN(price) && price > 0) {
+            return {
+              price,
+              change,
+              changePercent: parseFloat(changePercent.toFixed(2)),
+            };
+          }
+        }
+      }
+
+      const tablePattern = new RegExp(
+        `<tr[^>]*>[^<]*<td[^>]*>${fuelType}[^<]*</td>\\s*<td[^>]*>([0-9.,]+)</td>\\s*<td[^>]*>([+-]?[0-9.,]+)</td>`,
+        'i'
+      );
+      const tableMatch = html.match(tablePattern);
+      if (tableMatch && tableMatch[1]) {
+        const price = parseFloat(tableMatch[1].replace(',', ''));
+        const change = tableMatch[2] ? parseFloat(tableMatch[2].replace(',', '')) : 0;
+        const changePercent = price > 0 ? (change / (price - change)) * 100 : 0;
+
+        if (!isNaN(price) && price > 0) {
+          return {
+            price,
+            change,
+            changePercent: parseFloat(changePercent.toFixed(2)),
+          };
+        }
+      }
+
+      return null;
+    };
+
+    const mgo = extractPriceData('MGO') || extractPriceData('DMA') || extractPriceData('MGO 0.1%S');
+    const vlsfo = extractPriceData('VLSFO') || extractPriceData('VLSFO 0.5%S');
+    const ifo380 = extractPriceData('IFO380') || extractPriceData('IFO 380') || extractPriceData('HSFO');
+
+    console.log('Bunker prices extracted:', { mgo, vlsfo, ifo380 });
+
+    return { mgo, vlsfo, ifo380 };
+  } catch (error) {
+    console.error('Error fetching bunker prices from Ship & Bunker:', error);
+    return { mgo: null, vlsfo: null, ifo380: null };
+  }
+}
+
 async function fetchOilPrices(): Promise<OilPricesResponse> {
   try {
-    // Fetch WTI and Brent prices in parallel
-    const [wtiData, brentData] = await Promise.all([
+    const [wtiData, brentData, bunkerPrices] = await Promise.all([
       fetchPriceFromTradingEconomics('https://tradingeconomics.com/commodity/crude-oil'),
       fetchPriceFromTradingEconomics('https://tradingeconomics.com/commodity/brent-crude-oil'),
+      fetchBunkerPricesFromShipAndBunker(),
     ]);
+
+    const mgoPrice = bunkerPrices.mgo?.price || 850;
+    const mgoChange = bunkerPrices.mgo?.change || 12.50;
+    const mgoChangePercent = bunkerPrices.mgo?.changePercent || 1.49;
+
+    const vlsfoPrice = bunkerPrices.vlsfo?.price || 620;
+    const vlsfoChange = bunkerPrices.vlsfo?.change || 8.30;
+    const vlsfoChangePercent = bunkerPrices.vlsfo?.changePercent || 1.36;
+
+    const ifo380Price = bunkerPrices.ifo380?.price || 490;
+    const ifo380Change = bunkerPrices.ifo380?.change || 6.50;
+    const ifo380ChangePercent = bunkerPrices.ifo380?.changePercent || 1.34;
 
     const prices: OilPrice[] = [
       {
@@ -220,34 +308,34 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
         history: generateIntradayHistory(brentData?.price || 74.20, 0.018),
       },
       {
-        name: 'Marine Gas Oil (MGO)',
-        price: 850,
-        change: 12.50,
-        changePercent: 1.49,
+        name: 'MGO (Global Average)',
+        price: mgoPrice,
+        change: mgoChange,
+        changePercent: mgoChangePercent,
         currency: 'USD',
         unit: 'per metric ton',
-        url: 'https://shipandbunker.com/prices',
-        history: generateIntradayHistory(850, 0.025),
+        url: 'https://shipandbunker.com/prices/av/global/av-g20-global-20-ports-average',
+        history: generateIntradayHistory(mgoPrice, 0.025),
       },
       {
-        name: 'VLSFO',
-        price: 620,
-        change: 8.30,
-        changePercent: 1.36,
+        name: 'VLSFO (Global Average)',
+        price: vlsfoPrice,
+        change: vlsfoChange,
+        changePercent: vlsfoChangePercent,
         currency: 'USD',
         unit: 'per metric ton',
-        url: 'https://shipandbunker.com/prices',
-        history: generateIntradayHistory(620, 0.022),
+        url: 'https://shipandbunker.com/prices/av/global/av-g20-global-20-ports-average',
+        history: generateIntradayHistory(vlsfoPrice, 0.022),
       },
       {
-        name: 'IFO 380',
-        price: 490,
-        change: 6.50,
-        changePercent: 1.34,
+        name: 'IFO 380 (Global Average)',
+        price: ifo380Price,
+        change: ifo380Change,
+        changePercent: ifo380ChangePercent,
         currency: 'USD',
         unit: 'per metric ton',
-        url: 'https://shipandbunker.com/prices',
-        history: generateIntradayHistory(490, 0.020),
+        url: 'https://shipandbunker.com/prices/av/global/av-g20-global-20-ports-average',
+        history: generateIntradayHistory(ifo380Price, 0.020),
       },
     ];
 
@@ -281,33 +369,33 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
           history: generateIntradayHistory(74.20, 0.018),
         },
         {
-          name: 'Marine Gas Oil (MGO)',
+          name: 'MGO (Global Average)',
           price: 850,
           change: 12.50,
           changePercent: 1.49,
           currency: 'USD',
           unit: 'per metric ton',
-          url: 'https://shipandbunker.com/prices',
+          url: 'https://shipandbunker.com/prices/av/global/av-g20-global-20-ports-average',
           history: generateIntradayHistory(850, 0.025),
         },
         {
-          name: 'VLSFO',
+          name: 'VLSFO (Global Average)',
           price: 620,
           change: 8.30,
           changePercent: 1.36,
           currency: 'USD',
           unit: 'per metric ton',
-          url: 'https://shipandbunker.com/prices',
+          url: 'https://shipandbunker.com/prices/av/global/av-g20-global-20-ports-average',
           history: generateIntradayHistory(620, 0.022),
         },
         {
-          name: 'IFO 380',
+          name: 'IFO 380 (Global Average)',
           price: 490,
           change: 6.50,
           changePercent: 1.34,
           currency: 'USD',
           unit: 'per metric ton',
-          url: 'https://shipandbunker.com/prices',
+          url: 'https://shipandbunker.com/prices/av/global/av-g20-global-20-ports-average',
           history: generateIntradayHistory(490, 0.020),
         },
       ],
