@@ -50,6 +50,7 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://tradingeconomics.com/',
       },
     });
 
@@ -60,7 +61,11 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
 
     const html = await response.text();
 
-    // Look for JSON data embedded in script tags
+    let price: number | null = null;
+    let change: number | null = null;
+    let changePercent: number | null = null;
+
+    // First, try to get price from JSON chart data - this is most reliable
     const jsonDataMatch = html.match(/var\s+chartData\s*=\s*({[^;]+});/);
     if (jsonDataMatch) {
       try {
@@ -68,12 +73,8 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
         if (jsonData && jsonData.series && jsonData.series[0] && jsonData.series[0].data) {
           const latestData = jsonData.series[0].data[jsonData.series[0].data.length - 1];
           if (latestData && typeof latestData.y === 'number') {
-            const price = latestData.y;
-            return {
-              price,
-              change: 0,
-              changePercent: 0,
-            };
+            price = latestData.y;
+            console.log(`Found price from chart data: ${price}`);
           }
         }
       } catch (e) {
@@ -81,44 +82,46 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
       }
     }
 
-    // Try to find the price in the page
-    let price: number | null = null;
-    let change: number | null = null;
-    let changePercent: number | null = null;
+    // If we didn't get price from chart, look in HTML
+    if (price === null) {
+      const pricePatterns = [
+        // Main price display - Trading Economics uses id="p"
+        /<[^>]*id=["']p["'][^>]*>([0-9.]+)</i,
+        // Alternative patterns
+        /"Last":\s*"?([0-9.]+)"?/i,
+        /"last":\s*([0-9.]+)/i,
+        /"price":\s*([0-9.]+)/i,
+        // Data attributes
+        /data-price=["']([0-9.]+)["']/i,
+        /data-last=["']([0-9.]+)["']/i,
+        // Table display
+        /<td[^>]*>Last<\/td>\s*<td[^>]*>([0-9.]+)</i,
+      ];
 
-    // Look for the actual price value - Trading Economics uses specific HTML structure
-    const pricePatterns = [
-      // Main price display
-      /<div[^>]*id=["']p["'][^>]*>([0-9.]+)</i,
-      /<span[^>]*id=["']p["'][^>]*>([0-9.]+)</i,
-      // Alternative patterns
-      /"Last":\s*"?([0-9.]+)"?/i,
-      /"last":\s*([0-9.]+)/i,
-      /"price":\s*([0-9.]+)/i,
-      // Data attributes
-      /data-price=["']([0-9.]+)["']/i,
-      /data-last=["']([0-9.]+)["']/i,
-      // Table or list display
-      /<td[^>]*>Last<\/td>\s*<td[^>]*>([0-9.]+)</i,
-    ];
-
-    for (const pattern of pricePatterns) {
-      const match = html.match(pattern);
-      if (match && match[1]) {
-        const parsedPrice = parseFloat(match[1]);
-        if (!isNaN(parsedPrice) && parsedPrice > 0) {
-          price = parsedPrice;
-          console.log(`Found price using pattern: ${pattern}, value: ${price}`);
-          break;
+      for (const pattern of pricePatterns) {
+        const match = html.match(pattern);
+        if (match && match[1]) {
+          const parsedPrice = parseFloat(match[1]);
+          if (!isNaN(parsedPrice) && parsedPrice > 0) {
+            price = parsedPrice;
+            console.log(`Found price from HTML: ${price}`);
+            break;
+          }
         }
       }
     }
 
-    // Look for change values
+    // Always look for change values in HTML - Trading Economics uses id="ch"
     const changePatterns = [
-      /<div[^>]*id=["']ch["'][^>]*>([+-]?[0-9.]+)</i,
-      /<span[^>]*id=["']ch["'][^>]*>([+-]?[0-9.]+)</i,
-      /"change":\s*([+-]?[0-9.]+)/i,
+      // Main change display
+      /<[^>]*id=["']ch["'][^>]*>([+-]?[0-9.]+)</i,
+      // Alternative patterns
+      /"change":\s*"?([+-]?[0-9.]+)"?/i,
+      /data-change=["']([+-]?[0-9.]+)["']/i,
+      // In table format
+      /<td[^>]*>Change<\/td>\s*<td[^>]*>([+-]?[0-9.]+)</i,
+      // Sometimes displayed with +/- prefix explicitly
+      /[>+\s]([0-9.]+)\s*<[^>]*>[^<]*<[^>]*id=["']pch["']/i,
     ];
 
     for (const pattern of changePatterns) {
@@ -127,17 +130,26 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
         const parsedChange = parseFloat(match[1]);
         if (!isNaN(parsedChange)) {
           change = parsedChange;
+          console.log(`Found change: ${change}`);
           break;
         }
       }
     }
 
-    // Look for percent change
+    // Always look for percent change - Trading Economics uses id="pch"
     const percentPatterns = [
-      /<div[^>]*id=["']pch["'][^>]*>([+-]?[0-9.]+)</i,
-      /<span[^>]*id=["']pch["'][^>]*>([+-]?[0-9.]+)</i,
+      // Main percent display
+      /<[^>]*id=["']pch["'][^>]*>([+-]?[0-9.]+)</i,
+      // With percentage symbol
+      /<[^>]*id=["']pch["'][^>]*>([+-]?[0-9.]+)%/i,
+      // In parentheses
       /\(([+-]?[0-9.]+)%\)/,
-      /"changePercent":\s*([+-]?[0-9.]+)/i,
+      // Alternative patterns
+      /"changePercent":\s*"?([+-]?[0-9.]+)"?/i,
+      /"changepct":\s*"?([+-]?[0-9.]+)"?/i,
+      /data-changepercent=["']([+-]?[0-9.]+)["']/i,
+      // In table format
+      /<td[^>]*>%\s*Change<\/td>\s*<td[^>]*>([+-]?[0-9.]+)</i,
     ];
 
     for (const pattern of percentPatterns) {
@@ -146,13 +158,14 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
         const parsedPercent = parseFloat(match[1]);
         if (!isNaN(parsedPercent)) {
           changePercent = parsedPercent;
+          console.log(`Found changePercent: ${changePercent}`);
           break;
         }
       }
     }
 
     if (price !== null) {
-      console.log(`Successfully fetched from ${url}: price=${price}, change=${change}, changePercent=${changePercent}`);
+      console.log(`Successfully fetched from ${url}: price=${price}, change=${change || 0}, changePercent=${changePercent || 0}`);
       return {
         price,
         change: change || 0,
