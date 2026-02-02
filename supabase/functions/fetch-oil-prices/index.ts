@@ -69,7 +69,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
         changePercent: 1.08,
         currency: 'USD',
         unit: 'per barrel',
-        url: 'https://www.marketwatch.com/investing/future/crude%20oil%20-%20electronic',
+        url: 'https://tradingeconomics.com/commodity/crude-oil',
         history: generateIntradayHistory(70.50, 0.02),
       },
       {
@@ -79,7 +79,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
         changePercent: 1.12,
         currency: 'USD',
         unit: 'per barrel',
-        url: 'https://www.marketwatch.com/investing/future/bz00',
+        url: 'https://tradingeconomics.com/commodity/brent-crude-oil',
         history: generateIntradayHistory(74.20, 0.018),
       },
       {
@@ -119,7 +119,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
           changePercent: 1.08,
           currency: 'USD',
           unit: 'per barrel',
-          url: 'https://www.marketwatch.com/investing/future/crude%20oil%20-%20electronic',
+          url: 'https://tradingeconomics.com/commodity/crude-oil',
           history: generateIntradayHistory(70.50, 0.02),
         },
         {
@@ -129,7 +129,7 @@ async function fetchOilPrices(): Promise<OilPricesResponse> {
           changePercent: 1.12,
           currency: 'USD',
           unit: 'per barrel',
-          url: 'https://www.marketwatch.com/investing/future/bz00',
+          url: 'https://tradingeconomics.com/commodity/brent-crude-oil',
           history: generateIntradayHistory(74.20, 0.018),
         },
         {
