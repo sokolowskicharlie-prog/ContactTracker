@@ -405,7 +405,7 @@ export default function MGOPricesModal({
                             <TrendingDown className="w-3 h-3" />
                           )}
                           <span className="text-xs font-medium">
-                            {Math.abs(price.changePercent).toFixed(2)}%
+                            {price.changePercent >= 0 ? '+' : ''}{price.changePercent.toFixed(2)}%
                           </span>
                         </div>
                       </div>
