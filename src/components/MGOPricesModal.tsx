@@ -1,5 +1,5 @@
 import { X, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface MGOPricesModalProps {
   onClose: () => void;
@@ -45,9 +45,7 @@ export default function MGOPricesModal({
   const [error, setError] = useState('');
   const [isExpanded, setIsExpanded] = useState(true);
 
-  if (!isOpen) return null;
-
-  const fetchPrices = async () => {
+  const fetchPrices = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -74,11 +72,15 @@ export default function MGOPricesModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchPrices();
-  }, []);
+    if (isOpen) {
+      fetchPrices();
+    }
+  }, [isOpen, fetchPrices]);
+
+  if (!isOpen) return null;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
