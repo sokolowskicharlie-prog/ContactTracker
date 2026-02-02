@@ -177,8 +177,6 @@ export default function MGOPricesModal({
     });
   };
 
-  const maxPrice = data ? Math.max(...data.prices.map(p => p.price)) : 100;
-
   const calculateTopPosition = () => {
     let top = 16;
     const PANEL_HEADER_HEIGHT = 52;
@@ -328,48 +326,6 @@ export default function MGOPricesModal({
                     </div>
                   );
                 })}
-              </div>
-
-              <div className="bg-white border border-gray-200 rounded-lg p-3">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Price Comparison</h3>
-                <div className="space-y-3">
-                  {data.prices.map((price, index) => {
-                    const percentage = (price.price / maxPrice) * 100;
-                    const isPositive = price.change >= 0;
-
-                    return (
-                      <div key={index} className="space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-gray-700">
-                            {price.name}
-                          </span>
-                          <span className="text-xs font-semibold text-gray-900">
-                            ${price.price.toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="relative h-6 bg-gray-100 rounded overflow-hidden">
-                          <div
-                            className={`absolute inset-y-0 left-0 rounded transition-all duration-500 ${
-                              index === 0
-                                ? 'bg-gradient-to-r from-blue-500 to-blue-600'
-                                : index === 1
-                                ? 'bg-gradient-to-r from-orange-500 to-orange-600'
-                                : 'bg-gradient-to-r from-emerald-500 to-emerald-600'
-                            }`}
-                            style={{ width: `${percentage}%` }}
-                          >
-                            <div className="absolute inset-0 flex items-center justify-end pr-2">
-                              <span className="text-xs font-medium text-white">
-                                {isPositive ? '+' : ''}
-                                {price.changePercent.toFixed(1)}%
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
