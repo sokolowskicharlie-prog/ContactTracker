@@ -1,4 +1,4 @@
-import { X, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronDown, ChevronUp, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 
 interface MGOPricesModalProps {
@@ -227,6 +227,7 @@ export default function MGOPricesModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isReorderMode, setIsReorderMode] = useState(false);
 
   const fetchPrices = useCallback(async () => {
     setLoading(true);
@@ -327,6 +328,15 @@ export default function MGOPricesModal({
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
+            {onOilPricesOrderChange && (
+              <button
+                onClick={() => setIsReorderMode(!isReorderMode)}
+                className={`p-1 hover:bg-white/20 rounded transition-colors ${isReorderMode ? 'bg-white/30' : ''}`}
+                title={isReorderMode ? 'Exit reorder mode' : 'Reorder prices'}
+              >
+                <ArrowUpDown className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="p-1 hover:bg-white/20 rounded transition-colors"
@@ -445,7 +455,7 @@ export default function MGOPricesModal({
                                 {price.changePercent >= 0 ? '+' : ''}{price.changePercent.toFixed(2)}%
                               </span>
                             </div>
-                            {onOilPricesOrderChange && (
+                            {onOilPricesOrderChange && isReorderMode && (
                               <div className="flex gap-0.5">
                                 <button
                                   onClick={() => handleMoveUp(orderIndex)}
