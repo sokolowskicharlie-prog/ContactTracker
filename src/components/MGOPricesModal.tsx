@@ -1,4 +1,4 @@
-import { X, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronDown, ChevronUp, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronDown, ChevronUp, ArrowUp, ArrowDown, ArrowUpDown, Eye, EyeOff } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 
 interface MGOPricesModalProps {
@@ -14,6 +14,8 @@ interface MGOPricesModalProps {
   isOpen: boolean;
   oilPricesOrder?: string[];
   onOilPricesOrderChange?: (order: string[]) => void;
+  visibleOilPrices?: string[];
+  onVisibleOilPricesChange?: (visible: string[]) => void;
 }
 
 interface OilPrice {
@@ -221,7 +223,9 @@ export default function MGOPricesModal({
   panelSpacing = 2,
   isOpen,
   oilPricesOrder = ['WTI', 'Brent', 'MGO', 'VLSFO', 'IFO 380'],
-  onOilPricesOrderChange
+  onOilPricesOrderChange,
+  visibleOilPrices = ['WTI', 'Brent', 'MGO', 'VLSFO', 'IFO 380'],
+  onVisibleOilPricesChange
 }: MGOPricesModalProps) {
   const [data, setData] = useState<OilPricesData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -382,16 +386,32 @@ export default function MGOPricesModal({
                     if (priceName.includes('WTI')) return 'WTI';
                     if (priceName.includes('Brent')) return 'Brent';
                     if (priceName.includes('MGO')) return 'MGO';
+                    if (priceName.includes('VLSFO')) return 'VLSFO';
+                    if (priceName.includes('IFO 380')) return 'IFO 380';
                     return priceName;
                   };
 
-                  const sortedPrices = [...data.prices].sort((a, b) => {
-                    const aType = getOilTypeName(a.name);
-                    const bType = getOilTypeName(b.name);
-                    const aIndex = oilPricesOrder.indexOf(aType);
-                    const bIndex = oilPricesOrder.indexOf(bType);
-                    return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
-                  });
+                  const handleToggleVisibility = (oilType: string) => {
+                    if (!onVisibleOilPricesChange) return;
+                    if (visibleOilPrices.includes(oilType)) {
+                      onVisibleOilPricesChange(visibleOilPrices.filter(t => t !== oilType));
+                    } else {
+                      onVisibleOilPricesChange([...visibleOilPrices, oilType]);
+                    }
+                  };
+
+                  const sortedPrices = [...data.prices]
+                    .sort((a, b) => {
+                      const aType = getOilTypeName(a.name);
+                      const bType = getOilTypeName(b.name);
+                      const aIndex = oilPricesOrder.indexOf(aType);
+                      const bIndex = oilPricesOrder.indexOf(bType);
+                      return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+                    })
+                    .filter(price => {
+                      const oilType = getOilTypeName(price.name);
+                      return visibleOilPrices.includes(oilType);
+                    });
 
                   const handleMoveUp = (currentIndex: number) => {
                     if (currentIndex === 0 || !onOilPricesOrderChange) return;
@@ -423,14 +443,25 @@ export default function MGOPricesModal({
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">
-                            <a
-                              href={price.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline mb-0.5 inline-block cursor-pointer transition-colors"
-                            >
-                              {price.name}
-                            </a>
+                            <div className="flex items-center gap-1 mb-0.5">
+                              <a
+                                href={price.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline inline-block cursor-pointer transition-colors"
+                              >
+                                {price.name}
+                              </a>
+                              {onVisibleOilPricesChange && (
+                                <button
+                                  onClick={() => handleToggleVisibility(oilType)}
+                                  className="p-0.5 hover:bg-gray-200 rounded transition-colors"
+                                  title="Hide graph"
+                                >
+                                  <EyeOff className="w-3 h-3 text-gray-500" />
+                                </button>
+                              )}
+                            </div>
                             <p className="text-xl font-bold text-gray-900">
                               ${price.price.toFixed(2)}
                             </p>
@@ -496,6 +527,33 @@ export default function MGOPricesModal({
                   });
                 })()}
               </div>
+              {onVisibleOilPricesChange && (() => {
+                const allOilTypes = ['WTI', 'Brent', 'MGO', 'VLSFO', 'IFO 380'];
+                const hiddenTypes = allOilTypes.filter(type => !visibleOilPrices.includes(type));
+
+                if (hiddenTypes.length === 0) return null;
+
+                return (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div className="text-xs font-medium text-gray-600 mb-2">Hidden Graphs</div>
+                    <div className="flex flex-wrap gap-1">
+                      {hiddenTypes.map(type => (
+                        <button
+                          key={type}
+                          onClick={() => {
+                            onVisibleOilPricesChange([...visibleOilPrices, type]);
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded transition-colors"
+                          title={`Show ${type}`}
+                        >
+                          <Eye className="w-3 h-3" />
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
           </div>

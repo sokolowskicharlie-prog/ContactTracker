@@ -224,6 +224,7 @@ function App() {
   const [panelOrder, setPanelOrder] = useState<string[]>(['notes', 'goals', 'priority', 'mgo']);
   const [panelSpacing, setPanelSpacing] = useState<number>(2);
   const [oilPricesOrder, setOilPricesOrder] = useState<string[]>(['WTI', 'Brent', 'MGO', 'VLSFO', 'IFO 380']);
+  const [visibleOilPrices, setVisibleOilPrices] = useState<string[]>(['WTI', 'Brent', 'MGO', 'VLSFO', 'IFO 380']);
   const [customPriorityLabels, setCustomPriorityLabels] = useState<Record<number, string>>({
     0: 'Client',
     1: 'Highest',
@@ -2772,7 +2773,7 @@ function App() {
     try {
       const { data, error } = await supabase
         .from('user_preferences')
-        .select('button_order, visible_filters, panel_order, panel_spacing, custom_priority_labels, oil_prices_order')
+        .select('button_order, visible_filters, panel_order, panel_spacing, custom_priority_labels, oil_prices_order, visible_oil_prices')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -2810,6 +2811,13 @@ function App() {
           const newTypes = defaultOrder.filter(type => !existingOrder.includes(type));
           const mergedOrder = [...existingOrder, ...newTypes];
           setOilPricesOrder(mergedOrder);
+        }
+        if (data.visible_oil_prices) {
+          const defaultVisible = ['WTI', 'Brent', 'MGO', 'VLSFO', 'IFO 380'];
+          const existingVisible = data.visible_oil_prices;
+          const newTypes = defaultVisible.filter(type => !existingVisible.includes(type));
+          const mergedVisible = [...existingVisible, ...newTypes];
+          setVisibleOilPrices(mergedVisible);
         }
       }
     } catch (error) {
@@ -2874,6 +2882,37 @@ function App() {
       setOilPricesOrder(order);
     } catch (error) {
       console.error('Error saving oil prices order:', error);
+    }
+  };
+
+  const handleSaveVisibleOilPrices = async (visible: string[]) => {
+    if (!user) return;
+
+    try {
+      const { data: existing } = await supabase
+        .from('user_preferences')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('user_preferences')
+          .update({ visible_oil_prices: visible })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_preferences')
+          .insert([{ user_id: user.id, visible_oil_prices: visible }]);
+
+        if (error) throw error;
+      }
+
+      setVisibleOilPrices(visible);
+    } catch (error) {
+      console.error('Error saving visible oil prices:', error);
     }
   };
 
@@ -5015,6 +5054,8 @@ function App() {
         panelSpacing={panelSpacing}
         oilPricesOrder={oilPricesOrder}
         onOilPricesOrderChange={handleSaveOilPricesOrder}
+        visibleOilPrices={visibleOilPrices}
+        onVisibleOilPricesChange={handleSaveVisibleOilPrices}
       />
 
       <WorkspaceModal
