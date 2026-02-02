@@ -111,17 +111,41 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
       }
     }
 
-    // Always look for change values in HTML - Trading Economics uses id="ch"
+    // Look for percent change first - Trading Economics uses id="pch"
+    const percentPatterns = [
+      // Main percent display with id="pch"
+      /<[^>]*id=["']pch["'][^>]*>([+-]?[0-9.]+)/i,
+      // With percentage symbol
+      /<[^>]*id=["']pch["'][^>]*>([+-]?[0-9.]+)%/i,
+      // In parentheses next to price
+      /\(([+-]?[0-9.]+)%\)/,
+      // Alternative patterns
+      /"changePercent":\s*"?([+-]?[0-9.]+)"?/i,
+      /"changepct":\s*"?([+-]?[0-9.]+)"?/i,
+      /data-changepercent=["']([+-]?[0-9.]+)["']/i,
+    ];
+
+    for (const pattern of percentPatterns) {
+      const match = html.match(pattern);
+      if (match && match[1]) {
+        const parsedPercent = parseFloat(match[1]);
+        if (!isNaN(parsedPercent)) {
+          changePercent = parsedPercent;
+          console.log(`Found changePercent: ${changePercent}`);
+          break;
+        }
+      }
+    }
+
+    // Now look for change values - Trading Economics uses id="ch"
     const changePatterns = [
-      // Main change display with potential negative sign
+      // Main change display with id="ch" - captures sign and number together
       /<[^>]*id=["']ch["'][^>]*>([+-]?[0-9.]+)/i,
-      // With explicit minus/plus in content
-      /<[^>]*id=["']ch["'][^>]*>[-+]?\s*([0-9.]+)/i,
+      // Change value directly after price (pattern: price-change or price+change)
+      />[0-9.]+([+-][0-9.]+)\(/i,
       // Alternative patterns
       /"change":\s*"?([+-]?[0-9.]+)"?/i,
       /data-change=["']([+-]?[0-9.]+)["']/i,
-      // In table format
-      /<td[^>]*>Change<\/td>\s*<td[^>]*>([+-]?[0-9.]+)</i,
     ];
 
     for (const pattern of changePatterns) {
@@ -136,31 +160,16 @@ async function fetchPriceFromTradingEconomics(url: string): Promise<{ price: num
       }
     }
 
-    // Always look for percent change - Trading Economics uses id="pch"
-    const percentPatterns = [
-      // Main percent display
-      /<[^>]*id=["']pch["'][^>]*>([+-]?[0-9.]+)</i,
-      // With percentage symbol
-      /<[^>]*id=["']pch["'][^>]*>([+-]?[0-9.]+)%/i,
-      // In parentheses
-      /\(([+-]?[0-9.]+)%\)/,
-      // Alternative patterns
-      /"changePercent":\s*"?([+-]?[0-9.]+)"?/i,
-      /"changepct":\s*"?([+-]?[0-9.]+)"?/i,
-      /data-changepercent=["']([+-]?[0-9.]+)["']/i,
-      // In table format
-      /<td[^>]*>%\s*Change<\/td>\s*<td[^>]*>([+-]?[0-9.]+)</i,
-    ];
-
-    for (const pattern of percentPatterns) {
-      const match = html.match(pattern);
-      if (match && match[1]) {
-        const parsedPercent = parseFloat(match[1]);
-        if (!isNaN(parsedPercent)) {
-          changePercent = parsedPercent;
-          console.log(`Found changePercent: ${changePercent}`);
-          break;
-        }
+    // If we have percent change but no change value, or if signs don't match, recalculate
+    if (changePercent !== null && price !== null) {
+      if (change === null) {
+        // Calculate change from price and percent
+        change = (price * changePercent) / (100 + changePercent);
+        console.log(`Calculated change from percent: ${change}`);
+      } else if ((change > 0 && changePercent < 0) || (change < 0 && changePercent > 0)) {
+        // Signs don't match, fix the sign based on percent
+        change = Math.abs(change) * (changePercent < 0 ? -1 : 1);
+        console.log(`Fixed change sign based on percent: ${change}`);
       }
     }
 
