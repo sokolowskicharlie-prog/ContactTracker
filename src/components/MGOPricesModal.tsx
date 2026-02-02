@@ -198,6 +198,10 @@ function MiniChart({ data, color }: MiniChartProps) {
           );
         })}
       </svg>
+      <div className="flex justify-between text-xs text-gray-500 mt-1">
+        <span>Low: ${minPrice.toFixed(2)}</span>
+        <span>High: ${maxPrice.toFixed(2)}</span>
+      </div>
     </div>
   );
 }
