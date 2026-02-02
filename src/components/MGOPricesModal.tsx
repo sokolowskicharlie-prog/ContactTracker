@@ -421,16 +421,6 @@ export default function MGOPricesModal({
                   );
                 })}
               </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <h4 className="text-xs font-semibold text-blue-900 mb-2">About These Prices</h4>
-                <ul className="text-xs text-blue-800 space-y-0.5">
-                  <li>• WTI: West Texas Intermediate crude oil</li>
-                  <li>• Brent: International crude oil benchmark</li>
-                  <li>• MGO: Marine Gas Oil for shipping</li>
-                  <li>• Prices vary by location and supplier</li>
-                </ul>
-              </div>
             </div>
           )}
           </div>
