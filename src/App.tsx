@@ -1057,6 +1057,7 @@ function App() {
           average_margin: contactData.average_margin,
           number_of_deals: contactData.number_of_deals,
           average_days_credit_required: contactData.average_days_credit_required,
+          special_terms: contactData.special_terms,
           notes: contactData.notes,
           updated_at: new Date().toISOString(),
         };
