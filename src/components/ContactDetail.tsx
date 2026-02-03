@@ -1312,20 +1312,13 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                   <Calendar className="w-5 h-5 mr-3 text-gray-500" />
                   <span>Avg Days Credit: {contact.average_days_credit_required ?? 0}</span>
                 </div>
-                {contact.special_terms ? (
-                  <div className="flex items-start text-gray-900 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <AlertCircle className="w-5 h-5 mr-3 text-yellow-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <div className="font-semibold text-yellow-900 mb-1">Special Terms:</div>
-                      <span className="text-yellow-800">{contact.special_terms}</span>
-                    </div>
+                <div className={`flex items-start ${contact.special_terms ? 'text-gray-900 bg-yellow-50 border border-yellow-200 rounded-lg p-3' : 'text-gray-700'}`}>
+                  <AlertCircle className={`w-5 h-5 mr-3 mt-0.5 flex-shrink-0 ${contact.special_terms ? 'text-yellow-600' : 'text-gray-500'}`} />
+                  <div className="flex-1">
+                    <span className={contact.special_terms ? 'font-semibold text-yellow-900' : ''}>Special Terms: </span>
+                    <span className={contact.special_terms ? 'text-yellow-800' : ''}>{contact.special_terms || 'No'}</span>
                   </div>
-                ) : (
-                  <div className="flex items-center text-gray-700">
-                    <AlertCircle className="w-5 h-5 mr-3 text-gray-500" />
-                    <span>Special Terms: No</span>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
