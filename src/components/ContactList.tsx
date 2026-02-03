@@ -439,13 +439,11 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                   <span className="font-medium">{contact.number_of_deals ?? 0}</span>
                   <span className="ml-1 text-xs text-gray-500">deals</span>
                 </div>
-                {contact.average_days_credit_required && (
-                  <div className="flex items-center text-gray-600">
-                    <Clock className="w-4 h-4 mr-1.5 text-purple-500" />
-                    <span className="font-medium">{contact.average_days_credit_required}</span>
-                    <span className="ml-1 text-xs text-gray-500">days credit</span>
-                  </div>
-                )}
+                <div className="flex items-center text-gray-600">
+                  <Clock className="w-4 h-4 mr-1.5 text-purple-500" />
+                  <span className="font-medium">{contact.average_days_credit_required ?? 0}</span>
+                  <span className="ml-1 text-xs text-gray-500">days credit</span>
+                </div>
               </div>
               {contact.contact_persons && contact.contact_persons.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-gray-100">

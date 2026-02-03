@@ -336,13 +336,11 @@ export default function ContactTableView({
           </div>
         );
       case 'creditDays':
-        return contact.average_days_credit_required ? (
+        return (
           <div className="flex items-center gap-1 text-sm text-gray-900">
             <Clock className="w-3 h-3 text-purple-500 flex-shrink-0" />
-            <span className="font-medium">{contact.average_days_credit_required}</span>
+            <span className="font-medium">{contact.average_days_credit_required ?? 0}</span>
           </div>
-        ) : (
-          <div className="text-sm text-gray-400">-</div>
         );
       case 'status':
         return getStatusBadge(contact);
