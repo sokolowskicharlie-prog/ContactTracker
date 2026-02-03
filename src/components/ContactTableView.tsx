@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Edit2, Trash2, Phone, Mail, MapPin, AlertCircle, CheckCircle, TrendingUp, Settings, GripVertical, Eye, EyeOff, Skull, Package, Briefcase } from 'lucide-react';
+import { Edit2, Trash2, Phone, Mail, MapPin, AlertCircle, CheckCircle, TrendingUp, Settings, GripVertical, Eye, EyeOff, Skull, Package, Briefcase, Clock } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
 
 interface ContactTableViewProps {
@@ -26,6 +26,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'averageMt', label: 'Avg MT', visible: true, width: 100 },
   { id: 'averageMargin', label: 'Avg Margin', visible: true, width: 110 },
   { id: 'numberOfDeals', label: '# Deals', visible: true, width: 90 },
+  { id: 'creditDays', label: 'Credit Days', visible: true, width: 110 },
   { id: 'status', label: 'Status', visible: true, width: 120 },
   { id: 'activity', label: 'Activity', visible: true, width: 120 },
   { id: 'lastActivity', label: 'Last Activity', visible: true, width: 150 },
@@ -333,6 +334,15 @@ export default function ContactTableView({
             <Briefcase className="w-3 h-3 text-orange-500 flex-shrink-0" />
             <span className="font-medium">{contact.number_of_deals ?? 0}</span>
           </div>
+        );
+      case 'creditDays':
+        return contact.average_days_credit_required ? (
+          <div className="flex items-center gap-1 text-sm text-gray-900">
+            <Clock className="w-3 h-3 text-purple-500 flex-shrink-0" />
+            <span className="font-medium">{contact.average_days_credit_required}</span>
+          </div>
+        ) : (
+          <div className="text-sm text-gray-400">-</div>
         );
       case 'status':
         return getStatusBadge(contact);

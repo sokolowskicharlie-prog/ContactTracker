@@ -52,6 +52,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
   const [averageMtEnquiry, setAverageMtEnquiry] = useState('');
   const [averageMargin, setAverageMargin] = useState('');
   const [numberOfDeals, setNumberOfDeals] = useState('');
+  const [averageDaysCreditRequired, setAverageDaysCreditRequired] = useState('');
   const [notes, setNotes] = useState('');
   const [contactPersons, setContactPersons] = useState<Partial<ContactPerson>[]>([]);
   const [phoneTypes, setPhoneTypes] = useState<PhoneType[]>([]);
@@ -123,6 +124,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       setAverageMtEnquiry(contact.average_mt_enquiry?.toString() || '');
       setAverageMargin(contact.average_margin?.toString() || '');
       setNumberOfDeals(contact.number_of_deals?.toString() || '');
+      setAverageDaysCreditRequired(contact.average_days_credit_required?.toString() || '');
       setNotes(contact.notes || '');
       setContactPersons(contact.contact_persons || []);
       console.log('Contact persons loaded into state:', contact.contact_persons?.length || 0);
@@ -147,6 +149,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       setAverageMtEnquiry('');
       setAverageMargin('');
       setNumberOfDeals('');
+      setAverageDaysCreditRequired('');
       setNotes('');
       setContactPersons([]);
     }
@@ -264,6 +267,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       average_mt_enquiry: averageMtEnquiry !== '' ? parseFloat(averageMtEnquiry) : null,
       average_margin: averageMargin !== '' ? averageMargin.trim() : null,
       number_of_deals: numberOfDeals !== '' ? parseInt(numberOfDeals) : null,
+      average_days_credit_required: averageDaysCreditRequired !== '' ? parseInt(averageDaysCreditRequired) : null,
       notes: notes.trim() || null,
     };
 
@@ -612,6 +616,22 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
                 placeholder="e.g., 5"
               />
               <p className="text-xs text-gray-500 mt-1">Total number of deals closed</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Average Days Credit Required
+              </label>
+              <input
+                type="number"
+                value={averageDaysCreditRequired}
+                onChange={(e) => setAverageDaysCreditRequired(e.target.value)}
+                min="0"
+                step="1"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., 30"
+              />
+              <p className="text-xs text-gray-500 mt-1">Average payment terms in days</p>
             </div>
           </div>
 
