@@ -49,6 +49,7 @@ export type Contact = {
   average_margin?: string;
   number_of_deals?: number;
   average_days_credit_required?: number;
+  special_terms?: string;
   last_called?: string;
   last_emailed?: string;
   created_at: string;
