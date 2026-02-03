@@ -291,22 +291,18 @@ export default function ContactTableView({
           </div>
         );
       case 'averageMt':
-        return (contact as any).average_mt_enquiry !== null && (contact as any).average_mt_enquiry !== undefined ? (
+        return (
           <div className="flex items-center gap-1 text-sm text-gray-900">
             <Package className="w-3 h-3 text-blue-500 flex-shrink-0" />
-            <span className="font-medium">{(contact as any).average_mt_enquiry}</span>
+            <span className="font-medium">{(contact as any).average_mt_enquiry ?? 0}</span>
           </div>
-        ) : (
-          <div className="text-sm text-gray-400">-</div>
         );
       case 'averageMargin':
-        return (contact as any).average_margin !== null && (contact as any).average_margin !== undefined ? (
+        return (
           <div className="flex items-center gap-1 text-sm text-gray-900">
             <TrendingUp className="w-3 h-3 text-green-500 flex-shrink-0" />
-            <span className="font-medium">{(contact as any).average_margin}</span>
+            <span className="font-medium">{(contact as any).average_margin ?? 0}</span>
           </div>
-        ) : (
-          <div className="text-sm text-gray-400">-</div>
         );
       case 'status':
         return getStatusBadge(contact);
