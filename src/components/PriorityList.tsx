@@ -344,7 +344,10 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
                         )}
                       </div>
 
-                      {(contact.average_mt_enquiry || contact.average_margin || contact.number_of_deals || contact.average_days_credit_required) && (
+                      {(contact.average_mt_enquiry !== null && contact.average_mt_enquiry !== undefined ||
+                        contact.average_margin !== null && contact.average_margin !== undefined ||
+                        contact.number_of_deals !== null && contact.number_of_deals !== undefined ||
+                        contact.average_days_credit_required !== null && contact.average_days_credit_required !== undefined) && (
                         <div className="mt-3 grid grid-cols-2 gap-2">
                           {contact.average_mt_enquiry !== null && contact.average_mt_enquiry !== undefined && (
                             <div className="flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-200">
@@ -352,7 +355,7 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
                               <span className="font-medium">{contact.average_mt_enquiry} MT</span>
                             </div>
                           )}
-                          {contact.average_margin && (
+                          {contact.average_margin !== null && contact.average_margin !== undefined && (
                             <div className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 px-2 py-1 rounded border border-green-200">
                               <DollarSign className="w-3 h-3" />
                               <span className="font-medium">{contact.average_margin}%</span>
