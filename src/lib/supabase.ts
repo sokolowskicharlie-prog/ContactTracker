@@ -127,6 +127,7 @@ export type ContactWithActivity = Contact & {
   vessels: Vessel[];
   fuel_deals: FuelDeal[];
   tasks: Task[];
+  groups?: ContactGroup[];
   last_call_date?: string;
   last_email_date?: string;
   last_deal_date?: string;

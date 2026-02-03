@@ -259,8 +259,22 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                     className="flex-1 cursor-pointer"
                     onClick={() => onContactClick(contact)}
                   >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-lg font-semibold text-gray-900">{contact.name}</h3>
+                    {contact.groups && contact.groups.length > 0 && (
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {contact.groups.map((group) => (
+                          <span
+                            key={group.id}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-white"
+                            style={{ backgroundColor: group.color || '#3B82F6' }}
+                          >
+                            <Users className="w-3 h-3" />
+                            {group.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {contact.priority_rank && (
                       <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
                         <TrendingUp className="w-3 h-3" />

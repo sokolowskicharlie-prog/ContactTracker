@@ -838,6 +838,12 @@ function App() {
 
       if (tasksError) throw tasksError;
 
+      const { data: groupMembersData, error: groupMembersError } = await supabase
+        .from('contact_group_members')
+        .select('*, contact_groups(*)');
+
+      if (groupMembersError) throw groupMembersError;
+
       const { data: completedGoalsData, error: completedGoalsError } = await supabase
         .from('daily_goals')
         .select('*')
@@ -860,6 +866,10 @@ function App() {
         const vessels = (vesselsData || []).filter((vessel) => vessel.contact_id === contact.id);
         const fuelDeals = (fuelDealsData || []).filter((deal) => deal.contact_id === contact.id);
         const contactTasks = (tasksData || []).filter((task) => task.contact_id === contact.id);
+        const contactGroups = (groupMembersData || [])
+          .filter((member: any) => member.contact_id === contact.id)
+          .map((member: any) => member.contact_groups)
+          .filter(Boolean);
 
         const pendingTasks = contactTasks.filter(t => !t.completed && t.due_date);
         const sortedPendingTasks = pendingTasks.sort((a, b) =>
@@ -901,6 +911,7 @@ function App() {
           vessels: vessels,
           fuel_deals: fuelDeals,
           tasks: contactTasks,
+          groups: contactGroups,
           last_call_date: contactCalls[0]?.call_date,
           last_email_date: contactEmails[0]?.email_date,
           last_deal_date: fuelDeals[0]?.deal_date,
@@ -4169,6 +4180,24 @@ function App() {
                   placeholder="Select priorities..."
                 />
               )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Group
+                </label>
+                <select
+                  value={filterGroup}
+                  onChange={(e) => setFilterGroup(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                >
+                  <option value="all">All Groups</option>
+                  {contactGroups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.name} ({group.member_count})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

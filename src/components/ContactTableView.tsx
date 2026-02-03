@@ -246,7 +246,24 @@ export default function ContactTableView({
   const renderCell = (column: ColumnConfig, contact: ContactWithActivity) => {
     switch (column.id) {
       case 'name':
-        return <div className="text-sm font-medium text-gray-900 truncate">{contact.name}</div>;
+        return (
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-medium text-gray-900 truncate">{contact.name}</div>
+            {contact.groups && contact.groups.length > 0 && (
+              <div className="flex items-center gap-1 flex-wrap">
+                {contact.groups.map((group) => (
+                  <span
+                    key={group.id}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium text-white whitespace-nowrap"
+                    style={{ backgroundColor: group.color || '#3B82F6' }}
+                  >
+                    {group.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
       case 'company':
         return <div className="text-sm text-gray-900 truncate">{contact.company || '-'}</div>;
       case 'companySize':
