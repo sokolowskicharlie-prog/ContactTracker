@@ -302,7 +302,12 @@ export default function ContactTableView({
         return (
           <div className="flex items-center gap-1 text-sm text-gray-900">
             <TrendingUp className="w-3 h-3 text-green-500 flex-shrink-0" />
-            <span className="font-medium">{contact.average_margin ?? 0}</span>
+            <span className="font-medium">
+              {(() => {
+                const margin = contact.average_margin || '0';
+                return margin.includes('%') ? margin : `$${margin}`;
+              })()}
+            </span>
           </div>
         );
       case 'numberOfDeals':

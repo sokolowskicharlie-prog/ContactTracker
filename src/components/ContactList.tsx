@@ -347,7 +347,12 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                 </div>
                 <div className="flex items-center text-gray-600">
                   <TrendingUp className="w-4 h-4 mr-1.5 text-green-500" />
-                  <span className="font-medium">{contact.average_margin ?? 0}</span>
+                  <span className="font-medium">
+                    {(() => {
+                      const margin = contact.average_margin || '0';
+                      return margin.includes('%') ? margin : `$${margin}`;
+                    })()}
+                  </span>
                   <span className="ml-1 text-xs text-gray-500">margin</span>
                 </div>
                 <div className="flex items-center text-gray-600">

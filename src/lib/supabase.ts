@@ -46,7 +46,7 @@ export type Contact = {
   dead_additional_note?: string;
   priority_rank?: number;
   average_mt_enquiry?: number;
-  average_margin?: number;
+  average_margin?: string;
   number_of_deals?: number;
   last_called?: string;
   last_emailed?: string;

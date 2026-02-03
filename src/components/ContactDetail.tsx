@@ -1286,7 +1286,12 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
             </div>
             <div className="flex items-center text-gray-700">
               <TrendingUp className="w-5 h-5 mr-3 text-gray-500" />
-              <span>Avg Margin: {contact.average_margin ?? 0}</span>
+              <span>
+                Avg Margin: {(() => {
+                  const margin = contact.average_margin || '0';
+                  return margin.includes('%') ? margin : `$${margin}`;
+                })()}
+              </span>
             </div>
             <div className="flex items-center text-gray-700">
               <Briefcase className="w-5 h-5 mr-3 text-gray-500" />

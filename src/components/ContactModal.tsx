@@ -262,7 +262,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       reminder_days: reminderDays ? parseInt(reminderDays) : null,
       priority_rank: priorityRank ? parseInt(priorityRank) : null,
       average_mt_enquiry: averageMtEnquiry !== '' ? parseFloat(averageMtEnquiry) : null,
-      average_margin: averageMargin !== '' ? parseFloat(averageMargin) : null,
+      average_margin: averageMargin !== '' ? averageMargin.trim() : null,
       number_of_deals: numberOfDeals !== '' ? parseInt(numberOfDeals) : null,
       notes: notes.trim() || null,
     };
