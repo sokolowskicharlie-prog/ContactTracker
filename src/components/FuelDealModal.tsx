@@ -145,6 +145,7 @@ export default function FuelDealModal({ deal, vessels, contactId, contactName, c
                     {vessels.map((vessel) => (
                       <option key={vessel.id} value={vessel.id}>
                         {vessel.vessel_name}
+                        {vessel.charter_status ? ` [${vessel.charter_status}]` : ''}
                         {vessel.imo_number ? ` (IMO: ${vessel.imo_number})` : ''}
                       </option>
                     ))}

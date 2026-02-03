@@ -1401,6 +1401,11 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
                         <div className="font-medium text-gray-900 flex items-center gap-2">
                           <Ship className="w-4 h-4 text-blue-600" />
                           <span>{vessel.vessel_name}</span>
+                          {vessel.charter_status && (
+                            <span className="text-xs font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200">
+                              {vessel.charter_status}
+                            </span>
+                          )}
                           <a
                             href={`https://www.google.com/search?q=${encodeURIComponent(vessel.vessel_name + ' marine traffic')}`}
                             target="_blank"

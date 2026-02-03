@@ -36,6 +36,7 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
   const [notes, setNotes] = useState('');
   const [destination, setDestination] = useState('');
   const [eta, setEta] = useState('');
+  const [charterStatus, setCharterStatus] = useState('');
   const [isSearchingIMO, setIsSearchingIMO] = useState(false);
   const [imoSearchError, setImoSearchError] = useState('');
 
@@ -52,6 +53,7 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
       setNotes(vessel.notes || '');
       setDestination(vessel.destination || '');
       setEta(vessel.eta ? vessel.eta.split('T')[0] : '');
+      setCharterStatus(vessel.charter_status || '');
     }
   }, [vessel]);
 
@@ -150,6 +152,7 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
         notes: notes.trim() || null,
         destination: destination.trim() || null,
         eta: eta ? new Date(eta).toISOString() : null,
+        charter_status: charterStatus || null,
         last_updated: new Date().toISOString(),
       }));
       onSave(vessels);
@@ -164,6 +167,7 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
         notes: notes.trim() || null,
         destination: destination.trim() || null,
         eta: eta ? new Date(eta).toISOString() : null,
+        charter_status: charterStatus || null,
         last_updated: new Date().toISOString(),
       });
     }
@@ -293,6 +297,21 @@ export default function VesselModal({ vessel, contactName, onClose, onSave }: Ve
                   {type}
                 </option>
               ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Charter Status{isMultipleVessels ? ' (applies to all)' : ''}
+            </label>
+            <select
+              value={charterStatus}
+              onChange={(e) => setCharterStatus(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">None</option>
+              <option value="TC">TC (Time Charter)</option>
+              <option value="Bunkers Managed">Bunkers Managed</option>
             </select>
           </div>
 

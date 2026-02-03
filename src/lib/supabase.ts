@@ -104,6 +104,7 @@ export type Vessel = {
   notes?: string;
   destination?: string;
   eta?: string;
+  charter_status?: string;
   last_updated?: string;
   created_at: string;
 };
