@@ -444,6 +444,11 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                   <span className="font-medium">{contact.average_days_credit_required ?? 0}</span>
                   <span className="ml-1 text-xs text-gray-500">days credit</span>
                 </div>
+                <div className={`flex items-center ${contact.special_terms ? 'text-yellow-700' : 'text-gray-600'}`}>
+                  <AlertCircle className={`w-4 h-4 mr-1.5 ${contact.special_terms ? 'text-yellow-500' : 'text-gray-400'}`} />
+                  <span className="font-medium">{contact.special_terms || 'No'}</span>
+                  <span className="ml-1 text-xs text-gray-500">terms</span>
+                </div>
               </div>
               {contact.contact_persons && contact.contact_persons.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-gray-100">
