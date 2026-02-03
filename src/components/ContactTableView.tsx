@@ -27,6 +27,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'averageMargin', label: 'Avg Margin', visible: true, width: 110 },
   { id: 'numberOfDeals', label: '# Deals', visible: true, width: 90 },
   { id: 'creditDays', label: 'Credit Days', visible: true, width: 110 },
+  { id: 'specialTerms', label: 'Special Terms', visible: true, width: 150 },
   { id: 'status', label: 'Status', visible: true, width: 120 },
   { id: 'activity', label: 'Activity', visible: true, width: 120 },
   { id: 'lastActivity', label: 'Last Activity', visible: true, width: 150 },
@@ -340,6 +341,13 @@ export default function ContactTableView({
           <div className="flex items-center gap-1 text-sm text-gray-900">
             <Clock className="w-3 h-3 text-purple-500 flex-shrink-0" />
             <span className="font-medium">{contact.average_days_credit_required ?? 0}</span>
+          </div>
+        );
+      case 'specialTerms':
+        return (
+          <div className={`flex items-center gap-1 text-sm ${contact.special_terms ? 'text-yellow-700 font-medium' : 'text-gray-500'}`}>
+            <AlertCircle className={`w-3 h-3 flex-shrink-0 ${contact.special_terms ? 'text-yellow-500' : 'text-gray-400'}`} />
+            <span className="truncate">{contact.special_terms || 'No'}</span>
           </div>
         );
       case 'status':
