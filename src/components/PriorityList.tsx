@@ -1,5 +1,5 @@
-import { Phone, Mail, Building2, Edit, Trash2, Star, AlertTriangle, Check, TrendingUp, ArrowUpDown, Filter, Skull } from 'lucide-react';
-import { ContactWithActivity } from '../lib/supabase';
+import { Phone, Mail, Building2, Edit, Trash2, Star, AlertTriangle, Check, TrendingUp, ArrowUpDown, Filter, Skull, Package, DollarSign, Briefcase, Clock, Users } from 'lucide-react';
+import { ContactWithActivity, ContactGroupWithMembers } from '../lib/supabase';
 import { useState } from 'react';
 
 interface PriorityListProps {
@@ -8,6 +8,7 @@ interface PriorityListProps {
   onEditContact: (contact: ContactWithActivity) => void;
   onDeleteContact: (id: string) => void;
   customPriorityLabels?: Record<number, string>;
+  contactGroups?: ContactGroupWithMembers[];
 }
 
 const PRIORITY_STYLES: Record<number, { color: string; bgColor: string; borderColor: string }> = {
@@ -22,7 +23,7 @@ const PRIORITY_STYLES: Record<number, { color: string; bgColor: string; borderCo
 type SortOption = 'name' | 'company' | 'activity' | 'priority';
 type FilterStatus = 'all' | 'client' | 'traction' | 'jammed' | 'dead' | 'none';
 
-export default function PriorityList({ contacts, onContactClick, onEditContact, onDeleteContact, customPriorityLabels }: PriorityListProps) {
+export default function PriorityList({ contacts, onContactClick, onEditContact, onDeleteContact, customPriorityLabels, contactGroups = [] }: PriorityListProps) {
   const priorityLabels = customPriorityLabels || {
     0: 'Client',
     1: 'Highest Priority',
@@ -35,6 +36,10 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [selectedPriorities, setSelectedPriorities] = useState<number[]>([0, 1, 2, 3, 4, 5]);
   const [showFilters, setShowFilters] = useState(false);
+
+  const getContactGroups = (contactId: string) => {
+    return contactGroups.filter(group => group.contact_ids.includes(contactId));
+  };
 
   let priorityContacts = contacts.filter(c => c.priority_rank !== null && c.priority_rank !== undefined && c.priority_rank >= 0 && c.priority_rank <= 5);
 
@@ -285,6 +290,25 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
                         </div>
                       )}
 
+                      {getContactGroups(contact.id).length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {getContactGroups(contact.id).map(group => (
+                            <span
+                              key={group.id}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full"
+                              style={{
+                                backgroundColor: group.color ? `${group.color}20` : '#f3f4f6',
+                                color: group.color || '#374151',
+                                border: `1px solid ${group.color || '#d1d5db'}`
+                              }}
+                            >
+                              <Users className="w-3 h-3" />
+                              {group.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="space-y-1">
                         {contact.company && (
                           <div className="flex items-center text-sm text-gray-600">
@@ -309,16 +333,45 @@ export default function PriorityList({ contacts, onContactClick, onEditContact, 
                         )}
                       </div>
 
-                      <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
-                        <span>{contact.total_calls} calls</span>
-                        <span>{contact.total_emails} emails</span>
-                        {contact.total_deals > 0 && <span>{contact.total_deals} deals</span>}
+                      <div className="mt-3 flex items-center flex-wrap gap-3 text-xs">
+                        <span className="text-gray-500">{contact.total_calls} calls</span>
+                        <span className="text-gray-500">{contact.total_emails} emails</span>
+                        {contact.total_deals > 0 && <span className="text-gray-500">{contact.total_deals} deals</span>}
                         {contact.pending_tasks > 0 && (
                           <span className="text-orange-600 font-medium">
                             {contact.pending_tasks} pending tasks
                           </span>
                         )}
                       </div>
+
+                      {(contact.average_mt_enquiry || contact.average_margin || contact.number_of_deals || contact.average_days_credit_required) && (
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          {contact.average_mt_enquiry !== null && contact.average_mt_enquiry !== undefined && (
+                            <div className="flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-200">
+                              <Package className="w-3 h-3" />
+                              <span className="font-medium">{contact.average_mt_enquiry} MT</span>
+                            </div>
+                          )}
+                          {contact.average_margin && (
+                            <div className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 px-2 py-1 rounded border border-green-200">
+                              <DollarSign className="w-3 h-3" />
+                              <span className="font-medium">{contact.average_margin}%</span>
+                            </div>
+                          )}
+                          {contact.number_of_deals !== null && contact.number_of_deals !== undefined && (
+                            <div className="flex items-center gap-1.5 text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-200">
+                              <Briefcase className="w-3 h-3" />
+                              <span className="font-medium">{contact.number_of_deals} {contact.number_of_deals === 1 ? 'deal' : 'deals'}</span>
+                            </div>
+                          )}
+                          {contact.average_days_credit_required !== null && contact.average_days_credit_required !== undefined && (
+                            <div className="flex items-center gap-1.5 text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded border border-amber-200">
+                              <Clock className="w-3 h-3" />
+                              <span className="font-medium">{contact.average_days_credit_required} days</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex gap-2 ml-4">

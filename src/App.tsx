@@ -4770,6 +4770,7 @@ function App() {
             onEditContact={handleEditContact}
             onDeleteContact={handleDeleteContact}
             customPriorityLabels={customPriorityLabels}
+            contactGroups={contactGroups}
           />
         ) : null}
       </div>
@@ -5305,6 +5306,7 @@ function App() {
         onExpandedChange={setPriorityExpanded}
         panelSpacing={panelSpacing}
         customPriorityLabels={customPriorityLabels}
+        contactGroups={contactGroups}
       />
     </div>
   );

@@ -1,6 +1,6 @@
-import { X, TrendingUp, ChevronDown, ChevronUp, Star, AlertTriangle, Check, Phone, Mail, Building2, Skull } from 'lucide-react';
+import { X, TrendingUp, ChevronDown, ChevronUp, Star, AlertTriangle, Check, Phone, Mail, Building2, Skull, Package, DollarSign, Briefcase, Clock, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { ContactWithActivity } from '../lib/supabase';
+import { ContactWithActivity, ContactGroupWithMembers } from '../lib/supabase';
 
 interface PriorityPanelProps {
   isOpen: boolean;
@@ -17,6 +17,7 @@ interface PriorityPanelProps {
   onExpandedChange?: (expanded: boolean) => void;
   panelSpacing?: number;
   customPriorityLabels?: Record<number, string>;
+  contactGroups?: ContactGroupWithMembers[];
 }
 
 const PRIORITY_STYLES: Record<number, { color: string; bgColor: string; borderColor: string }> = {
@@ -28,7 +29,7 @@ const PRIORITY_STYLES: Record<number, { color: string; bgColor: string; borderCo
   5: { color: 'text-gray-700', bgColor: 'bg-gray-50', borderColor: 'border-gray-200' },
 };
 
-export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad, panelOrder = ['notes', 'goals', 'priority'], showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, panelSpacing = 2, customPriorityLabels }: PriorityPanelProps) {
+export default function PriorityPanel({ isOpen, onClose, contacts, onContactClick, showGoals, showNotepad, panelOrder = ['notes', 'goals', 'priority'], showPriority = false, notepadExpanded = true, goalsExpanded = true, priorityExpanded = true, onExpandedChange, panelSpacing = 2, customPriorityLabels, contactGroups = [] }: PriorityPanelProps) {
   const priorityLabels = customPriorityLabels || {
     0: 'Client',
     1: 'Highest',
@@ -39,6 +40,10 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
   };
   const [isExpanded, setIsExpanded] = useState(priorityExpanded);
   const [selectedPriority, setSelectedPriority] = useState<number | null>(null);
+
+  const getContactGroups = (contactId: string) => {
+    return contactGroups.filter(group => group.contact_ids.includes(contactId));
+  };
 
   useEffect(() => {
     setIsExpanded(priorityExpanded);
@@ -234,6 +239,25 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
                                     </div>
                                   )}
 
+                                  {getContactGroups(contact.id).length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                      {getContactGroups(contact.id).map(group => (
+                                        <span
+                                          key={group.id}
+                                          className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded-full"
+                                          style={{
+                                            backgroundColor: group.color ? `${group.color}20` : '#f3f4f6',
+                                            color: group.color || '#374151',
+                                            border: `1px solid ${group.color || '#d1d5db'}`
+                                          }}
+                                        >
+                                          <Users className="w-2.5 h-2.5" />
+                                          {group.name}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+
                                   {contact.company && (
                                     <div className="flex items-center text-xs text-gray-600 mb-0.5">
                                       <Building2 className="w-3 h-3 mr-1 flex-shrink-0" />
@@ -249,16 +273,47 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
                                   )}
 
                                   {contact.email && (
-                                    <div className="flex items-center text-xs text-gray-600">
+                                    <div className="flex items-center text-xs text-gray-600 mb-0.5">
                                       <Mail className="w-3 h-3 mr-1 flex-shrink-0" />
                                       <span className="truncate">{contact.email}</span>
                                     </div>
                                   )}
 
-                                  <div className={`mt-2 flex items-center gap-3 text-xs text-gray-500 ${index === contactsInPriority.length - 1 ? 'mb-0' : ''}`}>
+                                  <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
                                     <span>{contact.total_calls} calls</span>
                                     <span>{contact.total_emails} emails</span>
                                   </div>
+
+                                  {(contact.average_mt_enquiry || contact.average_margin || contact.number_of_deals || contact.average_days_credit_required) && (
+                                    <div className="mt-2 grid grid-cols-2 gap-1">
+                                      {contact.average_mt_enquiry !== null && contact.average_mt_enquiry !== undefined && (
+                                        <div className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">
+                                          <Package className="w-2.5 h-2.5" />
+                                          <span className="font-medium text-[10px]">{contact.average_mt_enquiry} MT</span>
+                                        </div>
+                                      )}
+                                      {contact.average_margin && (
+                                        <div className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded border border-green-200">
+                                          <DollarSign className="w-2.5 h-2.5" />
+                                          <span className="font-medium text-[10px]">{contact.average_margin}%</span>
+                                        </div>
+                                      )}
+                                      {contact.number_of_deals !== null && contact.number_of_deals !== undefined && (
+                                        <div className="flex items-center gap-1 text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200">
+                                          <Briefcase className="w-2.5 h-2.5" />
+                                          <span className="font-medium text-[10px]">{contact.number_of_deals} {contact.number_of_deals === 1 ? 'deal' : 'deals'}</span>
+                                        </div>
+                                      )}
+                                      {contact.average_days_credit_required !== null && contact.average_days_credit_required !== undefined && (
+                                        <div className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">
+                                          <Clock className="w-2.5 h-2.5" />
+                                          <span className="font-medium text-[10px]">{contact.average_days_credit_required}d</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  <div className={`${index === contactsInPriority.length - 1 ? 'mb-0' : ''}`} />
                                 </div>
                               </div>
                             </div>
