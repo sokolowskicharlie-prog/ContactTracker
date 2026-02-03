@@ -120,9 +120,9 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       setTimezone(contact.timezone || '');
       setReminderDays(contact.reminder_days?.toString() || '');
       setPriorityRank(contact.priority_rank?.toString() || '');
-      setAverageMtEnquiry((contact as any).average_mt_enquiry?.toString() || '');
-      setAverageMargin((contact as any).average_margin?.toString() || '');
-      setNumberOfDeals((contact as any).number_of_deals?.toString() || '');
+      setAverageMtEnquiry(contact.average_mt_enquiry?.toString() || '');
+      setAverageMargin(contact.average_margin?.toString() || '');
+      setNumberOfDeals(contact.number_of_deals?.toString() || '');
       setNotes(contact.notes || '');
       setContactPersons(contact.contact_persons || []);
       console.log('Contact persons loaded into state:', contact.contact_persons?.length || 0);
@@ -261,9 +261,9 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       timezone: timezone || null,
       reminder_days: reminderDays ? parseInt(reminderDays) : null,
       priority_rank: priorityRank ? parseInt(priorityRank) : null,
-      average_mt_enquiry: averageMtEnquiry ? parseFloat(averageMtEnquiry) : null,
-      average_margin: averageMargin ? parseFloat(averageMargin) : null,
-      number_of_deals: numberOfDeals ? parseInt(numberOfDeals) : null,
+      average_mt_enquiry: averageMtEnquiry !== '' ? parseFloat(averageMtEnquiry) : null,
+      average_margin: averageMargin !== '' ? parseFloat(averageMargin) : null,
+      number_of_deals: numberOfDeals !== '' ? parseInt(numberOfDeals) : null,
       notes: notes.trim() || null,
     };
 

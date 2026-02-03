@@ -342,17 +342,17 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
               <div className="flex items-center gap-4 mt-2 text-sm">
                 <div className="flex items-center text-gray-600">
                   <Package className="w-4 h-4 mr-1.5 text-blue-500" />
-                  <span className="font-medium">{(contact as any).average_mt_enquiry ?? 0}</span>
+                  <span className="font-medium">{contact.average_mt_enquiry ?? 0}</span>
                   <span className="ml-1 text-xs text-gray-500">MT/enquiry</span>
                 </div>
                 <div className="flex items-center text-gray-600">
                   <TrendingUp className="w-4 h-4 mr-1.5 text-green-500" />
-                  <span className="font-medium">{(contact as any).average_margin ?? 0}</span>
+                  <span className="font-medium">{contact.average_margin ?? 0}</span>
                   <span className="ml-1 text-xs text-gray-500">margin</span>
                 </div>
                 <div className="flex items-center text-gray-600">
                   <Briefcase className="w-4 h-4 mr-1.5 text-orange-500" />
-                  <span className="font-medium">{(contact as any).number_of_deals ?? 0}</span>
+                  <span className="font-medium">{contact.number_of_deals ?? 0}</span>
                   <span className="ml-1 text-xs text-gray-500">deals</span>
                 </div>
               </div>

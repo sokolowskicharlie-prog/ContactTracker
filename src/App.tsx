@@ -926,6 +926,7 @@ function App() {
           phone: contactData.phone,
           phone_type: contactData.phone_type,
           email: contactData.email,
+          email_type: contactData.email_type,
           company: contactData.company,
           company_size: contactData.company_size,
           company_excerpt: contactData.company_excerpt,
@@ -937,6 +938,9 @@ function App() {
           timezone: contactData.timezone,
           reminder_days: contactData.reminder_days,
           priority_rank: contactData.priority_rank,
+          average_mt_enquiry: contactData.average_mt_enquiry,
+          average_margin: contactData.average_margin,
+          number_of_deals: contactData.number_of_deals,
           notes: contactData.notes,
           updated_at: new Date().toISOString(),
         };

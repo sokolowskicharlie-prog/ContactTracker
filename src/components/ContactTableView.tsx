@@ -295,21 +295,21 @@ export default function ContactTableView({
         return (
           <div className="flex items-center gap-1 text-sm text-gray-900">
             <Package className="w-3 h-3 text-blue-500 flex-shrink-0" />
-            <span className="font-medium">{(contact as any).average_mt_enquiry ?? 0}</span>
+            <span className="font-medium">{contact.average_mt_enquiry ?? 0}</span>
           </div>
         );
       case 'averageMargin':
         return (
           <div className="flex items-center gap-1 text-sm text-gray-900">
             <TrendingUp className="w-3 h-3 text-green-500 flex-shrink-0" />
-            <span className="font-medium">{(contact as any).average_margin ?? 0}</span>
+            <span className="font-medium">{contact.average_margin ?? 0}</span>
           </div>
         );
       case 'numberOfDeals':
         return (
           <div className="flex items-center gap-1 text-sm text-gray-900">
             <Briefcase className="w-3 h-3 text-orange-500 flex-shrink-0" />
-            <span className="font-medium">{(contact as any).number_of_deals ?? 0}</span>
+            <span className="font-medium">{contact.number_of_deals ?? 0}</span>
           </div>
         );
       case 'status':
