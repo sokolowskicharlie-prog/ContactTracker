@@ -179,6 +179,8 @@ function App() {
   });
   const [filterPort, setFilterPort] = useState<string>('all');
   const [filterFuelType, setFilterFuelType] = useState<string>('all');
+  const [filterGroup, setFilterGroup] = useState<string>('all');
+  const [contactGroups, setContactGroups] = useState<any[]>([]);
   const [filterDeliveryMethod, setFilterDeliveryMethod] = useState<string>('all');
   const [filterRegion, setFilterRegion] = useState<string>('all');
   const [filterBusinessClassification, setFilterBusinessClassification] = useState<string>('Supplier');
@@ -251,6 +253,7 @@ function App() {
     loadSuppliers();
     loadTasks();
     loadSavedNotes();
+    loadGroups();
   }, [user, currentWorkspace]);
 
   useEffect(() => {
@@ -573,6 +576,16 @@ function App() {
       });
     }
 
+    // Apply group filter
+    if (filterGroup !== 'all') {
+      const selectedGroup = contactGroups.find(g => g.id === filterGroup);
+      if (selectedGroup && selectedGroup.contact_ids) {
+        filtered = filtered.filter(contact =>
+          selectedGroup.contact_ids.includes(contact.id)
+        );
+      }
+    }
+
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -616,7 +629,7 @@ function App() {
     });
 
     setFilteredContacts(filtered);
-  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterPhoneTypes, filterEmailTypes, filterCities, filterPostCodes, filterWebsites, filterAddresses, filterPriorities, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter, deadReasonFilter]);
+  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterPhoneTypes, filterEmailTypes, filterCities, filterPostCodes, filterWebsites, filterAddresses, filterPriorities, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter, deadReasonFilter, filterGroup, contactGroups]);
 
   useEffect(() => {
     let filtered = [...suppliers];
@@ -909,6 +922,29 @@ function App() {
       console.error('Error loading contacts:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadGroups = async () => {
+    if (!currentWorkspace) return;
+    try {
+      const { data: groupsData, error: groupsError } = await supabase
+        .from('contact_groups')
+        .select('*, contact_group_members(contact_id)')
+        .eq('workspace_id', currentWorkspace.id)
+        .order('name');
+
+      if (groupsError) throw groupsError;
+
+      const groupsWithMembers = (groupsData || []).map(group => ({
+        ...group,
+        member_count: group.contact_group_members?.length || 0,
+        contact_ids: group.contact_group_members?.map((m: any) => m.contact_id) || []
+      }));
+
+      setContactGroups(groupsWithMembers);
+    } catch (error) {
+      console.error('Error loading groups:', error);
     }
   };
 
@@ -4478,6 +4514,7 @@ function App() {
               onContactClick={handleContactClick}
               onDeleteContact={handleDeleteContact}
               onEditContact={handleEditContact}
+              workspaceId={currentWorkspace?.id || ''}
             />
           ) : (
             <ContactTableView

@@ -347,6 +347,28 @@ export type Meeting = {
   updated_at: string;
 };
 
+export type ContactGroup = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  name: string;
+  color?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ContactGroupMember = {
+  id: string;
+  group_id: string;
+  contact_id: string;
+  created_at: string;
+};
+
+export type ContactGroupWithMembers = ContactGroup & {
+  member_count: number;
+  contact_ids: string[];
+};
+
 export type CustomJammedReason = {
   id: string;
   user_id: string;

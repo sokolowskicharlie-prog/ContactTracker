@@ -1,6 +1,7 @@
-import { Phone, Mail, Building2, Calendar, Trash2, CreditCard as Edit, Globe, Bell, AlertCircle, User, Star, Check, Globe2, Clock, CheckSquare, AlertTriangle, StickyNote, TrendingUp, Skull, Ship, Package, Briefcase } from 'lucide-react';
+import { Phone, Mail, Building2, Calendar, Trash2, CreditCard as Edit, Globe, Bell, AlertCircle, User, Star, Check, Globe2, Clock, CheckSquare, AlertTriangle, StickyNote, TrendingUp, Skull, Ship, Package, Briefcase, Users } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
 import { useState, useEffect } from 'react';
+import GroupManagementModal from './GroupManagementModal';
 
 interface SavedNote {
   id: string;
@@ -17,10 +18,13 @@ interface ContactListProps {
   onContactClick: (contact: ContactWithActivity) => void;
   onDeleteContact: (id: string) => void;
   onEditContact: (contact: ContactWithActivity) => void;
+  workspaceId: string;
 }
 
-export default function ContactList({ contacts, notes, onContactClick, onDeleteContact, onEditContact }: ContactListProps) {
+export default function ContactList({ contacts, notes, onContactClick, onDeleteContact, onEditContact, workspaceId }: ContactListProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
+  const [showGroupManagement, setShowGroupManagement] = useState(false);
 
   const getContactNotes = (contactId: string) => {
     return notes.filter(n => n.contact_id === contactId);
@@ -33,6 +37,24 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
 
     return () => clearInterval(timer);
   }, []);
+
+  const toggleContactSelection = (contactId: string) => {
+    const newSelection = new Set(selectedContactIds);
+    if (newSelection.has(contactId)) {
+      newSelection.delete(contactId);
+    } else {
+      newSelection.add(contactId);
+    }
+    setSelectedContactIds(newSelection);
+  };
+
+  const selectAllContacts = () => {
+    setSelectedContactIds(new Set(contacts.map(c => c.id)));
+  };
+
+  const deselectAllContacts = () => {
+    setSelectedContactIds(new Set());
+  };
 
   const getDuplicateCompanies = () => {
     const companyCount = new Map<string, number>();
@@ -177,23 +199,66 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
   };
 
   return (
-    <div className="space-y-3">
-      {contacts.map((contact) => (
-        <div
-          key={contact.id}
-          className={`rounded-lg shadow-sm border hover:shadow-md transition-shadow ${
-            isDuplicateCompany(contact.company) || isDuplicateName(contact.name)
-              ? 'bg-orange-50 border-orange-300'
-              : 'bg-white border-gray-200'
-          }`}
-        >
-          <div className="p-4">
-            <div className="flex justify-between items-start mb-3">
-              <div
-                className="flex-1 cursor-pointer"
-                onClick={() => onContactClick(contact)}
+    <>
+      {selectedContactIds.size > 0 && (
+        <div className="sticky top-0 z-10 mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="font-medium text-blue-900">
+                {selectedContactIds.size} contact{selectedContactIds.size !== 1 ? 's' : ''} selected
+              </span>
+              <button
+                onClick={deselectAllContacts}
+                className="text-sm text-blue-600 hover:text-blue-700 underline"
               >
-                <div>
+                Clear selection
+              </button>
+              {selectedContactIds.size < contacts.length && (
+                <button
+                  onClick={selectAllContacts}
+                  className="text-sm text-blue-600 hover:text-blue-700 underline"
+                >
+                  Select all
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => setShowGroupManagement(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Users className="w-4 h-4" />
+              Manage Groups
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {contacts.map((contact) => (
+          <div
+            key={contact.id}
+            className={`rounded-lg shadow-sm border hover:shadow-md transition-shadow ${
+              selectedContactIds.has(contact.id)
+                ? 'ring-2 ring-blue-500 bg-blue-50 border-blue-300'
+                : isDuplicateCompany(contact.company) || isDuplicateName(contact.name)
+                ? 'bg-orange-50 border-orange-300'
+                : 'bg-white border-gray-200'
+            }`}
+          >
+            <div className="p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex items-start gap-3 flex-1">
+                  <input
+                    type="checkbox"
+                    checked={selectedContactIds.has(contact.id)}
+                    onChange={() => toggleContactSelection(contact.id)}
+                    className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <div
+                    className="flex-1 cursor-pointer"
+                    onClick={() => onContactClick(contact)}
+                  >
                   <div className="flex items-center gap-2">
                     <h3 className="text-lg font-semibold text-gray-900">{contact.name}</h3>
                     {contact.priority_rank && (
@@ -531,6 +596,17 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
           <p>No contacts yet. Add your first contact to get started!</p>
         </div>
       )}
-    </div>
+      </div>
+
+      <GroupManagementModal
+        isOpen={showGroupManagement}
+        onClose={() => setShowGroupManagement(false)}
+        workspaceId={workspaceId}
+        selectedContactIds={Array.from(selectedContactIds)}
+        onGroupsChanged={() => {
+          deselectAllContacts();
+        }}
+      />
+    </>
   );
 }
