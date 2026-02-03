@@ -288,27 +288,27 @@ export default function PriorityPanel({ isOpen, onClose, contacts, onContactClic
                                     contact.average_margin !== null && contact.average_margin !== undefined ||
                                     contact.number_of_deals !== null && contact.number_of_deals !== undefined ||
                                     contact.average_days_credit_required !== null && contact.average_days_credit_required !== undefined) && (
-                                    <div className="mt-2 grid grid-cols-2 gap-1">
+                                    <div className="mt-2 flex flex-wrap gap-1">
                                       {contact.average_mt_enquiry !== null && contact.average_mt_enquiry !== undefined && (
-                                        <div className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">
+                                        <div className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200 whitespace-nowrap">
                                           <Package className="w-2.5 h-2.5" />
                                           <span className="font-medium text-[10px]">{contact.average_mt_enquiry} MT</span>
                                         </div>
                                       )}
                                       {contact.average_margin !== null && contact.average_margin !== undefined && (
-                                        <div className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded border border-green-200">
+                                        <div className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded border border-green-200 whitespace-nowrap">
                                           <DollarSign className="w-2.5 h-2.5" />
                                           <span className="font-medium text-[10px]">{contact.average_margin}%</span>
                                         </div>
                                       )}
                                       {contact.number_of_deals !== null && contact.number_of_deals !== undefined && (
-                                        <div className="flex items-center gap-1 text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200">
+                                        <div className="flex items-center gap-1 text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200 whitespace-nowrap">
                                           <Briefcase className="w-2.5 h-2.5" />
                                           <span className="font-medium text-[10px]">{contact.number_of_deals} {contact.number_of_deals === 1 ? 'deal' : 'deals'}</span>
                                         </div>
                                       )}
                                       {contact.average_days_credit_required !== null && contact.average_days_credit_required !== undefined && (
-                                        <div className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">
+                                        <div className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 whitespace-nowrap">
                                           <Clock className="w-2.5 h-2.5" />
                                           <span className="font-medium text-[10px]">{contact.average_days_credit_required}d</span>
                                         </div>
