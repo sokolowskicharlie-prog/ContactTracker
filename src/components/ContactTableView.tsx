@@ -302,11 +302,9 @@ export default function ContactTableView({
             <div className="text-gray-600">
               {contact.total_deals || 0} deals
             </div>
-            {contact.vessels && contact.vessels.length > 0 && (
-              <div className="text-gray-600">
-                {contact.vessels.length} {contact.vessels.length === 1 ? 'vessel' : 'vessels'}
-              </div>
-            )}
+            <div className="text-gray-600">
+              {contact.vessels?.length || 0} {contact.vessels?.length === 1 ? 'vessel' : 'vessels'}
+            </div>
             {contact.total_tasks > 0 && (
               <div className="flex items-center gap-1">
                 <span className="text-gray-600">
