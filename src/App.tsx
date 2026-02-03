@@ -126,6 +126,10 @@ function App() {
   const [filterWebsites, setFilterWebsites] = useState<string[]>([]);
   const [filterAddresses, setFilterAddresses] = useState<string[]>([]);
   const [filterPriorities, setFilterPriorities] = useState<string[]>([]);
+  const [filterAverageMt, setFilterAverageMt] = useState<string[]>([]);
+  const [filterAverageMargin, setFilterAverageMargin] = useState<string[]>([]);
+  const [filterNumberOfDeals, setFilterNumberOfDeals] = useState<string[]>([]);
+  const [filterCreditDays, setFilterCreditDays] = useState<string[]>([]);
   const [visibleFilters, setVisibleFilters] = useState<{
     name: boolean;
     company: boolean;
@@ -141,6 +145,10 @@ function App() {
     country: boolean;
     timezone: boolean;
     priority: boolean;
+    averageMt: boolean;
+    averageMargin: boolean;
+    numberOfDeals: boolean;
+    creditDays: boolean;
   }>({
     name: true,
     company: true,
@@ -156,6 +164,10 @@ function App() {
     country: true,
     timezone: true,
     priority: true,
+    averageMt: true,
+    averageMargin: true,
+    numberOfDeals: true,
+    creditDays: true,
   });
   const [showFilterSettings, setShowFilterSettings] = useState(false);
   const [sortBy, setSortBy] = useState<string>('name');
@@ -457,6 +469,42 @@ function App() {
       });
     }
 
+    // Apply average MT filter
+    if (filterAverageMt.length > 0) {
+      filtered = filtered.filter((contact) => {
+        if (filterAverageMt.includes('[None]') && (contact.average_mt_enquiry === null || contact.average_mt_enquiry === undefined)) return true;
+        if (contact.average_mt_enquiry === null || contact.average_mt_enquiry === undefined) return false;
+        return filterAverageMt.includes(contact.average_mt_enquiry.toString());
+      });
+    }
+
+    // Apply average margin filter
+    if (filterAverageMargin.length > 0) {
+      filtered = filtered.filter((contact) => {
+        if (filterAverageMargin.includes('[None]') && !contact.average_margin?.trim()) return true;
+        if (!contact.average_margin?.trim()) return false;
+        return filterAverageMargin.includes(contact.average_margin);
+      });
+    }
+
+    // Apply number of deals filter
+    if (filterNumberOfDeals.length > 0) {
+      filtered = filtered.filter((contact) => {
+        if (filterNumberOfDeals.includes('[None]') && (contact.number_of_deals === null || contact.number_of_deals === undefined)) return true;
+        if (contact.number_of_deals === null || contact.number_of_deals === undefined) return false;
+        return filterNumberOfDeals.includes(contact.number_of_deals.toString());
+      });
+    }
+
+    // Apply credit days filter
+    if (filterCreditDays.length > 0) {
+      filtered = filtered.filter((contact) => {
+        if (filterCreditDays.includes('[None]') && (contact.average_days_credit_required === null || contact.average_days_credit_required === undefined)) return true;
+        if (contact.average_days_credit_required === null || contact.average_days_credit_required === undefined) return false;
+        return filterCreditDays.includes(contact.average_days_credit_required.toString());
+      });
+    }
+
     // Apply status filters (OR logic - show contacts matching ANY selected status)
     const hasActiveStatusFilter = statusFilters.hasTraction || statusFilters.isClient || statusFilters.isJammed || statusFilters.isDead || statusFilters.none;
     if (hasActiveStatusFilter) {
@@ -623,13 +671,33 @@ function App() {
           };
           return getLastActivity(b) - getLastActivity(a);
         }
+        case 'average_mt': {
+          const aMt = a.average_mt_enquiry !== null && a.average_mt_enquiry !== undefined ? a.average_mt_enquiry : -1;
+          const bMt = b.average_mt_enquiry !== null && b.average_mt_enquiry !== undefined ? b.average_mt_enquiry : -1;
+          return bMt - aMt;
+        }
+        case 'average_margin': {
+          const aMargin = a.average_margin ? parseFloat(a.average_margin) : -1;
+          const bMargin = b.average_margin ? parseFloat(b.average_margin) : -1;
+          return bMargin - aMargin;
+        }
+        case 'number_of_deals': {
+          const aDeals = a.number_of_deals !== null && a.number_of_deals !== undefined ? a.number_of_deals : -1;
+          const bDeals = b.number_of_deals !== null && b.number_of_deals !== undefined ? b.number_of_deals : -1;
+          return bDeals - aDeals;
+        }
+        case 'credit_days': {
+          const aDays = a.average_days_credit_required !== null && a.average_days_credit_required !== undefined ? a.average_days_credit_required : -1;
+          const bDays = b.average_days_credit_required !== null && b.average_days_credit_required !== undefined ? b.average_days_credit_required : -1;
+          return bDays - aDays;
+        }
         default:
           return 0;
       }
     });
 
     setFilteredContacts(filtered);
-  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterPhoneTypes, filterEmailTypes, filterCities, filterPostCodes, filterWebsites, filterAddresses, filterPriorities, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter, deadReasonFilter, filterGroup, contactGroups]);
+  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterPhoneTypes, filterEmailTypes, filterCities, filterPostCodes, filterWebsites, filterAddresses, filterPriorities, filterAverageMt, filterAverageMargin, filterNumberOfDeals, filterCreditDays, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter, deadReasonFilter, filterGroup, contactGroups]);
 
   useEffect(() => {
     let filtered = [...suppliers];
@@ -3647,7 +3715,11 @@ function App() {
                     address: 'Address',
                     country: 'Country',
                     timezone: 'Timezone',
-                    priority: 'Priority'
+                    priority: 'Priority',
+                    averageMt: 'Average MT',
+                    averageMargin: 'Average Margin',
+                    numberOfDeals: 'Number of Deals',
+                    creditDays: 'Credit Days'
                   }).map(([key, label]) => (
                     <label key={key} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900">
                       <input
@@ -4182,6 +4254,46 @@ function App() {
                 />
               )}
 
+              {visibleFilters.averageMt && (
+                <MultiSelectDropdown
+                  label="Average MT"
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.average_mt_enquiry).filter(v => v !== null && v !== undefined).map(String))).sort((a, b) => parseFloat(b) - parseFloat(a))]}
+                  selectedValues={filterAverageMt}
+                  onChange={setFilterAverageMt}
+                  placeholder="Select average MT..."
+                />
+              )}
+
+              {visibleFilters.averageMargin && (
+                <MultiSelectDropdown
+                  label="Average Margin"
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.average_margin).filter(Boolean) as string[])).sort((a, b) => parseFloat(b) - parseFloat(a))]}
+                  selectedValues={filterAverageMargin}
+                  onChange={setFilterAverageMargin}
+                  placeholder="Select average margin..."
+                />
+              )}
+
+              {visibleFilters.numberOfDeals && (
+                <MultiSelectDropdown
+                  label="Number of Deals"
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.number_of_deals).filter(v => v !== null && v !== undefined).map(String))).sort((a, b) => parseFloat(b) - parseFloat(a))]}
+                  selectedValues={filterNumberOfDeals}
+                  onChange={setFilterNumberOfDeals}
+                  placeholder="Select number of deals..."
+                />
+              )}
+
+              {visibleFilters.creditDays && (
+                <MultiSelectDropdown
+                  label="Credit Days"
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.average_days_credit_required).filter(v => v !== null && v !== undefined).map(String))).sort((a, b) => parseFloat(b) - parseFloat(a))]}
+                  selectedValues={filterCreditDays}
+                  onChange={setFilterCreditDays}
+                  placeholder="Select credit days..."
+                />
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Group
@@ -4219,6 +4331,10 @@ function App() {
                   <option value="priority">Priority</option>
                   <option value="status">Status</option>
                   <option value="recent-activity">Most Recent Activity</option>
+                  <option value="average_mt">Average MT (High to Low)</option>
+                  <option value="average_margin">Average Margin (High to Low)</option>
+                  <option value="number_of_deals">Number of Deals (High to Low)</option>
+                  <option value="credit_days">Credit Days (High to Low)</option>
                 </select>
               </div>
               <div>
