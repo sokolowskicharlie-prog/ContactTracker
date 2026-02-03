@@ -1207,120 +1207,127 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            {contact.company && (
-              <div className="flex items-center text-gray-700">
-                <Building2 className="w-5 h-5 mr-3 text-gray-500" />
-                <div className="flex items-center gap-2">
-                  <span>{contact.company}</span>
-                  {contact.company_size && (
-                    <span className="text-sm text-gray-500">({contact.company_size})</span>
-                  )}
-                </div>
-              </div>
-            )}
-            {contact.phone && (
-              <div className="flex items-center text-gray-700">
-                {contact.phone_type === 'whatsapp' ? (
-                  <MessageCircle className="w-5 h-5 mr-3 text-green-500" />
-                ) : (
-                  <Phone className="w-5 h-5 mr-3 text-gray-500" />
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                {contact.company && (
+                  <div className="flex items-center text-gray-700">
+                    <Building2 className="w-5 h-5 mr-3 text-gray-500" />
+                    <div className="flex items-center gap-2">
+                      <span>{contact.company}</span>
+                      {contact.company_size && (
+                        <span className="text-sm text-gray-500">({contact.company_size})</span>
+                      )}
+                    </div>
+                  </div>
                 )}
-                <span>{contact.phone}</span>
-                <span className="ml-2 text-xs text-gray-400">({contact.phone_type || 'general'})</span>
+                {contact.phone && (
+                  <div className="flex items-center text-gray-700">
+                    {contact.phone_type === 'whatsapp' ? (
+                      <MessageCircle className="w-5 h-5 mr-3 text-green-500" />
+                    ) : (
+                      <Phone className="w-5 h-5 mr-3 text-gray-500" />
+                    )}
+                    <span>{contact.phone}</span>
+                    <span className="ml-2 text-xs text-gray-400">({contact.phone_type || 'general'})</span>
+                  </div>
+                )}
+                {contact.email && (
+                  <div className="flex items-center text-gray-700">
+                    <Mail className="w-5 h-5 mr-3 text-gray-500" />
+                    <span>{contact.email}</span>
+                  </div>
+                )}
+                {contact.website && (
+                  <div className="flex items-center text-gray-700">
+                    <Globe className="w-5 h-5 mr-3 text-gray-500" />
+                    <a href={contact.website} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 underline">
+                      {contact.website}
+                    </a>
+                  </div>
+                )}
+                {contact.address && (
+                  <div className="flex items-start text-gray-700">
+                    <Building2 className="w-5 h-5 mr-3 text-gray-500 mt-0.5" />
+                    <span className="flex-1">{contact.address}</span>
+                  </div>
+                )}
+                {contact.city && (
+                  <div className="flex items-center text-gray-700">
+                    <Building2 className="w-5 h-5 mr-3 text-gray-500" />
+                    <span>{contact.city}</span>
+                  </div>
+                )}
+                {contact.post_code && (
+                  <div className="flex items-center text-gray-700">
+                    <Hash className="w-5 h-5 mr-3 text-gray-500" />
+                    <span>{contact.post_code}</span>
+                  </div>
+                )}
+                {contact.country && (
+                  <div className="flex items-center text-gray-700">
+                    <Globe2 className="w-5 h-5 mr-3 text-gray-500" />
+                    <span>{contact.country}</span>
+                  </div>
+                )}
+                {contact.timezone && (
+                  <div className="flex items-center text-gray-700">
+                    <Clock className="w-5 h-5 mr-3 text-gray-500" />
+                    <span>{contact.timezone}</span>
+                  </div>
+                )}
+                {contact.company_excerpt && (
+                  <div className="flex items-start text-gray-700">
+                    <FileText className="w-5 h-5 mr-3 text-gray-500 mt-0.5" />
+                    <span className="flex-1 italic">{contact.company_excerpt}</span>
+                  </div>
+                )}
+                {contact.notes && (
+                  <div className="flex items-start text-gray-700 pt-2 border-t border-gray-200">
+                    <FileText className="w-5 h-5 mr-3 text-gray-500 mt-0.5" />
+                    <span className="flex-1">{contact.notes}</span>
+                  </div>
+                )}
               </div>
-            )}
-            {contact.email && (
-              <div className="flex items-center text-gray-700">
-                <Mail className="w-5 h-5 mr-3 text-gray-500" />
-                <span>{contact.email}</span>
-              </div>
-            )}
-            {contact.website && (
-              <div className="flex items-center text-gray-700">
-                <Globe className="w-5 h-5 mr-3 text-gray-500" />
-                <a href={contact.website} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 underline">
-                  {contact.website}
-                </a>
-              </div>
-            )}
-            {contact.address && (
-              <div className="flex items-start text-gray-700">
-                <Building2 className="w-5 h-5 mr-3 text-gray-500 mt-0.5" />
-                <span className="flex-1">{contact.address}</span>
-              </div>
-            )}
-            {contact.city && (
-              <div className="flex items-center text-gray-700">
-                <Building2 className="w-5 h-5 mr-3 text-gray-500" />
-                <span>{contact.city}</span>
-              </div>
-            )}
-            {contact.post_code && (
-              <div className="flex items-center text-gray-700">
-                <Hash className="w-5 h-5 mr-3 text-gray-500" />
-                <span>{contact.post_code}</span>
-              </div>
-            )}
-            {contact.country && (
-              <div className="flex items-center text-gray-700">
-                <Globe2 className="w-5 h-5 mr-3 text-gray-500" />
-                <span>{contact.country}</span>
-              </div>
-            )}
-            {contact.timezone && (
-              <div className="flex items-center text-gray-700">
-                <Clock className="w-5 h-5 mr-3 text-gray-500" />
-                <span>{contact.timezone}</span>
-              </div>
-            )}
-            {contact.company_excerpt && (
-              <div className="flex items-start text-gray-700">
-                <FileText className="w-5 h-5 mr-3 text-gray-500 mt-0.5" />
-                <span className="flex-1 italic">{contact.company_excerpt}</span>
-              </div>
-            )}
-            <div className="flex items-center text-gray-700">
-              <Package className="w-5 h-5 mr-3 text-gray-500" />
-              <span>Avg MT/Enquiry: {contact.average_mt_enquiry ?? 0}</span>
-            </div>
-            <div className="flex items-center text-gray-700">
-              <TrendingUp className="w-5 h-5 mr-3 text-gray-500" />
-              <span>
-                Avg Margin: {(() => {
-                  const margin = contact.average_margin || '0';
-                  return margin.includes('%') ? margin : `$${margin}`;
-                })()}
-              </span>
-            </div>
-            <div className="flex items-center text-gray-700">
-              <Briefcase className="w-5 h-5 mr-3 text-gray-500" />
-              <span>Number of Deals: {contact.number_of_deals ?? 0}</span>
-            </div>
-            <div className="flex items-center text-gray-700">
-              <Calendar className="w-5 h-5 mr-3 text-gray-500" />
-              <span>Avg Days Credit Required: {contact.average_days_credit_required ?? 0}</span>
-            </div>
-            {contact.special_terms ? (
-              <div className="flex items-start text-gray-900 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <AlertCircle className="w-5 h-5 mr-3 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <div className="font-semibold text-yellow-900 mb-1">Special Terms:</div>
-                  <span className="text-yellow-800">{contact.special_terms}</span>
+
+              <div className="space-y-3">
+                <div className="flex items-center text-gray-700">
+                  <Package className="w-5 h-5 mr-3 text-gray-500" />
+                  <span>Avg MT/Enquiry: {contact.average_mt_enquiry ?? 0}</span>
                 </div>
+                <div className="flex items-center text-gray-700">
+                  <TrendingUp className="w-5 h-5 mr-3 text-gray-500" />
+                  <span>
+                    Avg Margin: {(() => {
+                      const margin = contact.average_margin || '0';
+                      return margin.includes('%') ? margin : `$${margin}`;
+                    })()}
+                  </span>
+                </div>
+                <div className="flex items-center text-gray-700">
+                  <Briefcase className="w-5 h-5 mr-3 text-gray-500" />
+                  <span>Number of Deals: {contact.number_of_deals ?? 0}</span>
+                </div>
+                <div className="flex items-center text-gray-700">
+                  <Calendar className="w-5 h-5 mr-3 text-gray-500" />
+                  <span>Avg Days Credit: {contact.average_days_credit_required ?? 0}</span>
+                </div>
+                {contact.special_terms ? (
+                  <div className="flex items-start text-gray-900 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <AlertCircle className="w-5 h-5 mr-3 text-yellow-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="font-semibold text-yellow-900 mb-1">Special Terms:</div>
+                      <span className="text-yellow-800">{contact.special_terms}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center text-gray-700">
+                    <AlertCircle className="w-5 h-5 mr-3 text-gray-500" />
+                    <span>Special Terms: No</span>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="flex items-center text-gray-700">
-                <AlertCircle className="w-5 h-5 mr-3 text-gray-500" />
-                <span>Special Terms: No</span>
-              </div>
-            )}
-            {contact.notes && (
-              <div className="flex items-start text-gray-700 pt-2 border-t border-gray-200">
-                <FileText className="w-5 h-5 mr-3 text-gray-500 mt-0.5" />
-                <span className="flex-1">{contact.notes}</span>
-              </div>
-            )}
+            </div>
           </div>
 
           {contact.contact_persons && contact.contact_persons.length > 0 && (
