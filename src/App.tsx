@@ -988,6 +988,7 @@ function App() {
           average_mt_enquiry: contactData.average_mt_enquiry,
           average_margin: contactData.average_margin,
           number_of_deals: contactData.number_of_deals,
+          average_days_credit_required: contactData.average_days_credit_required,
           notes: contactData.notes,
           updated_at: new Date().toISOString(),
         };
