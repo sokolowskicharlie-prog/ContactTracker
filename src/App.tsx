@@ -130,6 +130,7 @@ function App() {
   const [filterAverageMargin, setFilterAverageMargin] = useState<string[]>([]);
   const [filterNumberOfDeals, setFilterNumberOfDeals] = useState<string[]>([]);
   const [filterCreditDays, setFilterCreditDays] = useState<string[]>([]);
+  const [filterSpecialTerms, setFilterSpecialTerms] = useState<string[]>([]);
   const [visibleFilters, setVisibleFilters] = useState<{
     name: boolean;
     company: boolean;
@@ -149,6 +150,7 @@ function App() {
     averageMargin: boolean;
     numberOfDeals: boolean;
     creditDays: boolean;
+    specialTerms: boolean;
   }>({
     name: true,
     company: true,
@@ -168,6 +170,7 @@ function App() {
     averageMargin: true,
     numberOfDeals: true,
     creditDays: true,
+    specialTerms: true,
   });
   const [showFilterSettings, setShowFilterSettings] = useState(false);
   const [sortBy, setSortBy] = useState<string>('name');
@@ -505,6 +508,15 @@ function App() {
       });
     }
 
+    // Apply special terms filter
+    if (filterSpecialTerms.length > 0) {
+      filtered = filtered.filter((contact) => {
+        if (filterSpecialTerms.includes('[None]') && (!contact.special_terms || contact.special_terms.trim() === '')) return true;
+        if (!contact.special_terms || contact.special_terms.trim() === '') return false;
+        return filterSpecialTerms.includes(contact.special_terms);
+      });
+    }
+
     // Apply status filters (OR logic - show contacts matching ANY selected status)
     const hasActiveStatusFilter = statusFilters.hasTraction || statusFilters.isClient || statusFilters.isJammed || statusFilters.isDead || statusFilters.none;
     if (hasActiveStatusFilter) {
@@ -691,13 +703,15 @@ function App() {
           const bDays = b.average_days_credit_required !== null && b.average_days_credit_required !== undefined ? b.average_days_credit_required : -1;
           return bDays - aDays;
         }
+        case 'special_terms':
+          return (a.special_terms || '').localeCompare(b.special_terms || '');
         default:
           return 0;
       }
     });
 
     setFilteredContacts(filtered);
-  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterPhoneTypes, filterEmailTypes, filterCities, filterPostCodes, filterWebsites, filterAddresses, filterPriorities, filterAverageMt, filterAverageMargin, filterNumberOfDeals, filterCreditDays, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter, deadReasonFilter, filterGroup, contactGroups]);
+  }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterPhoneTypes, filterEmailTypes, filterCities, filterPostCodes, filterWebsites, filterAddresses, filterPriorities, filterAverageMt, filterAverageMargin, filterNumberOfDeals, filterCreditDays, filterSpecialTerms, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter, deadReasonFilter, filterGroup, contactGroups]);
 
   useEffect(() => {
     let filtered = [...suppliers];
@@ -3720,7 +3734,8 @@ function App() {
                     averageMt: 'Average MT',
                     averageMargin: 'Average Margin',
                     numberOfDeals: 'Number of Deals',
-                    creditDays: 'Credit Days'
+                    creditDays: 'Credit Days',
+                    specialTerms: 'Special Terms'
                   }).map(([key, label]) => (
                     <label key={key} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900">
                       <input
@@ -4295,6 +4310,16 @@ function App() {
                 />
               )}
 
+              {visibleFilters.specialTerms && (
+                <MultiSelectDropdown
+                  label="Special Terms"
+                  options={['[None]', ...Array.from(new Set(contacts.map((c) => c.special_terms).filter(v => v && v.trim() !== ''))).sort()]}
+                  selectedValues={filterSpecialTerms}
+                  onChange={setFilterSpecialTerms}
+                  placeholder="Select special terms..."
+                />
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Group
@@ -4336,6 +4361,7 @@ function App() {
                   <option value="average_margin">Average Margin (High to Low)</option>
                   <option value="number_of_deals">Number of Deals (High to Low)</option>
                   <option value="credit_days">Credit Days (High to Low)</option>
+                  <option value="special_terms">Special Terms</option>
                 </select>
               </div>
               <div>
@@ -4358,7 +4384,7 @@ function App() {
                 </select>
               </div>
             </div>
-          {(filterNames.length > 0 || filterCompanies.length > 0 || filterCompanySizes.length > 0 || filterEmails.length > 0 || filterPhones.length > 0 || filterCities.length > 0 || filterPostCodes.length > 0 || filterWebsites.length > 0 || filterAddresses.length > 0 || filterCountries.length > 0 || filterTimezones.length > 0 || statusFilters.hasTraction || statusFilters.isClient || statusFilters.isJammed || statusFilters.none || activityDateFilter !== 'all' || jammedReasonFilter.trim() || tractionReasonFilter.trim() || clientReasonFilter.trim()) && (
+          {(filterNames.length > 0 || filterCompanies.length > 0 || filterCompanySizes.length > 0 || filterEmails.length > 0 || filterPhones.length > 0 || filterCities.length > 0 || filterPostCodes.length > 0 || filterWebsites.length > 0 || filterAddresses.length > 0 || filterCountries.length > 0 || filterTimezones.length > 0 || filterPriorities.length > 0 || filterAverageMt.length > 0 || filterAverageMargin.length > 0 || filterNumberOfDeals.length > 0 || filterCreditDays.length > 0 || filterSpecialTerms.length > 0 || statusFilters.hasTraction || statusFilters.isClient || statusFilters.isJammed || statusFilters.isDead || statusFilters.none || activityDateFilter !== 'all' || jammedReasonFilter.trim() || tractionReasonFilter.trim() || clientReasonFilter.trim() || deadReasonFilter.trim()) && (
             <div className="mt-3 flex items-center gap-2">
               <span className="text-sm text-gray-600">
                 Showing {filteredContacts.length} of {contacts.length} contacts
@@ -4376,11 +4402,18 @@ function App() {
                   setFilterAddresses([]);
                   setFilterCountries([]);
                   setFilterTimezones([]);
-                  setStatusFilters({ hasTraction: false, isClient: false, isJammed: false, none: false });
+                  setFilterPriorities([]);
+                  setFilterAverageMt([]);
+                  setFilterAverageMargin([]);
+                  setFilterNumberOfDeals([]);
+                  setFilterCreditDays([]);
+                  setFilterSpecialTerms([]);
+                  setStatusFilters({ hasTraction: false, isClient: false, isJammed: false, isDead: false, none: false });
                   setActivityDateFilter('all');
                   setJammedReasonFilter('');
                   setTractionReasonFilter('');
                   setClientReasonFilter('');
+                  setDeadReasonFilter('');
                 }}
                 className="text-sm text-blue-600 hover:text-blue-800 underline"
               >
