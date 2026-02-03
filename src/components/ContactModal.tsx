@@ -51,6 +51,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
   const [priorityRank, setPriorityRank] = useState('');
   const [averageMtEnquiry, setAverageMtEnquiry] = useState('');
   const [averageMargin, setAverageMargin] = useState('');
+  const [numberOfDeals, setNumberOfDeals] = useState('');
   const [notes, setNotes] = useState('');
   const [contactPersons, setContactPersons] = useState<Partial<ContactPerson>[]>([]);
   const [phoneTypes, setPhoneTypes] = useState<PhoneType[]>([]);
@@ -121,6 +122,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       setPriorityRank(contact.priority_rank?.toString() || '');
       setAverageMtEnquiry((contact as any).average_mt_enquiry?.toString() || '');
       setAverageMargin((contact as any).average_margin?.toString() || '');
+      setNumberOfDeals((contact as any).number_of_deals?.toString() || '');
       setNotes(contact.notes || '');
       setContactPersons(contact.contact_persons || []);
       console.log('Contact persons loaded into state:', contact.contact_persons?.length || 0);
@@ -144,6 +146,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       setPriorityRank('');
       setAverageMtEnquiry('');
       setAverageMargin('');
+      setNumberOfDeals('');
       setNotes('');
       setContactPersons([]);
     }
@@ -260,6 +263,7 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
       priority_rank: priorityRank ? parseInt(priorityRank) : null,
       average_mt_enquiry: averageMtEnquiry ? parseFloat(averageMtEnquiry) : null,
       average_margin: averageMargin ? parseFloat(averageMargin) : null,
+      number_of_deals: numberOfDeals ? parseInt(numberOfDeals) : null,
       notes: notes.trim() || null,
     };
 
@@ -592,6 +596,22 @@ export default function ContactModal({ contact, onClose, onSave }: ContactModalP
                 placeholder="e.g., 12.5"
               />
               <p className="text-xs text-gray-500 mt-1">Average margin ($/MT or %)</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Number of Deals
+              </label>
+              <input
+                type="number"
+                value={numberOfDeals}
+                onChange={(e) => setNumberOfDeals(e.target.value)}
+                min="0"
+                step="1"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., 5"
+              />
+              <p className="text-xs text-gray-500 mt-1">Total number of deals closed</p>
             </div>
           </div>
 

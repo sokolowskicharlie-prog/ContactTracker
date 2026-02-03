@@ -1,4 +1,4 @@
-import { Phone, Mail, Building2, Calendar, Trash2, CreditCard as Edit, Globe, Bell, AlertCircle, User, Star, Check, Globe2, Clock, CheckSquare, AlertTriangle, StickyNote, TrendingUp, Skull, Ship, Package } from 'lucide-react';
+import { Phone, Mail, Building2, Calendar, Trash2, CreditCard as Edit, Globe, Bell, AlertCircle, User, Star, Check, Globe2, Clock, CheckSquare, AlertTriangle, StickyNote, TrendingUp, Skull, Ship, Package, Briefcase } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 
@@ -349,6 +349,11 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                   <TrendingUp className="w-4 h-4 mr-1.5 text-green-500" />
                   <span className="font-medium">{(contact as any).average_margin ?? 0}</span>
                   <span className="ml-1 text-xs text-gray-500">margin</span>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <Briefcase className="w-4 h-4 mr-1.5 text-orange-500" />
+                  <span className="font-medium">{(contact as any).number_of_deals ?? 0}</span>
+                  <span className="ml-1 text-xs text-gray-500">deals</span>
                 </div>
               </div>
               {contact.contact_persons && contact.contact_persons.length > 0 && (

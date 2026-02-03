@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Edit2, Trash2, Phone, Mail, MapPin, AlertCircle, CheckCircle, TrendingUp, Settings, GripVertical, Eye, EyeOff, Skull, Package } from 'lucide-react';
+import { Edit2, Trash2, Phone, Mail, MapPin, AlertCircle, CheckCircle, TrendingUp, Settings, GripVertical, Eye, EyeOff, Skull, Package, Briefcase } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
 
 interface ContactTableViewProps {
@@ -25,6 +25,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'location', label: 'Location', visible: true, width: 150 },
   { id: 'averageMt', label: 'Avg MT', visible: true, width: 100 },
   { id: 'averageMargin', label: 'Avg Margin', visible: true, width: 110 },
+  { id: 'numberOfDeals', label: '# Deals', visible: true, width: 90 },
   { id: 'status', label: 'Status', visible: true, width: 120 },
   { id: 'activity', label: 'Activity', visible: true, width: 120 },
   { id: 'lastActivity', label: 'Last Activity', visible: true, width: 150 },
@@ -302,6 +303,13 @@ export default function ContactTableView({
           <div className="flex items-center gap-1 text-sm text-gray-900">
             <TrendingUp className="w-3 h-3 text-green-500 flex-shrink-0" />
             <span className="font-medium">{(contact as any).average_margin ?? 0}</span>
+          </div>
+        );
+      case 'numberOfDeals':
+        return (
+          <div className="flex items-center gap-1 text-sm text-gray-900">
+            <Briefcase className="w-3 h-3 text-orange-500 flex-shrink-0" />
+            <span className="font-medium">{(contact as any).number_of_deals ?? 0}</span>
           </div>
         );
       case 'status':

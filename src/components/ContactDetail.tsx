@@ -1,4 +1,4 @@
-import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, CreditCard as Edit2, StickyNote, AlertTriangle, Package, Skull, MapPin, Search } from 'lucide-react';
+import { X, Phone, Mail, Building2, FileText, Calendar, Clock, Globe, User, Star, Globe as Globe2, Ship, Plus, CreditCard as Edit, Trash2, ExternalLink, Hash, Droplet, Anchor, TrendingUp, MessageCircle, Smartphone, Check, XCircle, CheckSquare, Circle, CheckCircle2, AlertCircle, CreditCard as Edit2, StickyNote, AlertTriangle, Package, Skull, MapPin, Search, Briefcase } from 'lucide-react';
 import { ContactWithActivity, Vessel, FuelDeal, Call, Email, TaskWithRelated, CustomJammedReason, supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 
@@ -1287,6 +1287,10 @@ export default function ContactDetail({ contact, tasks, notes, onClose, onEdit, 
             <div className="flex items-center text-gray-700">
               <TrendingUp className="w-5 h-5 mr-3 text-gray-500" />
               <span>Avg Margin: {(contact as any).average_margin ?? 0}</span>
+            </div>
+            <div className="flex items-center text-gray-700">
+              <Briefcase className="w-5 h-5 mr-3 text-gray-500" />
+              <span>Number of Deals: {(contact as any).number_of_deals ?? 0}</span>
             </div>
             {contact.notes && (
               <div className="flex items-start text-gray-700 pt-2 border-t border-gray-200">
