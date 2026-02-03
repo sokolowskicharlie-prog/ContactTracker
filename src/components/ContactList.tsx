@@ -1,4 +1,4 @@
-import { Phone, Mail, Building2, Calendar, Trash2, CreditCard as Edit, Globe, Bell, AlertCircle, User, Star, Check, Globe2, Clock, CheckSquare, AlertTriangle, StickyNote, TrendingUp, Skull } from 'lucide-react';
+import { Phone, Mail, Building2, Calendar, Trash2, CreditCard as Edit, Globe, Bell, AlertCircle, User, Star, Check, Globe2, Clock, CheckSquare, AlertTriangle, StickyNote, TrendingUp, Skull, Ship } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 
@@ -472,6 +472,17 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
                       {contact.total_tasks} total
                     </span>
                   </div>
+                </div>
+              )}
+              {contact.vessels && contact.vessels.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Ship className="w-4 h-4 mr-1" />
+                    Vessels
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">
+                    {contact.vessels.length} {contact.vessels.length === 1 ? 'vessel' : 'vessels'}
+                  </span>
                 </div>
               )}
               {getContactNotes(contact.id).length > 0 && (
