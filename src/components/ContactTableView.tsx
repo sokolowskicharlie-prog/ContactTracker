@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Edit2, Trash2, Phone, Mail, MapPin, AlertCircle, CheckCircle, TrendingUp, Settings, GripVertical, Eye, EyeOff, Skull } from 'lucide-react';
+import { Edit2, Trash2, Phone, Mail, MapPin, AlertCircle, CheckCircle, TrendingUp, Settings, GripVertical, Eye, EyeOff, Skull, Package } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
 
 interface ContactTableViewProps {
@@ -23,6 +23,8 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'priority', label: 'Priority', visible: true, width: 80 },
   { id: 'contactInfo', label: 'Contact Info', visible: true, width: 200 },
   { id: 'location', label: 'Location', visible: true, width: 150 },
+  { id: 'averageMt', label: 'Avg MT', visible: true, width: 100 },
+  { id: 'averageMargin', label: 'Avg Margin', visible: true, width: 110 },
   { id: 'status', label: 'Status', visible: true, width: 120 },
   { id: 'activity', label: 'Activity', visible: true, width: 120 },
   { id: 'lastActivity', label: 'Last Activity', visible: true, width: 150 },
@@ -287,6 +289,24 @@ export default function ContactTableView({
               </div>
             )}
           </div>
+        );
+      case 'averageMt':
+        return (contact as any).average_mt_enquiry ? (
+          <div className="flex items-center gap-1 text-sm text-gray-900">
+            <Package className="w-3 h-3 text-blue-500 flex-shrink-0" />
+            <span className="font-medium">{(contact as any).average_mt_enquiry}</span>
+          </div>
+        ) : (
+          <div className="text-sm text-gray-400">-</div>
+        );
+      case 'averageMargin':
+        return (contact as any).average_margin ? (
+          <div className="flex items-center gap-1 text-sm text-gray-900">
+            <TrendingUp className="w-3 h-3 text-green-500 flex-shrink-0" />
+            <span className="font-medium">{(contact as any).average_margin}</span>
+          </div>
+        ) : (
+          <div className="text-sm text-gray-400">-</div>
         );
       case 'status':
         return getStatusBadge(contact);

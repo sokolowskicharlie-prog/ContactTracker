@@ -1,4 +1,4 @@
-import { Phone, Mail, Building2, Calendar, Trash2, CreditCard as Edit, Globe, Bell, AlertCircle, User, Star, Check, Globe2, Clock, CheckSquare, AlertTriangle, StickyNote, TrendingUp, Skull, Ship } from 'lucide-react';
+import { Phone, Mail, Building2, Calendar, Trash2, CreditCard as Edit, Globe, Bell, AlertCircle, User, Star, Check, Globe2, Clock, CheckSquare, AlertTriangle, StickyNote, TrendingUp, Skull, Ship, Package } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 
@@ -338,6 +338,24 @@ export default function ContactList({ contacts, notes, onContactClick, onDeleteC
               )}
               {contact.company_excerpt && (
                 <p className="text-sm text-gray-500 italic mt-2">{contact.company_excerpt}</p>
+              )}
+              {((contact as any).average_mt_enquiry || (contact as any).average_margin) && (
+                <div className="flex items-center gap-4 mt-2 text-sm">
+                  {(contact as any).average_mt_enquiry && (
+                    <div className="flex items-center text-gray-600">
+                      <Package className="w-4 h-4 mr-1.5 text-blue-500" />
+                      <span className="font-medium">{(contact as any).average_mt_enquiry}</span>
+                      <span className="ml-1 text-xs text-gray-500">MT/enquiry</span>
+                    </div>
+                  )}
+                  {(contact as any).average_margin && (
+                    <div className="flex items-center text-gray-600">
+                      <TrendingUp className="w-4 h-4 mr-1.5 text-green-500" />
+                      <span className="font-medium">{(contact as any).average_margin}</span>
+                      <span className="ml-1 text-xs text-gray-500">margin</span>
+                    </div>
+                  )}
+                </div>
               )}
               {contact.contact_persons && contact.contact_persons.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-gray-100">
