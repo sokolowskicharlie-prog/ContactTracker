@@ -11,9 +11,10 @@ interface DuplicatesModalProps {
   contacts: ContactWithActivity[];
   onClose: () => void;
   onDelete: (contactId: string) => void;
+  onRefresh?: () => void;
 }
 
-export default function DuplicatesModal({ contacts, onClose, onDelete }: DuplicatesModalProps) {
+export default function DuplicatesModal({ contacts, onClose, onDelete, onRefresh }: DuplicatesModalProps) {
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -82,6 +83,11 @@ export default function DuplicatesModal({ contacts, onClose, onDelete }: Duplica
       }
 
       alert(`Successfully deleted ${totalToDelete} newest duplicate(s)`);
+
+      if (onRefresh) {
+        await onRefresh();
+      }
+
       onClose();
     } catch (error) {
       console.error('Error deleting newest duplicates:', error);
@@ -113,6 +119,11 @@ export default function DuplicatesModal({ contacts, onClose, onDelete }: Duplica
       }
 
       alert(`Successfully deleted ${totalToDelete} oldest duplicate(s)`);
+
+      if (onRefresh) {
+        await onRefresh();
+      }
+
       onClose();
     } catch (error) {
       console.error('Error deleting oldest duplicates:', error);

@@ -5230,9 +5230,9 @@ function App() {
           contacts={contacts}
           onClose={() => {
             setShowDuplicatesModal(false);
-            loadContacts();
           }}
           onDelete={handleDeleteContact}
+          onRefresh={loadContacts}
         />
       )}
 
