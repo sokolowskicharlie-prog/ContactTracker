@@ -3418,6 +3418,7 @@ function App() {
             </div>
             <div className="flex flex-wrap items-center gap-0.5">
               <button
+                type="button"
                 onClick={() => setShowNotepad(!showNotepad)}
                 className={`flex-shrink-0 flex items-center gap-2 px-2.5 sm:px-4 py-2 rounded-lg transition-colors ${
                   showNotepad
@@ -3430,6 +3431,7 @@ function App() {
                 <span className="hidden sm:inline whitespace-nowrap">Notes</span>
               </button>
               <button
+                type="button"
                 onClick={() => {
                   const newValue = !showGoalProgressBox;
                   setShowGoalProgressBox(newValue);
@@ -3446,6 +3448,7 @@ function App() {
                 <span className="hidden sm:inline whitespace-nowrap">Goals</span>
               </button>
               <button
+                type="button"
                 onClick={() => setShowPriorityPanel(!showPriorityPanel)}
                 className={`flex-shrink-0 flex items-center gap-2 px-2.5 sm:px-4 py-2 rounded-lg transition-colors ${
                   showPriorityPanel
@@ -3458,6 +3461,7 @@ function App() {
                 <span className="hidden sm:inline whitespace-nowrap">Priority</span>
               </button>
               <button
+                type="button"
                 onClick={() => setShowMGOPrices(!showMGOPrices)}
                 className={`flex-shrink-0 flex items-center gap-2 px-2.5 sm:px-4 py-2 rounded-lg transition-colors ${
                   showMGOPrices
