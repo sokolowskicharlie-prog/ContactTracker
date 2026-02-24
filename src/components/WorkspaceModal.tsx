@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Edit2, Save } from 'lucide-react';
+import { X, Plus, Trash2, Edit2, Save, Users } from 'lucide-react';
 import { Workspace, getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace } from '../lib/workspaces';
 import { useAuth } from '../lib/auth';
+import WorkspaceMembersModal from './WorkspaceMembersModal';
 
 interface WorkspaceModalProps {
   isOpen: boolean;
@@ -30,6 +31,8 @@ export default function WorkspaceModal({ isOpen, onClose, onWorkspaceChange }: W
   const [editName, setEditName] = useState('');
   const [editColor, setEditColor] = useState('');
   const [loading, setLoading] = useState(false);
+  const [membersModalOpen, setMembersModalOpen] = useState(false);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
 
   useEffect(() => {
     if (isOpen && user) {
@@ -181,6 +184,16 @@ export default function WorkspaceModal({ isOpen, onClose, onWorkspaceChange }: W
                     )}
                   </span>
                   <button
+                    onClick={() => {
+                      setSelectedWorkspace(workspace);
+                      setMembersModalOpen(true);
+                    }}
+                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    title="Manage members"
+                  >
+                    <Users className="w-5 h-5" />
+                  </button>
+                  <button
                     onClick={() => startEdit(workspace)}
                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                   >
@@ -268,6 +281,18 @@ export default function WorkspaceModal({ isOpen, onClose, onWorkspaceChange }: W
           </button>
         </div>
       </div>
+
+      {selectedWorkspace && (
+        <WorkspaceMembersModal
+          isOpen={membersModalOpen}
+          onClose={() => {
+            setMembersModalOpen(false);
+            setSelectedWorkspace(null);
+          }}
+          workspaceId={selectedWorkspace.id}
+          workspaceName={selectedWorkspace.name}
+        />
+      )}
     </div>
   );
 }
