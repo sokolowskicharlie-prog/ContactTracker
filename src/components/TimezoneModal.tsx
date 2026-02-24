@@ -1,5 +1,7 @@
-import { X, Clock, ChevronDown, ChevronUp, Globe } from 'lucide-react';
+import { X, Clock, ChevronDown, ChevronUp, Globe, Eye, EyeOff, Edit2, Check, Settings } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
 
 interface TimezoneModalProps {
   onClose: () => void;
@@ -26,6 +28,13 @@ interface Timezone {
   date: string;
   isDST: boolean;
   isLondon?: boolean;
+}
+
+interface TimezoneSettings {
+  [key: string]: {
+    visible: boolean;
+    customName?: string;
+  };
 }
 
 const majorTimezones = [
@@ -70,7 +79,30 @@ export default function TimezoneModal({
   onExpandedChange
 }: TimezoneModalProps) {
   const [timezones, setTimezones] = useState<Timezone[]>([]);
+  const [timezoneSettings, setTimezoneSettings] = useState<TimezoneSettings>({});
+  const [editMode, setEditMode] = useState(false);
+  const [editingTimezone, setEditingTimezone] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const { user } = useAuth();
   const isExpanded = expanded;
+
+  useEffect(() => {
+    if (!user) return;
+
+    const loadTimezoneSettings = async () => {
+      const { data } = await supabase
+        .from('user_preferences')
+        .select('timezone_settings')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (data?.timezone_settings) {
+        setTimezoneSettings(data.timezone_settings);
+      }
+    };
+
+    loadTimezoneSettings();
+  }, [user]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -174,6 +206,68 @@ export default function TimezoneModal({
     return () => clearInterval(interval);
   }, [isOpen]);
 
+  const toggleTimezoneVisibility = async (timezoneName: string) => {
+    if (!user) return;
+
+    const currentVisible = timezoneSettings[timezoneName]?.visible ?? true;
+    const newSettings = {
+      ...timezoneSettings,
+      [timezoneName]: {
+        ...timezoneSettings[timezoneName],
+        visible: !currentVisible,
+      },
+    };
+
+    setTimezoneSettings(newSettings);
+
+    await supabase
+      .from('user_preferences')
+      .upsert({
+        user_id: user.id,
+        timezone_settings: newSettings,
+      }, {
+        onConflict: 'user_id',
+      });
+  };
+
+  const startEditingTimezone = (timezoneName: string, currentName: string) => {
+    setEditingTimezone(timezoneName);
+    setEditValue(timezoneSettings[timezoneName]?.customName || currentName);
+  };
+
+  const saveTimezoneName = async (timezoneName: string) => {
+    if (!user) return;
+
+    const newSettings = {
+      ...timezoneSettings,
+      [timezoneName]: {
+        ...timezoneSettings[timezoneName],
+        visible: timezoneSettings[timezoneName]?.visible ?? true,
+        customName: editValue.trim() || undefined,
+      },
+    };
+
+    setTimezoneSettings(newSettings);
+    setEditingTimezone(null);
+
+    await supabase
+      .from('user_preferences')
+      .upsert({
+        user_id: user.id,
+        timezone_settings: newSettings,
+      }, {
+        onConflict: 'user_id',
+      });
+  };
+
+  const getDisplayName = (timezone: Timezone) => {
+    return timezoneSettings[timezone.name]?.customName || timezone.city;
+  };
+
+  const isTimezoneVisible = (timezoneName: string) => {
+    return timezoneSettings[timezoneName]?.visible ?? true;
+  };
+
   if (!isOpen) return null;
 
   const calculatePosition = () => {
@@ -209,6 +303,13 @@ export default function TimezoneModal({
           </div>
           <div className="flex items-center gap-1">
             <button
+              onClick={() => setEditMode(!editMode)}
+              className={`p-1 rounded transition-colors ${editMode ? 'bg-white/30' : 'hover:bg-white/20'}`}
+              title="Customize timezones"
+            >
+              <Settings className="w-4 h-4 text-white" />
+            </button>
+            <button
               onClick={() => onExpandedChange?.(!isExpanded)}
               className="p-1 hover:bg-white/20 rounded transition-colors"
               title={isExpanded ? 'Collapse' : 'Expand'}
@@ -227,39 +328,98 @@ export default function TimezoneModal({
 
         {isExpanded && (
           <div className="p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+            {editMode && (
+              <div className="mb-3 text-xs text-white/70 bg-white/10 rounded-lg p-2">
+                Click the eye icon to hide/show timezones. Click the pencil icon to rename them.
+              </div>
+            )}
             <div className="space-y-3">
-              {timezones.map((timezone) => (
-                <div
-                  key={timezone.name}
-                  className={`backdrop-blur-sm rounded-lg p-3 transition-colors ${
-                    timezone.isLondon
-                      ? 'bg-yellow-500/30 border-2 border-yellow-400/50 hover:bg-yellow-500/40'
-                      : 'bg-white/10 hover:bg-white/20'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Clock className={`w-4 h-4 ${timezone.isLondon ? 'text-yellow-300' : 'text-white/80'}`} />
-                      <div>
-                        <div className={`font-semibold ${timezone.isLondon ? 'text-yellow-100' : 'text-white'}`}>
-                          {timezone.city}
-                        </div>
-                        <div className={`text-xs ${timezone.isLondon ? 'text-yellow-200/80' : 'text-white/60'}`}>
-                          {timezone.offset}
+              {timezones.map((timezone) => {
+                const isVisible = isTimezoneVisible(timezone.name);
+                const displayName = getDisplayName(timezone);
+                const isEditing = editingTimezone === timezone.name;
+
+                return (
+                  <div
+                    key={timezone.name}
+                    className={`backdrop-blur-sm rounded-lg p-3 transition-all ${
+                      !isVisible
+                        ? 'opacity-40'
+                        : timezone.isLondon
+                        ? 'bg-yellow-500/30 border-2 border-yellow-400/50 hover:bg-yellow-500/40'
+                        : 'bg-white/10 hover:bg-white/20'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <Clock className={`w-4 h-4 flex-shrink-0 ${timezone.isLondon ? 'text-yellow-300' : 'text-white/80'}`} />
+                        <div className="flex-1 min-w-0">
+                          {isEditing ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') saveTimezoneName(timezone.name);
+                                  if (e.key === 'Escape') setEditingTimezone(null);
+                                }}
+                                className="bg-white/20 text-white px-2 py-1 rounded text-sm w-full"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => saveTimezoneName(timezone.name)}
+                                className="p-1 hover:bg-white/20 rounded transition-colors flex-shrink-0"
+                              >
+                                <Check className="w-3 h-3 text-white" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className={`font-semibold truncate ${timezone.isLondon ? 'text-yellow-100' : 'text-white'}`}>
+                              {displayName}
+                            </div>
+                          )}
+                          <div className={`text-xs ${timezone.isLondon ? 'text-yellow-200/80' : 'text-white/60'}`}>
+                            {timezone.offset}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`font-mono text-lg font-semibold ${timezone.isLondon ? 'text-yellow-100' : 'text-white'}`}>
-                        {timezone.time}
-                      </div>
-                      <div className={`text-xs ${timezone.isLondon ? 'text-yellow-200/80' : 'text-white/70'}`}>
-                        {timezone.date}
+                      <div className="flex items-center gap-2">
+                        {editMode && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => startEditingTimezone(timezone.name, timezone.city)}
+                              className="p-1 hover:bg-white/20 rounded transition-colors"
+                              title="Rename"
+                            >
+                              <Edit2 className="w-3 h-3 text-white/80" />
+                            </button>
+                            <button
+                              onClick={() => toggleTimezoneVisibility(timezone.name)}
+                              className="p-1 hover:bg-white/20 rounded transition-colors"
+                              title={isVisible ? 'Hide' : 'Show'}
+                            >
+                              {isVisible ? (
+                                <Eye className="w-3 h-3 text-white/80" />
+                              ) : (
+                                <EyeOff className="w-3 h-3 text-white/80" />
+                              )}
+                            </button>
+                          </div>
+                        )}
+                        <div className="text-right">
+                          <div className={`font-mono text-lg font-semibold ${timezone.isLondon ? 'text-yellow-100' : 'text-white'}`}>
+                            {timezone.time}
+                          </div>
+                          <div className={`text-xs ${timezone.isLondon ? 'text-yellow-200/80' : 'text-white/70'}`}>
+                            {timezone.date}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
