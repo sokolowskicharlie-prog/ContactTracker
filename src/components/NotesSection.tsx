@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, StickyNote, User, Calendar, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, StickyNote, User, Calendar, ArrowUpDown, Share2 } from 'lucide-react';
 import { ContactWithActivity } from '../lib/supabase';
 import { formatNoteContent } from '../lib/noteFormatter';
+import ShareNoteModal from './ShareNoteModal';
 
 interface SavedNote {
   id: string;
@@ -10,6 +11,7 @@ interface SavedNote {
   contact_id?: string;
   created_at: string;
   updated_at: string;
+  user_id?: string;
 }
 
 interface NotesSectionProps {
@@ -18,6 +20,7 @@ interface NotesSectionProps {
   onAddNote: () => void;
   onEditNote: (note: SavedNote) => void;
   onDeleteNote: (noteId: string) => void;
+  currentUserId?: string;
 }
 
 export default function NotesSection({
@@ -26,6 +29,7 @@ export default function NotesSection({
   onAddNote,
   onEditNote,
   onDeleteNote,
+  currentUserId,
 }: NotesSectionProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredNotes, setFilteredNotes] = useState<SavedNote[]>(notes);
@@ -34,6 +38,8 @@ export default function NotesSection({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [searchResults, setSearchResults] = useState<SavedNote[]>([]);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedNoteForShare, setSelectedNoteForShare] = useState<SavedNote | null>(null);
 
   useEffect(() => {
     let filtered = [...notes];
@@ -254,6 +260,18 @@ export default function NotesSection({
                     {note.title}
                   </h3>
                   <div className="flex items-center gap-1">
+                    {note.user_id === currentUserId && (
+                      <button
+                        onClick={() => {
+                          setSelectedNoteForShare(note);
+                          setShareModalOpen(true);
+                        }}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="Share note"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => onEditNote(note)}
                       className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
@@ -261,17 +279,19 @@ export default function NotesSection({
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete this note?')) {
-                          onDeleteNote(note.id);
-                        }
-                      }}
-                      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      title="Delete note"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {note.user_id === currentUserId && (
+                      <button
+                        onClick={() => {
+                          if (confirm('Are you sure you want to delete this note?')) {
+                            onDeleteNote(note.id);
+                          }
+                        }}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        title="Delete note"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -295,11 +315,29 @@ export default function NotesSection({
                     <Calendar className="w-3.5 h-3.5" />
                     <span>Created: {formatDate(note.created_at)}</span>
                   </div>
+                  {note.user_id !== currentUserId && (
+                    <div className="flex items-center gap-1 text-blue-600">
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Shared with you</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {shareModalOpen && selectedNoteForShare && (
+        <ShareNoteModal
+          isOpen={shareModalOpen}
+          onClose={() => {
+            setShareModalOpen(false);
+            setSelectedNoteForShare(null);
+          }}
+          noteId={selectedNoteForShare.id}
+          noteTitle={selectedNoteForShare.title}
+        />
       )}
     </div>
   );

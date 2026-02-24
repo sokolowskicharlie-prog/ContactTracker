@@ -1764,7 +1764,6 @@ function App() {
       const { data, error } = await supabase
         .from('saved_notes')
         .select('*')
-        .eq('user_id', user.id)
         .eq('workspace_id', currentWorkspace.id)
         .order('updated_at', { ascending: false });
 
@@ -4796,6 +4795,7 @@ function App() {
             onAddNote={handleAddNote}
             onEditNote={handleEditSavedNote}
             onDeleteNote={handleDeleteSavedNote}
+            currentUserId={user?.id}
           />
         ) : currentPage === 'priority' ? (
           <PriorityList
