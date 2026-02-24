@@ -44,24 +44,19 @@ export default function WorkspaceMembersModal({ isOpen, onClose, workspaceId, wo
 
       if (error) throw error;
 
-      const membersWithEmails = await Promise.all(
-        (data || []).map(async (member) => {
-          const { data: userData } = await supabase
-            .from('user_profiles')
-            .select('email')
-            .eq('id', member.user_id)
-            .maybeSingle();
+      const { data: allUsers } = await supabase.rpc('get_user_emails');
+      const userEmailMap = new Map((allUsers || []).map((u: any) => [u.id, u.email]));
 
-          if (member.user_id === user?.id) {
-            setCurrentUserRole(member.role);
-          }
+      const membersWithEmails = (data || []).map((member) => {
+        if (member.user_id === user?.id) {
+          setCurrentUserRole(member.role);
+        }
 
-          return {
-            ...member,
-            email: userData?.email || 'Unknown User',
-          };
-        })
-      );
+        return {
+          ...member,
+          email: userEmailMap.get(member.user_id) || 'Unknown User',
+        };
+      });
 
       setMembers(membersWithEmails);
     } catch (err) {
@@ -71,14 +66,12 @@ export default function WorkspaceMembersModal({ isOpen, onClose, workspaceId, wo
 
   const loadUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('id, email')
-        .neq('id', user?.id || '');
+      const { data, error } = await supabase.rpc('get_user_emails');
 
       if (error) throw error;
 
-      setUsers(data || []);
+      const filteredUsers = (data || []).filter((u: any) => u.id !== user?.id);
+      setUsers(filteredUsers);
     } catch (err) {
       console.error('Error loading users:', err);
       setError('Unable to load users list.');
