@@ -20,25 +20,7 @@ export async function getWorkspaces(userId: string): Promise<Workspace[]> {
 
   if (ownedError) throw ownedError;
 
-  const { data: sharedWorkspaces, error: sharedError } = await supabase
-    .from('workspaces')
-    .select(`
-      *,
-      workspace_members!inner(user_id)
-    `)
-    .eq('workspace_members.user_id', userId)
-    .neq('user_id', userId)
-    .order('display_order');
-
-  if (sharedError) throw sharedError;
-
-  const owned = ownedWorkspaces || [];
-  const shared = (sharedWorkspaces || []).map(ws => {
-    const { workspace_members, ...workspace } = ws as any;
-    return workspace;
-  });
-
-  return [...owned, ...shared];
+  return ownedWorkspaces || [];
 }
 
 export async function getOrCreateDefaultWorkspace(userId: string): Promise<Workspace> {
