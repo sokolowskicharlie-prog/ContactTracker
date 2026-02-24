@@ -65,24 +65,39 @@ export default function DuplicatesModal({ contacts, onClose, onDelete, onRefresh
     const totalToDelete = duplicateGroups.length;
     const idsToDelete = duplicateGroups.map(group => group.contacts[0].id);
 
+    console.log('Attempting to delete IDs:', idsToDelete);
+
     if (!confirm(`Are you sure you want to delete ${totalToDelete} NEWEST duplicates? This will keep the oldest contact for each duplicate name.`)) {
       return;
     }
 
     setIsDeleting(true);
     try {
-      const { error } = await supabase
-        .from('contacts')
-        .delete()
-        .in('id', idsToDelete);
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
 
-      if (error) {
-        console.error('Error deleting contacts:', error);
-        alert(`Error deleting duplicates: ${error.message}`);
-        return;
+      for (const id of idsToDelete) {
+        const { error } = await supabase
+          .from('contacts')
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          console.error(`Error deleting contact ${id}:`, error);
+          errors.push(`${id}: ${error.message}`);
+          errorCount++;
+        } else {
+          successCount++;
+        }
       }
 
-      alert(`Successfully deleted ${totalToDelete} newest duplicate(s)`);
+      if (errorCount > 0) {
+        console.error('Deletion errors:', errors);
+        alert(`Deleted ${successCount} contacts. Failed to delete ${errorCount} contacts. Check console for details.`);
+      } else {
+        alert(`Successfully deleted ${totalToDelete} newest duplicate(s)`);
+      }
 
       if (onRefresh) {
         await onRefresh();
@@ -101,24 +116,39 @@ export default function DuplicatesModal({ contacts, onClose, onDelete, onRefresh
     const totalToDelete = duplicateGroups.length;
     const idsToDelete = duplicateGroups.map(group => group.contacts[group.contacts.length - 1].id);
 
+    console.log('Attempting to delete IDs:', idsToDelete);
+
     if (!confirm(`Are you sure you want to delete ${totalToDelete} OLDEST duplicates? This will keep the newest contact for each duplicate name.`)) {
       return;
     }
 
     setIsDeleting(true);
     try {
-      const { error } = await supabase
-        .from('contacts')
-        .delete()
-        .in('id', idsToDelete);
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
 
-      if (error) {
-        console.error('Error deleting contacts:', error);
-        alert(`Error deleting duplicates: ${error.message}`);
-        return;
+      for (const id of idsToDelete) {
+        const { error } = await supabase
+          .from('contacts')
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          console.error(`Error deleting contact ${id}:`, error);
+          errors.push(`${id}: ${error.message}`);
+          errorCount++;
+        } else {
+          successCount++;
+        }
       }
 
-      alert(`Successfully deleted ${totalToDelete} oldest duplicate(s)`);
+      if (errorCount > 0) {
+        console.error('Deletion errors:', errors);
+        alert(`Deleted ${successCount} contacts. Failed to delete ${errorCount} contacts. Check console for details.`);
+      } else {
+        alert(`Successfully deleted ${totalToDelete} oldest duplicate(s)`);
+      }
 
       if (onRefresh) {
         await onRefresh();
