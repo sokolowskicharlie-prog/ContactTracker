@@ -16,6 +16,8 @@ interface MGOPricesModalProps {
   onOilPricesOrderChange?: (order: string[]) => void;
   visibleOilPrices?: string[];
   onVisibleOilPricesChange?: (visible: string[]) => void;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
 interface OilPrice {
@@ -225,13 +227,16 @@ export default function MGOPricesModal({
   oilPricesOrder = ['WTI', 'Brent', 'Gasoil', 'MGO', 'VLSFO', 'IFO 380'],
   onOilPricesOrderChange,
   visibleOilPrices = ['WTI', 'Brent', 'Gasoil', 'MGO', 'VLSFO', 'IFO 380'],
-  onVisibleOilPricesChange
+  onVisibleOilPricesChange,
+  expanded = true,
+  onExpandedChange
 }: MGOPricesModalProps) {
   const [data, setData] = useState<OilPricesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isExpanded, setIsExpanded] = useState(true);
   const [isReorderMode, setIsReorderMode] = useState(false);
+
+  const isExpanded = expanded;
 
   const fetchPrices = useCallback(async () => {
     setLoading(true);
@@ -342,7 +347,7 @@ export default function MGOPricesModal({
               </button>
             )}
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => onExpandedChange?.(!isExpanded)}
               className="p-1 hover:bg-white/20 rounded transition-colors"
               title={isExpanded ? 'Collapse' : 'Expand'}
             >

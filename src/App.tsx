@@ -234,6 +234,7 @@ function App() {
   const [notepadExpanded, setNotepadExpanded] = useState(true);
   const [goalsExpanded, setGoalsExpanded] = useState(true);
   const [priorityExpanded, setPriorityExpanded] = useState(true);
+  const [oilPricesExpanded, setOilPricesExpanded] = useState(true);
   const [hasGoals, setHasGoals] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [noteId, setNoteId] = useState<string | undefined>();
@@ -5339,6 +5340,8 @@ function App() {
         onOilPricesOrderChange={handleSaveOilPricesOrder}
         visibleOilPrices={visibleOilPrices}
         onVisibleOilPricesChange={handleSaveVisibleOilPrices}
+        expanded={oilPricesExpanded}
+        onExpandedChange={setOilPricesExpanded}
       />
 
       <WorkspaceModal
