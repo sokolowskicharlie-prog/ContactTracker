@@ -1885,6 +1885,7 @@ function App() {
       'Company Size': contact.company_size || '',
       'Company Excerpt': contact.company_excerpt || '',
       'Email': contact.email || '',
+      'Email Type': contact.email_type || '',
       'Phone': contact.phone || '',
       'Phone Type': contact.phone_type || '',
       'City': contact.city || '',
@@ -1894,9 +1895,31 @@ function App() {
       'Timezone': contact.timezone || '',
       'Website': contact.website || '',
       'Reminder Days': contact.reminder_days || '',
+      'Priority Rank': contact.priority_rank || '',
       'Has Traction': contact.has_traction ? 'Yes' : 'No',
+      'Traction Date': contact.traction_date ? new Date(contact.traction_date).toLocaleDateString() : '',
+      'Traction Note': contact.traction_note || '',
+      'Traction Additional Note': contact.traction_additional_note || '',
       'Is Client': contact.is_client ? 'Yes' : 'No',
+      'Client Date': contact.client_date ? new Date(contact.client_date).toLocaleDateString() : '',
+      'Client Note': contact.client_note || '',
+      'Client Additional Note': contact.client_additional_note || '',
       'Is Jammed': contact.is_jammed ? 'Yes' : 'No',
+      'Jammed Date': contact.jammed_date ? new Date(contact.jammed_date).toLocaleDateString() : '',
+      'Jammed Note': contact.jammed_note || '',
+      'Jammed Additional Note': contact.jammed_additional_note || '',
+      'Is Dead': contact.is_dead ? 'Yes' : 'No',
+      'Dead Date': contact.dead_date ? new Date(contact.dead_date).toLocaleDateString() : '',
+      'Dead Note': contact.dead_note || '',
+      'Dead Additional Note': contact.dead_additional_note || '',
+      'Follow Up Date': contact.follow_up_date ? new Date(contact.follow_up_date).toLocaleDateString() : '',
+      'Follow Up Reason': contact.follow_up_reason || '',
+      'Average MT Enquiry': contact.average_mt_enquiry || '',
+      'Average Margin': contact.average_margin || '',
+      'Number of Deals': contact.number_of_deals || '',
+      'Average Days Credit Required': contact.average_days_credit_required || '',
+      'Special Terms': contact.special_terms || '',
+      'Groups': contact.groups?.map(g => g.name).join(', ') || '',
       'Total Calls': contact.total_calls || 0,
       'Total Emails': contact.total_emails || 0,
       'Total Deals': contact.total_deals || 0,
@@ -1910,6 +1933,8 @@ function App() {
       'Next Task Due': contact.next_task_due ? new Date(contact.next_task_due).toLocaleDateString() : '',
       'Next Task Title': contact.next_task_title || '',
       'Notes': contact.notes || '',
+      'Created At': new Date(contact.created_at).toLocaleString(),
+      'Updated At': new Date(contact.updated_at).toLocaleString(),
     }));
 
     const contactPersonsData: any[] = [];
@@ -1918,14 +1943,17 @@ function App() {
         contact.contact_persons.forEach(person => {
           contactPersonsData.push({
             'Contact Name': contact.name,
+            'Company': contact.company || '',
             'Person Name': person.name,
             'Job Title': person.job_title || '',
             'Email': person.email || '',
+            'Email Type': person.email_type || '',
             'Phone': person.phone || '',
             'Phone Type': person.phone_type || '',
             'Mobile': person.mobile || '',
             'Mobile Type': person.mobile_type || '',
             'Is Primary': person.is_primary ? 'Yes' : 'No',
+            'Created At': new Date(person.created_at).toLocaleString(),
           });
         });
       }
@@ -1937,10 +1965,12 @@ function App() {
         'Contact Name': contact?.name || '',
         'Company': contact?.company || '',
         'Call Date': new Date(call.call_date).toLocaleString(),
+        'Communication Type': call.communication_type || 'call',
         'Duration (min)': call.duration || '',
         'Spoke With': call.spoke_with || '',
         'Phone Number': call.phone_number || '',
         'Notes': call.notes || '',
+        'Created At': new Date(call.created_at).toLocaleString(),
       };
     });
 
@@ -1954,6 +1984,7 @@ function App() {
         'Emailed To': email.emailed_to || '',
         'Email Address': email.email_address || '',
         'Notes': email.notes || '',
+        'Created At': new Date(email.created_at).toLocaleString(),
       };
     });
 
@@ -1967,10 +1998,14 @@ function App() {
             'Vessel Name': vessel.vessel_name || '',
             'IMO Number': vessel.imo_number || '',
             'Vessel Type': vessel.vessel_type || '',
-            'Flag': vessel.flag || '',
-            'Year Built': vessel.year_built || '',
-            'DWT': vessel.dwt || '',
+            'Destination': vessel.destination || '',
+            'ETA': vessel.eta ? new Date(vessel.eta).toLocaleString() : '',
+            'Charter Status': vessel.charter_status || '',
+            'Marine Traffic URL': vessel.marine_traffic_url || '',
+            'Marine Traffic ID': vessel.marine_traffic_id || '',
+            'Last Updated': vessel.last_updated ? new Date(vessel.last_updated).toLocaleString() : '',
             'Notes': vessel.notes || '',
+            'Created At': new Date(vessel.created_at).toLocaleString(),
           });
         });
       }
@@ -1984,15 +2019,13 @@ function App() {
           fuelDealsData.push({
             'Contact Name': contact.name,
             'Company': contact.company || '',
-            'Vessel Name': vessel?.vessel_name || '',
+            'Vessel Name': deal.vessel_name || vessel?.vessel_name || '',
             'Deal Date': new Date(deal.deal_date).toLocaleDateString(),
             'Port': deal.port || '',
             'Fuel Type': deal.fuel_type || '',
-            'Quantity (MT)': deal.quantity || '',
-            'Price per MT': deal.price_per_mt || '',
-            'Currency': deal.currency || '',
-            'Total Amount': deal.total_amount || '',
+            'Fuel Quantity (MT)': deal.fuel_quantity || '',
             'Notes': deal.notes || '',
+            'Created At': new Date(deal.created_at).toLocaleString(),
           });
         });
       }
@@ -2002,17 +2035,29 @@ function App() {
       'Company Name': supplier.company_name,
       'Contact Person': supplier.contact_person || '',
       'Email': supplier.email || '',
+      'General Email': supplier.general_email || '',
       'Phone': supplier.phone || '',
+      'Website': supplier.website || '',
       'Address': supplier.address || '',
       'Country': supplier.country || '',
+      'Region': supplier.region || '',
+      'UK Regions': supplier.regions?.map(r => r.name).join(', ') || '',
       'Supplier Type': supplier.supplier_type || '',
+      'Business Classification': supplier.business_classification || '',
+      'Products/Services': supplier.products_services || '',
       'Ports': supplier.ports || '',
       'Fuel Types': supplier.fuel_types || '',
+      'Default Has Barge': supplier.default_has_barge ? 'Yes' : 'No',
+      'Default Has Truck': supplier.default_has_truck ? 'Yes' : 'No',
+      'Default Has Ex-Pipe': supplier.default_has_expipe ? 'Yes' : 'No',
       'Payment Terms': supplier.payment_terms || '',
       'Currency': supplier.currency || '',
+      'Rating': supplier.rating || '',
       'Total Orders': supplier.total_orders || 0,
       'Last Order Date': supplier.last_order_date ? new Date(supplier.last_order_date).toLocaleDateString() : '',
       'Notes': supplier.notes || '',
+      'Created At': new Date(supplier.created_at).toLocaleString(),
+      'Updated At': new Date(supplier.updated_at).toLocaleString(),
     }));
 
     const supplierContactsData: any[] = [];
@@ -2022,13 +2067,37 @@ function App() {
           supplierContactsData.push({
             'Supplier Name': supplier.company_name,
             'Contact Name': contact.name,
-            'Job Title': contact.job_title || '',
+            'Job Title': contact.title || '',
             'Email': contact.email || '',
             'Phone': contact.phone || '',
             'Phone Type': contact.phone_type || '',
             'Mobile': contact.mobile || '',
             'Mobile Type': contact.mobile_type || '',
             'Is Primary': contact.is_primary ? 'Yes' : 'No',
+            'Notes': contact.notes || '',
+            'Created At': new Date(contact.created_at).toLocaleString(),
+          });
+        });
+      }
+    });
+
+    const supplierPortsData: any[] = [];
+    suppliers.forEach(supplier => {
+      if (supplier.ports_detailed && supplier.ports_detailed.length > 0) {
+        supplier.ports_detailed.forEach(port => {
+          supplierPortsData.push({
+            'Supplier Name': supplier.company_name,
+            'Port Name': port.port_name,
+            'Region': port.region || '',
+            'Has Barge': port.has_barge ? 'Yes' : 'No',
+            'Has Truck': port.has_truck ? 'Yes' : 'No',
+            'Has Ex-Pipe': port.has_expipe ? 'Yes' : 'No',
+            'Has VLSFO': port.has_vlsfo ? 'Yes' : 'No',
+            'Has LSMGO': port.has_lsmgo ? 'Yes' : 'No',
+            'Custom Delivery Methods': port.custom_delivery_methods?.map(m => m.name).join(', ') || '',
+            'Custom Fuel Types': port.custom_fuel_types?.map(f => f.name).join(', ') || '',
+            'Notes': port.notes || '',
+            'Created At': new Date(port.created_at).toLocaleString(),
           });
         });
       }
@@ -2042,6 +2111,7 @@ function App() {
             'Supplier Name': supplier.company_name,
             'Order Date': new Date(order.order_date).toLocaleDateString(),
             'Order Number': order.order_number || '',
+            'Items': order.items || '',
             'Description': order.description || '',
             'Quantity': order.quantity || '',
             'Unit Price': order.unit_price || '',
@@ -2050,6 +2120,7 @@ function App() {
             'Status': order.status || '',
             'Delivery Date': order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : '',
             'Notes': order.notes || '',
+            'Created At': new Date(order.created_at).toLocaleString(),
           });
         });
       }
@@ -2112,6 +2183,11 @@ function App() {
     if (supplierContactsData.length > 0) {
       const supplierContactsSheet = XLSX.utils.json_to_sheet(supplierContactsData);
       XLSX.utils.book_append_sheet(workbook, supplierContactsSheet, 'Supplier Contacts');
+    }
+
+    if (supplierPortsData.length > 0) {
+      const supplierPortsSheet = XLSX.utils.json_to_sheet(supplierPortsData);
+      XLSX.utils.book_append_sheet(workbook, supplierPortsSheet, 'Supplier Ports');
     }
 
     if (ordersData.length > 0) {
