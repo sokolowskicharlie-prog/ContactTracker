@@ -73,28 +73,14 @@ export default function DuplicatesModal({ contacts, onClose, onDelete, onRefresh
 
     setIsDeleting(true);
     try {
-      let successCount = 0;
-      let errorCount = 0;
-      const errors: string[] = [];
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .in('id', idsToDelete);
 
-      for (const id of idsToDelete) {
-        const { error } = await supabase
-          .from('contacts')
-          .delete()
-          .eq('id', id);
-
-        if (error) {
-          console.error(`Error deleting contact ${id}:`, error);
-          errors.push(`${id}: ${error.message}`);
-          errorCount++;
-        } else {
-          successCount++;
-        }
-      }
-
-      if (errorCount > 0) {
-        console.error('Deletion errors:', errors);
-        alert(`Deleted ${successCount} contacts. Failed to delete ${errorCount} contacts. Check console for details.`);
+      if (error) {
+        console.error('Error deleting newest duplicates:', error);
+        alert('An error occurred while deleting duplicates. Please try again.');
       } else {
         alert(`Successfully deleted ${totalToDelete} newest duplicate(s)`);
       }
@@ -124,28 +110,14 @@ export default function DuplicatesModal({ contacts, onClose, onDelete, onRefresh
 
     setIsDeleting(true);
     try {
-      let successCount = 0;
-      let errorCount = 0;
-      const errors: string[] = [];
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .in('id', idsToDelete);
 
-      for (const id of idsToDelete) {
-        const { error } = await supabase
-          .from('contacts')
-          .delete()
-          .eq('id', id);
-
-        if (error) {
-          console.error(`Error deleting contact ${id}:`, error);
-          errors.push(`${id}: ${error.message}`);
-          errorCount++;
-        } else {
-          successCount++;
-        }
-      }
-
-      if (errorCount > 0) {
-        console.error('Deletion errors:', errors);
-        alert(`Deleted ${successCount} contacts. Failed to delete ${errorCount} contacts. Check console for details.`);
+      if (error) {
+        console.error('Error deleting oldest duplicates:', error);
+        alert('An error occurred while deleting duplicates. Please try again.');
       } else {
         alert(`Successfully deleted ${totalToDelete} oldest duplicate(s)`);
       }
