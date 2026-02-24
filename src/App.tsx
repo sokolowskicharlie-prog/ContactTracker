@@ -4082,6 +4082,45 @@ function App() {
               </div>
             )}
 
+            <div className="flex justify-between items-center mb-4">
+              <button
+                onClick={() => {
+                  setFilterCountries([]);
+                  setFilterTimezones([]);
+                  setFilterNames([]);
+                  setFilterCompanies([]);
+                  setFilterCompanySizes([]);
+                  setFilterEmails([]);
+                  setFilterPhones([]);
+                  setFilterPhoneTypes([]);
+                  setFilterEmailTypes([]);
+                  setFilterCities([]);
+                  setFilterPostCodes([]);
+                  setFilterWebsites([]);
+                  setFilterAddresses([]);
+                  setFilterPriorities([]);
+                  setFilterAverageMt([]);
+                  setFilterAverageMargin([]);
+                  setFilterNumberOfDeals([]);
+                  setFilterCreditDays([]);
+                  setFilterSpecialTerms([]);
+                  setFilterPort('all');
+                  setFilterFuelType('all');
+                  setFilterGroup('all');
+                  setFilterDeliveryMethod('all');
+                  setSearchQuery('');
+                  setJammedReasonFilter('');
+                  setTractionReasonFilter('');
+                  setClientReasonFilter('');
+                  setDeadReasonFilter('');
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Clear All Filters
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               {visibleFilters.name && (
                 <MultiSelectDropdown
@@ -4473,6 +4512,24 @@ function App() {
                 )}
               </div>
             </div>
+
+            <div className="flex justify-between items-center mb-4">
+              <button
+                onClick={() => {
+                  setFilterPort('all');
+                  setFilterFuelType('all');
+                  setFilterDeliveryMethod('all');
+                  setFilterRegion('all');
+                  setFilterBusinessClassification('Supplier');
+                  setSupplierSearchQuery('');
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Clear All Filters
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
