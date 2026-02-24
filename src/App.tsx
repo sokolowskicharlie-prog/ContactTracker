@@ -881,16 +881,11 @@ function App() {
   const loadContacts = async () => {
     if (!currentWorkspace) return;
     try {
-      let query = supabase
+      const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
         .select('*')
+        .eq('workspace_id', currentWorkspace.id)
         .order('name');
-
-      if (currentWorkspace) {
-        query = query.or(`workspace_id.eq.${currentWorkspace.id},workspace_id.is.null`);
-      }
-
-      const { data: contactsData, error: contactsError } = await query;
 
       if (contactsError) throw contactsError;
 
@@ -1516,16 +1511,11 @@ function App() {
   const loadSuppliers = async () => {
     if (!currentWorkspace) return;
     try {
-      let query = supabase
+      const { data: suppliersData, error: suppliersError } = await supabase
         .from('suppliers')
         .select('*')
+        .eq('workspace_id', currentWorkspace.id)
         .order('company_name');
-
-      if (currentWorkspace) {
-        query = query.or(`workspace_id.eq.${currentWorkspace.id},workspace_id.is.null`);
-      }
-
-      const { data: suppliersData, error: suppliersError } = await query;
 
       if (suppliersError) throw suppliersError;
 
