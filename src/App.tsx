@@ -855,10 +855,23 @@ function App() {
         const defaultWorkspace = await getOrCreateDefaultWorkspace(user.id);
         setWorkspaces([defaultWorkspace]);
         setCurrentWorkspace(defaultWorkspace);
+        localStorage.setItem('currentWorkspaceId', defaultWorkspace.id);
       } else {
         setWorkspaces(workspacesData);
-        const defaultWs = workspacesData.find(w => w.is_default) || workspacesData[0];
-        setCurrentWorkspace(defaultWs);
+
+        const savedWorkspaceId = localStorage.getItem('currentWorkspaceId');
+        let workspaceToSet: Workspace | undefined;
+
+        if (savedWorkspaceId) {
+          workspaceToSet = workspacesData.find(w => w.id === savedWorkspaceId);
+        }
+
+        if (!workspaceToSet) {
+          workspaceToSet = workspacesData.find(w => w.is_default) || workspacesData[0];
+        }
+
+        setCurrentWorkspace(workspaceToSet);
+        localStorage.setItem('currentWorkspaceId', workspaceToSet.id);
       }
     } catch (error) {
       console.error('Error loading workspaces:', error);
@@ -3383,6 +3396,7 @@ function App() {
                           key={workspace.id}
                           onClick={() => {
                             setCurrentWorkspace(workspace);
+                            localStorage.setItem('currentWorkspaceId', workspace.id);
                             setShowWorkspaceDropdown(false);
                           }}
                           className={`w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition-colors ${
