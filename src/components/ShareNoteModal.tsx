@@ -53,20 +53,20 @@ export default function ShareNoteModal({
 
   const loadUsers = async () => {
     try {
-      const { data, error } = await supabase.auth.admin.listUsers();
-      if (error) throw error;
-
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const otherUsers = data.users
-        .filter(u => u.id !== user.id)
-        .map(u => ({ id: u.id, email: u.email || 'No email' }));
+      const { data, error } = await supabase.rpc('get_user_emails');
+      if (error) throw error;
+
+      const otherUsers = (data || [])
+        .filter((u: User) => u.id !== user.id)
+        .map((u: User) => ({ id: u.id, email: u.email || 'No email' }));
 
       setUsers(otherUsers);
     } catch (err) {
       console.error('Error loading users:', err);
-      setError('Unable to load users. Make sure you have proper permissions.');
+      setError('Unable to load users.');
     }
   };
 
@@ -79,22 +79,13 @@ export default function ShareNoteModal({
 
       if (error) throw error;
 
-      const sharesWithEmails = await Promise.all(
-        (data || []).map(async (share) => {
-          try {
-            const { data: userData } = await supabase.auth.admin.getUserById(share.shared_with);
-            return {
-              ...share,
-              shared_with_email: userData.user?.email || 'Unknown user',
-            };
-          } catch {
-            return {
-              ...share,
-              shared_with_email: 'Unknown user',
-            };
-          }
-        })
-      );
+      const { data: userEmails } = await supabase.rpc('get_user_emails');
+      const emailMap = new Map((userEmails || []).map((u: User) => [u.id, u.email]));
+
+      const sharesWithEmails = (data || []).map((share) => ({
+        ...share,
+        shared_with_email: emailMap.get(share.shared_with) || 'Unknown user',
+      }));
 
       setShares(sharesWithEmails);
     } catch (err) {
