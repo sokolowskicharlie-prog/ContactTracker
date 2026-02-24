@@ -3710,13 +3710,51 @@ function App() {
                 <Filter className="w-5 h-5 text-gray-600" />
                 <h3 className="font-medium text-gray-900">Filter & Sort</h3>
               </div>
-              <button
-                onClick={() => setShowFilterSettings(!showFilterSettings)}
-                className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center gap-1"
-              >
-                <Settings className="w-4 h-4" />
-                {showFilterSettings ? 'Hide' : 'Show'} Filter Settings
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setFilterCountries([]);
+                    setFilterTimezones([]);
+                    setFilterNames([]);
+                    setFilterCompanies([]);
+                    setFilterCompanySizes([]);
+                    setFilterEmails([]);
+                    setFilterPhones([]);
+                    setFilterPhoneTypes([]);
+                    setFilterEmailTypes([]);
+                    setFilterCities([]);
+                    setFilterPostCodes([]);
+                    setFilterWebsites([]);
+                    setFilterAddresses([]);
+                    setFilterPriorities([]);
+                    setFilterAverageMt([]);
+                    setFilterAverageMargin([]);
+                    setFilterNumberOfDeals([]);
+                    setFilterCreditDays([]);
+                    setFilterSpecialTerms([]);
+                    setFilterPort('all');
+                    setFilterFuelType('all');
+                    setFilterGroup('all');
+                    setFilterDeliveryMethod('all');
+                    setSearchQuery('');
+                    setJammedReasonFilter('');
+                    setTractionReasonFilter('');
+                    setClientReasonFilter('');
+                    setDeadReasonFilter('');
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Clear All
+                </button>
+                <button
+                  onClick={() => setShowFilterSettings(!showFilterSettings)}
+                  className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center gap-1"
+                >
+                  <Settings className="w-4 h-4" />
+                  {showFilterSettings ? 'Hide' : 'Show'} Filter Settings
+                </button>
+              </div>
             </div>
 
             {showFilterSettings && (
@@ -4082,45 +4120,6 @@ function App() {
               </div>
             )}
 
-            <div className="flex justify-between items-center mb-4">
-              <button
-                onClick={() => {
-                  setFilterCountries([]);
-                  setFilterTimezones([]);
-                  setFilterNames([]);
-                  setFilterCompanies([]);
-                  setFilterCompanySizes([]);
-                  setFilterEmails([]);
-                  setFilterPhones([]);
-                  setFilterPhoneTypes([]);
-                  setFilterEmailTypes([]);
-                  setFilterCities([]);
-                  setFilterPostCodes([]);
-                  setFilterWebsites([]);
-                  setFilterAddresses([]);
-                  setFilterPriorities([]);
-                  setFilterAverageMt([]);
-                  setFilterAverageMargin([]);
-                  setFilterNumberOfDeals([]);
-                  setFilterCreditDays([]);
-                  setFilterSpecialTerms([]);
-                  setFilterPort('all');
-                  setFilterFuelType('all');
-                  setFilterGroup('all');
-                  setFilterDeliveryMethod('all');
-                  setSearchQuery('');
-                  setJammedReasonFilter('');
-                  setTractionReasonFilter('');
-                  setClientReasonFilter('');
-                  setDeadReasonFilter('');
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                <X className="w-4 h-4" />
-                Clear All Filters
-              </button>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               {visibleFilters.name && (
                 <MultiSelectDropdown
@@ -4478,6 +4477,20 @@ function App() {
                 <h3 className="font-medium text-gray-900">Filter & Sort Suppliers</h3>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setFilterPort('all');
+                    setFilterFuelType('all');
+                    setFilterDeliveryMethod('all');
+                    setFilterRegion('all');
+                    setFilterBusinessClassification('Supplier');
+                    setSupplierSearchQuery('');
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Clear All
+                </button>
                 <label className="text-sm font-medium text-gray-700">Sort by:</label>
                 <select
                   value={supplierSortBy}
@@ -4511,23 +4524,6 @@ function App() {
                   </button>
                 )}
               </div>
-            </div>
-
-            <div className="flex justify-between items-center mb-4">
-              <button
-                onClick={() => {
-                  setFilterPort('all');
-                  setFilterFuelType('all');
-                  setFilterDeliveryMethod('all');
-                  setFilterRegion('all');
-                  setFilterBusinessClassification('Supplier');
-                  setSupplierSearchQuery('');
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                <X className="w-4 h-4" />
-                Clear All Filters
-              </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
