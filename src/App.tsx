@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell, ChevronDown, FolderOpen, PieChart, Calendar, Map as MapIcon, BarChart3 } from 'lucide-react';
+import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell, ChevronDown, FolderOpen, PieChart, Calendar, Map as MapIcon, BarChart3, Globe } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import { Workspace, getWorkspaces, getOrCreateDefaultWorkspace } from './lib/workspaces';
 import AuthForm from './components/AuthForm';
@@ -50,6 +50,7 @@ import WorkspaceModal from './components/WorkspaceModal';
 import StatsModal from './components/StatsModal';
 import DayScheduleModal from './components/DayScheduleModal';
 import MGOPricesModal from './components/MGOPricesModal';
+import TimezoneModal from './components/TimezoneModal';
 
 interface NotificationSettings {
   id?: string;
@@ -230,16 +231,18 @@ function App() {
   const [showNotepad, setShowNotepad] = useState(false);
   const [showPriorityPanel, setShowPriorityPanel] = useState(false);
   const [showMGOPrices, setShowMGOPrices] = useState(false);
+  const [showTimezones, setShowTimezones] = useState(false);
   const [showPriorityLabelSettings, setShowPriorityLabelSettings] = useState(false);
   const [notepadExpanded, setNotepadExpanded] = useState(true);
   const [goalsExpanded, setGoalsExpanded] = useState(true);
   const [priorityExpanded, setPriorityExpanded] = useState(true);
   const [oilPricesExpanded, setOilPricesExpanded] = useState(true);
+  const [timezonesExpanded, setTimezonesExpanded] = useState(true);
   const [hasGoals, setHasGoals] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [noteId, setNoteId] = useState<string | undefined>();
   const [buttonOrder, setButtonOrder] = useState<string[]>(['copy-emails', 'export', 'history', 'duplicates', 'delete-all', 'settings', 'import', 'bulk-search', 'add-contact', 'alerts', 'stats']);
-  const [panelOrder, setPanelOrder] = useState<string[]>(['notes', 'goals', 'priority', 'mgo']);
+  const [panelOrder, setPanelOrder] = useState<string[]>(['notes', 'goals', 'priority', 'mgo', 'timezones']);
   const [panelSpacing, setPanelSpacing] = useState<number>(2);
   const [oilPricesOrder, setOilPricesOrder] = useState<string[]>(['WTI', 'Brent', 'Gasoil', 'MGO', 'VLSFO', 'IFO 380']);
   const [visibleOilPrices, setVisibleOilPrices] = useState<string[]>(['WTI', 'Brent', 'Gasoil', 'MGO', 'VLSFO', 'IFO 380']);
@@ -3555,6 +3558,19 @@ function App() {
                 <span className="hidden sm:inline whitespace-nowrap">Oil Prices</span>
               </button>
               <button
+                type="button"
+                onClick={() => setShowTimezones(!showTimezones)}
+                className={`flex-shrink-0 flex items-center gap-2 px-2.5 sm:px-4 py-2 rounded-lg transition-colors ${
+                  showTimezones
+                    ? 'text-teal-600 bg-teal-50 hover:bg-teal-100'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                }`}
+                title={showTimezones ? 'Hide Timezones' : 'Show Timezones'}
+              >
+                <Globe className="w-5 h-5" />
+                <span className="hidden sm:inline whitespace-nowrap">Timezones</span>
+              </button>
+              <button
                 onClick={() => setShowAccountSettings(true)}
                 className="flex-shrink-0 flex items-center gap-2 px-2.5 sm:px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg transition-colors"
                 title="Account Settings"
@@ -5418,6 +5434,23 @@ function App() {
         onVisibleOilPricesChange={handleSaveVisibleOilPrices}
         expanded={oilPricesExpanded}
         onExpandedChange={setOilPricesExpanded}
+      />
+
+      <TimezoneModal
+        isOpen={showTimezones}
+        onClose={() => setShowTimezones(false)}
+        showGoals={showGoalProgressBox && hasGoals}
+        showNotepad={showNotepad}
+        showPriority={showPriorityPanel}
+        showOilPrices={showMGOPrices}
+        panelOrder={panelOrder}
+        notepadExpanded={notepadExpanded}
+        goalsExpanded={goalsExpanded}
+        priorityExpanded={priorityExpanded}
+        oilPricesExpanded={oilPricesExpanded}
+        panelSpacing={panelSpacing}
+        expanded={timezonesExpanded}
+        onExpandedChange={setTimezonesExpanded}
       />
 
       <WorkspaceModal
