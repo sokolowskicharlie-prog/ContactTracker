@@ -25,31 +25,32 @@ interface Timezone {
   time: string;
   date: string;
   isDST: boolean;
+  isLondon?: boolean;
 }
 
 const majorTimezones = [
-  { name: 'Pacific/Honolulu', city: 'Honolulu', utcOffset: -10 },
-  { name: 'America/Anchorage', city: 'Anchorage', utcOffset: -9 },
-  { name: 'America/Los_Angeles', city: 'Los Angeles', utcOffset: -8 },
-  { name: 'America/Denver', city: 'Denver', utcOffset: -7 },
-  { name: 'America/Chicago', city: 'Chicago', utcOffset: -6 },
-  { name: 'America/New_York', city: 'New York', utcOffset: -5 },
-  { name: 'America/Caracas', city: 'Caracas', utcOffset: -4 },
-  { name: 'America/St_Johns', city: 'St. Johns', utcOffset: -3.5 },
-  { name: 'America/Sao_Paulo', city: 'São Paulo', utcOffset: -3 },
-  { name: 'Atlantic/Azores', city: 'Azores', utcOffset: -1 },
-  { name: 'Europe/London', city: 'London', utcOffset: 0 },
-  { name: 'Europe/Paris', city: 'Paris', utcOffset: 1 },
-  { name: 'Europe/Athens', city: 'Athens', utcOffset: 2 },
-  { name: 'Europe/Moscow', city: 'Moscow', utcOffset: 3 },
-  { name: 'Asia/Dubai', city: 'Dubai', utcOffset: 4 },
-  { name: 'Asia/Karachi', city: 'Karachi', utcOffset: 5 },
-  { name: 'Asia/Dhaka', city: 'Dhaka', utcOffset: 6 },
-  { name: 'Asia/Bangkok', city: 'Bangkok', utcOffset: 7 },
-  { name: 'Asia/Shanghai', city: 'Shanghai', utcOffset: 8 },
-  { name: 'Asia/Tokyo', city: 'Tokyo', utcOffset: 9 },
-  { name: 'Australia/Sydney', city: 'Sydney', utcOffset: 10 },
-  { name: 'Pacific/Auckland', city: 'Auckland', utcOffset: 12 },
+  { name: 'Pacific/Honolulu', city: 'Honolulu' },
+  { name: 'America/Anchorage', city: 'Anchorage' },
+  { name: 'America/Los_Angeles', city: 'Los Angeles' },
+  { name: 'America/Denver', city: 'Denver' },
+  { name: 'America/Chicago', city: 'Chicago' },
+  { name: 'America/New_York', city: 'New York' },
+  { name: 'America/Caracas', city: 'Caracas' },
+  { name: 'America/St_Johns', city: 'St. Johns' },
+  { name: 'America/Sao_Paulo', city: 'São Paulo' },
+  { name: 'Atlantic/Azores', city: 'Azores' },
+  { name: 'Europe/London', city: 'London', isLondon: true },
+  { name: 'Europe/Paris', city: 'Paris' },
+  { name: 'Europe/Athens', city: 'Athens' },
+  { name: 'Europe/Moscow', city: 'Moscow' },
+  { name: 'Asia/Dubai', city: 'Dubai' },
+  { name: 'Asia/Karachi', city: 'Karachi' },
+  { name: 'Asia/Dhaka', city: 'Dhaka' },
+  { name: 'Asia/Bangkok', city: 'Bangkok' },
+  { name: 'Asia/Shanghai', city: 'Shanghai' },
+  { name: 'Asia/Tokyo', city: 'Tokyo' },
+  { name: 'Australia/Sydney', city: 'Sydney' },
+  { name: 'Pacific/Auckland', city: 'Auckland' },
 ];
 
 export default function TimezoneModal({
@@ -76,6 +77,18 @@ export default function TimezoneModal({
 
     const updateTimezones = () => {
       const now = new Date();
+
+      const londonFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Europe/London',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false,
+      });
+
+      const londonTimeStr = londonFormatter.format(now);
+      const [londonHour, londonMinute] = londonTimeStr.split(':').map(Number);
+      const londonTotalMinutes = londonHour * 60 + londonMinute;
+
       const updatedTimezones = majorTimezones.map(tz => {
         try {
           const formatter = new Intl.DateTimeFormat('en-US', {
@@ -93,13 +106,41 @@ export default function TimezoneModal({
             day: 'numeric',
           });
 
+          const hourFormatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz.name,
+            hour: 'numeric',
+            minute: 'numeric',
+            hour12: false,
+          });
+
           const time = formatter.format(now);
           const date = dateFormatter.format(now);
 
-          const offset = tz.utcOffset;
-          const offsetStr = offset >= 0
-            ? `UTC+${offset}`
-            : `UTC${offset}`;
+          const tzTimeStr = hourFormatter.format(now);
+          const [tzHour, tzMinute] = tzTimeStr.split(':').map(Number);
+          const tzTotalMinutes = tzHour * 60 + tzMinute;
+
+          let diffMinutes = tzTotalMinutes - londonTotalMinutes;
+
+          if (diffMinutes > 720) diffMinutes -= 1440;
+          if (diffMinutes < -720) diffMinutes += 1440;
+
+          const diffHours = Math.floor(Math.abs(diffMinutes) / 60);
+          const diffMins = Math.abs(diffMinutes) % 60;
+
+          let offsetStr;
+          if (tz.isLondon) {
+            offsetStr = 'London Time';
+          } else if (diffMinutes === 0) {
+            offsetStr = 'Same as London';
+          } else {
+            const sign = diffMinutes >= 0 ? '+' : '-';
+            if (diffMins === 0) {
+              offsetStr = `${sign}${diffHours}h`;
+            } else {
+              offsetStr = `${sign}${diffHours}h ${diffMins}m`;
+            }
+          }
 
           return {
             name: tz.name,
@@ -108,16 +149,18 @@ export default function TimezoneModal({
             time,
             date,
             isDST: false,
+            isLondon: tz.isLondon,
           };
         } catch (error) {
           console.error(`Error formatting timezone ${tz.name}:`, error);
           return {
             name: tz.name,
             city: tz.city,
-            offset: `UTC${tz.utcOffset >= 0 ? '+' : ''}${tz.utcOffset}`,
+            offset: 'N/A',
             time: '--:--:--',
             date: '--',
             isDST: false,
+            isLondon: tz.isLondon,
           };
         }
       });
@@ -188,21 +231,29 @@ export default function TimezoneModal({
               {timezones.map((timezone) => (
                 <div
                   key={timezone.name}
-                  className="bg-white/10 backdrop-blur-sm rounded-lg p-3 hover:bg-white/20 transition-colors"
+                  className={`backdrop-blur-sm rounded-lg p-3 transition-colors ${
+                    timezone.isLondon
+                      ? 'bg-yellow-500/30 border-2 border-yellow-400/50 hover:bg-yellow-500/40'
+                      : 'bg-white/10 hover:bg-white/20'
+                  }`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-white/80" />
+                      <Clock className={`w-4 h-4 ${timezone.isLondon ? 'text-yellow-300' : 'text-white/80'}`} />
                       <div>
-                        <div className="text-white font-semibold">{timezone.city}</div>
-                        <div className="text-white/60 text-xs">{timezone.offset}</div>
+                        <div className={`font-semibold ${timezone.isLondon ? 'text-yellow-100' : 'text-white'}`}>
+                          {timezone.city}
+                        </div>
+                        <div className={`text-xs ${timezone.isLondon ? 'text-yellow-200/80' : 'text-white/60'}`}>
+                          {timezone.offset}
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-white font-mono text-lg font-semibold">
+                      <div className={`font-mono text-lg font-semibold ${timezone.isLondon ? 'text-yellow-100' : 'text-white'}`}>
                         {timezone.time}
                       </div>
-                      <div className="text-white/70 text-xs">
+                      <div className={`text-xs ${timezone.isLondon ? 'text-yellow-200/80' : 'text-white/70'}`}>
                         {timezone.date}
                       </div>
                     </div>
