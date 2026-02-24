@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Plus, Search, Users, Upload, Settings, Filter, Package, Trash2, LayoutGrid, Table, CheckSquare, History, ArrowUpDown, Download, Copy, LogOut, UserCog, Target, StickyNote, TrendingUp, Layers, X, Bell, ChevronDown, FolderOpen, PieChart, Calendar, Map as MapIcon, BarChart3 } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import { Workspace, getWorkspaces, getOrCreateDefaultWorkspace } from './lib/workspaces';
@@ -72,13 +72,11 @@ function App() {
   const [currentPage, setCurrentPage] = useState<'contacts' | 'suppliers' | 'tasks' | 'notes' | 'priority' | 'calendar'>('contacts');
   const [viewMode, setViewMode] = useState<'grid' | 'table' | 'map'>('grid');
   const [contacts, setContacts] = useState<ContactWithActivity[]>([]);
-  const [filteredContacts, setFilteredContacts] = useState<ContactWithActivity[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
   const [showWorkspaceDropdown, setShowWorkspaceDropdown] = useState(false);
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
   const [suppliers, setSuppliers] = useState<SupplierWithOrders[]>([]);
-  const [filteredSuppliers, setFilteredSuppliers] = useState<SupplierWithOrders[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSupplierSearch, setSelectedSupplierSearch] = useState('');
   const [supplierSearchQuery, setSupplierSearchQuery] = useState('');
@@ -201,7 +199,6 @@ function App() {
   const [filterBusinessClassification, setFilterBusinessClassification] = useState<string>('Supplier');
   const [supplierSortBy, setSupplierSortBy] = useState<'name' | 'type' | 'classification' | 'country' | 'region'>('name');
   const [tasks, setTasks] = useState<TaskWithRelated[]>([]);
-  const [filteredTasks, setFilteredTasks] = useState<TaskWithRelated[]>([]);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showDayScheduleModal, setShowDayScheduleModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -280,7 +277,7 @@ function App() {
     }
   }, [contacts]);
 
-  useEffect(() => {
+  const filteredContacts = useMemo(() => {
     let filtered = [...contacts];
 
     // Apply search filter
@@ -710,10 +707,10 @@ function App() {
       }
     });
 
-    setFilteredContacts(filtered);
+    return filtered;
   }, [searchQuery, contacts, filterCountries, filterTimezones, filterNames, filterCompanies, filterCompanySizes, filterEmails, filterPhones, filterPhoneTypes, filterEmailTypes, filterCities, filterPostCodes, filterWebsites, filterAddresses, filterPriorities, filterAverageMt, filterAverageMargin, filterNumberOfDeals, filterCreditDays, filterSpecialTerms, sortBy, statusFilters, activityDateFilter, jammedReasonFilter, tractionReasonFilter, clientReasonFilter, deadReasonFilter, filterGroup, contactGroups]);
 
-  useEffect(() => {
+  const filteredSuppliers = useMemo(() => {
     let filtered = [...suppliers];
 
     if (selectedSupplierSearch) {
@@ -809,10 +806,10 @@ function App() {
       }
     });
 
-    setFilteredSuppliers(filtered);
+    return filtered;
   }, [suppliers, selectedSupplierSearch, supplierSearchQuery, filterPort, filterFuelType, filterDeliveryMethod, filterRegion, filterBusinessClassification, supplierSortBy]);
 
-  useEffect(() => {
+  const filteredTasks = useMemo(() => {
     let filtered = [...tasks];
 
     if (searchQuery.trim() !== '') {
@@ -844,7 +841,7 @@ function App() {
       return 0;
     });
 
-    setFilteredTasks(filtered);
+    return filtered;
   }, [tasks, searchQuery, taskFilter]);
 
   const loadWorkspaces = async () => {
@@ -3111,32 +3108,40 @@ function App() {
     }
   };
 
-  const handleSaveVisibleFilters = async (filters: typeof visibleFilters) => {
-    try {
-      const { data: existing } = await supabase
-        .from('user_preferences')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
+  const saveVisibleFiltersTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-      if (existing) {
-        const { error } = await supabase
-          .from('user_preferences')
-          .update({ visible_filters: filters })
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_preferences')
-          .insert([{ user_id: user.id, visible_filters: filters }]);
-
-        if (error) throw error;
-      }
-    } catch (error) {
-      console.error('Error saving visible filters:', error);
+  const handleSaveVisibleFilters = useCallback((filters: typeof visibleFilters) => {
+    if (saveVisibleFiltersTimeoutRef.current) {
+      clearTimeout(saveVisibleFiltersTimeoutRef.current);
     }
-  };
+
+    saveVisibleFiltersTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { data: existing } = await supabase
+          .from('user_preferences')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (existing) {
+          const { error } = await supabase
+            .from('user_preferences')
+            .update({ visible_filters: filters })
+            .eq('user_id', user.id);
+
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('user_preferences')
+            .insert([{ user_id: user.id, visible_filters: filters }]);
+
+          if (error) throw error;
+        }
+      } catch (error) {
+        console.error('Error saving visible filters:', error);
+      }
+    }, 500);
+  }, [user.id]);
 
   const handleCopyAllEmails = () => {
     const emails = filteredContacts
